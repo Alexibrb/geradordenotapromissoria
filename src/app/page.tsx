@@ -13,7 +13,7 @@ export default function Home() {
 
   const handleGenerate = (formData: PromissoryNoteData) => {
     setData(null);
-    // Use a short timeout to allow the old components to unmount and then mount the new ones with a subtle animation.
+    // Use um pequeno timeout para permitir que os componentes antigos sejam desmontados e depois montar os novos com uma animação sutil.
     setTimeout(() => {
       setData(formData);
     }, 100);
@@ -24,10 +24,10 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 md:py-12">
         <header className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">
-            Promissory Note Generator
+            Gerador de Nota Promissória
           </h1>
           <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
-            Create and print professional promissory notes and payment booklets with ease. Fill in the details below to get started.
+            Crie e imprima notas promissórias e carnês de pagamento profissionais com facilidade. Preencha os detalhes abaixo para começar.
           </p>
         </header>
 
@@ -46,7 +46,7 @@ export default function Home() {
                 <CardContent className="text-center p-8">
                   <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
                   <p className="mt-4 text-sm text-muted-foreground">
-                    Your generated documents will appear here.
+                    Seus documentos gerados aparecerão aqui.
                   </p>
                 </CardContent>
               </Card>

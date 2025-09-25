@@ -2,6 +2,7 @@
 
 import type { PromissoryNoteData } from "@/types";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Printer } from "lucide-react";
@@ -29,15 +30,15 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     }
   };
 
-  const formattedValue = new Intl.NumberFormat("en-US", {
+  const formattedValue = new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "USD",
+    currency: "BRL",
   }).format(totalValue);
 
-  const formattedDate = format(paymentDate, "MMMM do, yyyy");
-  const installmentValue = new Intl.NumberFormat("en-US", {
+  const formattedDate = format(paymentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
+  const installmentValue = new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "USD",
+    currency: "BRL",
   }).format(totalValue / installments);
 
 
@@ -46,43 +47,43 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="font-headline">Generated Promissory Note</CardTitle>
-              <CardDescription>Review the generated document below.</CardDescription>
+              <CardTitle className="font-headline">Nota Promissória Gerada</CardTitle>
+              <CardDescription>Revise o documento gerado abaixo.</CardDescription>
             </div>
             <Button onClick={handlePrint} className="mt-4 sm:mt-0 no-print">
               <Printer className="mr-2" />
-              Print Note
+              Imprimir Nota
             </Button>
         </div>
       </CardHeader>
       <CardContent id="note-print-area" className="prose prose-sm max-w-none">
-        <h2 className="text-center font-bold text-xl mb-6">PROMISSORY NOTE</h2>
+        <h2 className="text-center font-bold text-xl mb-6">NOTA PROMISSÓRIA</h2>
         <p>
-          For value received, the undersigned, <strong>{clientName}</strong>, residing at{" "}
-          <strong>{clientAddress}</strong> (hereinafter "the Borrower"), promises to
-          pay to the order of the creditor the principal sum of{" "}
+          Pelo valor recebido, o signatário, <strong>{clientName}</strong>, residente em{" "}
+          <strong>{clientAddress}</strong> (doravante "o Devedor"), promete
+          pagar à ordem do credor a quantia principal de{" "}
           <strong>{formattedValue}</strong>.
         </p>
         <p>
-          This note is in reference to the product/service:{" "}
+          Esta nota refere-se ao produto/serviço:{" "}
           <strong>{productReference}</strong>.
         </p>
         <p>
-          The principal amount shall be paid in <strong>{installments}</strong> equal monthly
-          installments of <strong>{installmentValue}</strong> each. The first payment
-          shall be due on <strong>{formattedDate}</strong>, and subsequent payments shall be
-          due on the same day of each consecutive month until the principal is
-          paid in full.
+          O valor principal será pago em <strong>{installments}</strong> parcelas mensais
+          iguais de <strong>{installmentValue}</strong> cada. O primeiro pagamento
+          será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
+          devidos no mesmo dia de cada mês consecutivo até que o principal seja
+          pago integralmente.
         </p>
         <p>
-          In the event of default in the payment of any of the said installments
-          as and when the same shall become due, the entire amount of the said
-          principal sum then remaining unpaid shall at once become due and payable.
+          Em caso de inadimplência no pagamento de qualquer uma das referidas parcelas
+          quando as mesmas se vencerem, o valor total do referido
+          principal remanescente não pago tornar-se-á imediatamente devido e pagável.
         </p>
         <div className="mt-12 pt-8 border-t">
             <div className="w-full">
                 <div className="w-3/4 border-b border-foreground pb-1"></div>
-                <p className="mt-2">Signature of Borrower: {clientName}</p>
+                <p className="mt-2">Assinatura do Devedor: {clientName}</p>
             </div>
         </div>
       </CardContent>

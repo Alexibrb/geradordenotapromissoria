@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   User,
   MapPin,
@@ -27,13 +28,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  clientName: z.string().min(3, { message: "Name must be at least 3 characters." }),
-  clientAddress: z.string().min(10, { message: "Please enter a full, valid address." }),
-  clientContact: z.string().min(7, { message: "Please enter a valid phone or email." }),
-  productReference: z.string().min(2, { message: "Please enter a product reference." }),
-  totalValue: z.coerce.number().positive({ message: "Value must be a positive number." }),
-  paymentDate: z.date({ required_error: "A payment start date is required." }),
-  installments: z.coerce.number().int().min(1, { message: "At least one installment is required." }).max(120, { message: "Cannot exceed 120 installments." }),
+  clientName: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
+  clientAddress: z.string().min(10, { message: "Por favor, insira um endereço completo e válido." }),
+  clientContact: z.string().min(7, { message: "Por favor, insira um telefone ou e-mail válido." }),
+  productReference: z.string().min(2, { message: "Por favor, insira uma referência do produto." }),
+  totalValue: z.coerce.number().positive({ message: "O valor deve ser um número positivo." }),
+  paymentDate: z.date({ required_error: "A data de início do pagamento é obrigatória." }),
+  installments: z.coerce.number().int().min(1, { message: "É necessária pelo menos uma parcela." }).max(120, { message: "Não pode exceder 120 parcelas." }),
 });
 
 type PromissoryNoteFormProps = {
@@ -56,8 +57,8 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
   function onSubmit(values: z.infer<typeof formSchema>) {
     onGenerate(values);
     toast({
-      title: "Documents Generated!",
-      description: "Your promissory note and payment booklet are ready.",
+      title: "Documentos Gerados!",
+      description: "Sua nota promissória e carnê de pagamento estão prontos.",
       className: "bg-accent text-accent-foreground",
     });
   }
@@ -65,8 +66,8 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline">Enter Details</CardTitle>
-        <CardDescription>Provide the necessary information to create the documents.</CardDescription>
+        <CardTitle className="font-headline">Insira os Detalhes</CardTitle>
+        <CardDescription>Forneça as informações necessárias para criar os documentos.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -76,9 +77,9 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
               name="clientName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4" /> Client Name</FormLabel>
+                  <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4" /> Nome do Cliente</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Input placeholder="João da Silva" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -89,9 +90,9 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
               name="clientAddress"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><MapPin className="mr-2 h-4 w-4" /> Client Address</FormLabel>
+                  <FormLabel className="flex items-center"><MapPin className="mr-2 h-4 w-4" /> Endereço do Cliente</FormLabel>
                   <FormControl>
-                    <Input placeholder="123 Main St, Anytown, USA" {...field} />
+                    <Input placeholder="Rua Principal, 123, Cidade, Estado" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -102,9 +103,9 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
               name="clientContact"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><Phone className="mr-2 h-4 w-4" /> Client Contact</FormLabel>
+                  <FormLabel className="flex items-center"><Phone className="mr-2 h-4 w-4" /> Contato do Cliente</FormLabel>
                   <FormControl>
-                    <Input placeholder="email@example.com or (555) 123-4567" {...field} />
+                    <Input placeholder="email@exemplo.com ou (11) 98765-4321" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,9 +116,9 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
               name="productReference"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><Barcode className="mr-2 h-4 w-4" /> Product/Service Reference</FormLabel>
+                  <FormLabel className="flex items-center"><Barcode className="mr-2 h-4 w-4" /> Referência do Produto/Serviço</FormLabel>
                   <FormControl>
-                    <Input placeholder="Invoice #12345" {...field} />
+                    <Input placeholder="Fatura #12345" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -129,9 +130,9 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
                 name="totalValue"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center"><CircleDollarSign className="mr-2 h-4 w-4" /> Total Value ($)</FormLabel>
+                    <FormLabel className="flex items-center"><CircleDollarSign className="mr-2 h-4 w-4" /> Valor Total (R$)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="1000.00" {...field} />
+                      <Input type="number" placeholder="1000,00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -142,7 +143,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
                 name="installments"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center"><Hash className="mr-2 h-4 w-4" /> Installments</FormLabel>
+                    <FormLabel className="flex items-center"><Hash className="mr-2 h-4 w-4" /> Parcelas</FormLabel>
                     <FormControl>
                       <Input type="number" min="1" {...field} />
                     </FormControl>
@@ -156,7 +157,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
               name="paymentDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> First Payment Date</FormLabel>
+                  <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Data do Primeiro Pagamento</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -168,9 +169,9 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
                           )}
                         >
                           {field.value ? (
-                            format(field.value, "PPP")
+                            format(field.value, "PPP", { locale: ptBR })
                           ) : (
-                            <span>Pick a date</span>
+                            <span>Escolha uma data</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -185,6 +186,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
                           date < new Date(new Date().setHours(0,0,0,0))
                         }
                         initialFocus
+                        locale={ptBR}
                       />
                     </PopoverContent>
                   </Popover>
@@ -193,7 +195,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
               )}
             />
             <Button type="submit" className="w-full" size="lg">
-              Generate Documents
+              Gerar Documentos
               <Send className="ml-2 h-4 w-4"/>
             </Button>
           </form>
