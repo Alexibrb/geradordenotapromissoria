@@ -30,6 +30,7 @@ import {
   initiateEmailSignIn,
   initiateEmailSignUp,
 } from '@/firebase/non-blocking-login';
+import { onAuthStateChanged } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 
 const loginSchema = z.object({
@@ -63,8 +64,15 @@ export default function LoginPage() {
   useEffect(() => {
     if (!auth) return;
 
-    const unsubscribe = auth.onAuthStateChanged(
-      () => {}, // Success case is handled by the useUser hook
+    // This listener handles successful authentication and redirects, but also catches errors.
+    const unsubscribe = onAuthStateChanged(auth, 
+      (user) => {
+        if (user) {
+          setIsSubmitting(false);
+          router.replace('/clients');
+        }
+        // If no user, do nothing, just stay on the login page.
+      }, 
       (error) => {
         setIsSubmitting(false);
         let title = 'Ocorreu um erro';
@@ -89,7 +97,7 @@ export default function LoginPage() {
               break;
             default:
               title = 'Erro de Autenticação'
-              description = 'Não foi possível fazer login. Verifique suas credenciais.';
+              description = 'Não foi possível autenticar. Verifique suas credenciais.';
               break;
           }
         }
@@ -103,7 +111,7 @@ export default function LoginPage() {
     );
 
     return () => unsubscribe();
-  }, [auth, toast]);
+  }, [auth, router, toast]);
 
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
