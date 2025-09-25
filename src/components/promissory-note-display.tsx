@@ -14,8 +14,10 @@ type PromissoryNoteDisplayProps = {
 export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
   const {
     clientName,
+    clientCpf,
     clientAddress,
     creditorName,
+    creditorCpf,
     totalValue,
     paymentDate,
     installments,
@@ -60,9 +62,10 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
       <CardContent id="note-print-area" className="prose prose-sm max-w-none">
         <h2 className="text-center font-bold text-xl mb-6">NOTA PROMISSÓRIA</h2>
         <p>
-          Pelo valor recebido, o signatário, <strong>{clientName}</strong>, residente em{" "}
-          <strong>{clientAddress}</strong> (doravante "o Devedor"), promete
-          pagar à ordem de <strong>{creditorName}</strong> (doravante "o Credor") a quantia principal de{" "}
+          Pelo valor recebido, o signatário, <strong>{clientName}</strong>, inscrito no CPF sob o nº{" "}
+          <strong>{clientCpf}</strong>, residente em <strong>{clientAddress}</strong> (doravante "o Devedor"), promete
+          pagar à ordem de <strong>{creditorName}</strong>, inscrito no CPF/CNPJ sob o nº{" "}
+          <strong>{creditorCpf}</strong> (doravante "o Credor"), a quantia principal de{" "}
           <strong>{formattedValue}</strong>.
         </p>
         <p>
@@ -82,14 +85,17 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           principal remanescente não pago tornar-se-á imediatamente devido e pagável.
         </p>
         <div className="mt-12 pt-8 border-t flex justify-between">
-            <div className="w-2/5">
+            <div className="w-2/5 text-center">
                 <div className="w-full border-b border-foreground pb-1"></div>
-                <p className="mt-2 text-center">Assinatura do Devedor: {clientName}</p>
+                <p className="mt-2 text-sm">Assinatura do Devedor</p>
+                <p className="font-semibold">{clientName}</p>
+                <p className="text-xs">{clientCpf}</p>
             </div>
-            <div className="w-2/5">
-                <p className="mb-2 text-center text-sm font-semibold">{creditorName}</p>
+            <div className="w-2/5 text-center">
                 <div className="w-full border-b border-foreground pb-1"></div>
-                <p className="mt-1 text-center text-xs text-muted-foreground">Assinatura do Credor</p>
+                 <p className="mt-2 text-sm">Assinatura do Credor</p>
+                <p className="font-semibold">{creditorName}</p>
+                <p className="text-xs">{creditorCpf}</p>
             </div>
         </div>
       </CardContent>

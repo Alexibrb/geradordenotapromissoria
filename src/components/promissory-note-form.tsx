@@ -15,6 +15,7 @@ import {
   Hash,
   Send,
   Briefcase,
+  Fingerprint,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -30,9 +31,11 @@ import { toast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   creditorName: z.string().min(3, { message: "O nome do credor deve ter pelo menos 3 caracteres." }),
+  creditorCpf: z.string().min(11, { message: "O CPF do credor deve ter 11 dígitos." }),
   clientName: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
+  clientCpf: z.string().min(11, { message: "O CPF do cliente deve ter 11 dígitos." }),
   clientAddress: z.string().min(10, { message: "Por favor, insira um endereço completo e válido." }),
-  clientContact: z.string().min(7, { message: "Por favor, insira um telefone ou e-mail válido." }),
+  clientContact: z.string().optional(),
   productReference: z.string().min(2, { message: "Por favor, insira uma referência do produto." }),
   totalValue: z.coerce.number().positive({ message: "O valor deve ser um número positivo." }),
   paymentDate: z.date({ required_error: "A data de início do pagamento é obrigatória." }),
@@ -48,7 +51,9 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       creditorName: "",
+      creditorCpf: "",
       clientName: "",
+      clientCpf: "",
       clientAddress: "",
       clientContact: "",
       productReference: "",
@@ -75,32 +80,62 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="creditorName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center"><Briefcase className="mr-2 h-4 w-4" /> Nome do Credor</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Sua Empresa LTDA" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="clientName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4" /> Nome do Cliente</FormLabel>
-                  <FormControl>
-                    <Input placeholder="João da Silva" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="creditorName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><Briefcase className="mr-2 h-4 w-4" /> Nome do Credor</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Sua Empresa LTDA" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="creditorCpf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><Fingerprint className="mr-2 h-4 w-4" /> CPF/CNPJ do Credor</FormLabel>
+                    <FormControl>
+                      <Input placeholder="00.000.000/0001-00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="clientName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4" /> Nome do Cliente</FormLabel>
+                    <FormControl>
+                      <Input placeholder="João da Silva" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="clientCpf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center"><Fingerprint className="mr-2 h-4 w-4" /> CPF do Cliente</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123.456.789-00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="clientAddress"
@@ -119,7 +154,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
               name="clientContact"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center"><Phone className="mr-2 h-4 w-4" /> Contato do Cliente</FormLabel>
+                  <FormLabel className="flex items-center"><Phone className="mr-2 h-4 w-4" /> Contato do Cliente (Opcional)</FormLabel>
                   <FormControl>
                     <Input placeholder="email@exemplo.com ou (11) 98765-4321" {...field} />
                   </FormControl>

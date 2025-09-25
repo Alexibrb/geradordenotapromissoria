@@ -16,6 +16,7 @@ type InstallmentSlipProps = {
   dueDate: Date;
   clientName: string;
   creditorName: string;
+  creditorCpf: string;
   productReference: string;
 };
 
@@ -26,6 +27,7 @@ export function InstallmentSlip({
   dueDate,
   clientName,
   creditorName,
+  creditorCpf,
   productReference,
 }: InstallmentSlipProps) {
   const [isPaid, setIsPaid] = useState(false);
@@ -85,11 +87,14 @@ export function InstallmentSlip({
         </div>
       </div>
       <div className="mt-8 pt-4">
-        <p className="mb-2 text-center text-sm font-semibold">{creditorName}</p>
-        <div className="w-3/4 mx-auto border-b border-foreground pb-1"></div>
-        <p className="mt-1 text-center text-xs text-muted-foreground">
-          Assinatura do Credor
-        </p>
+        <div className="w-3/4 mx-auto text-center">
+          <div className="border-b border-foreground pb-1"></div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Assinatura do Credor
+          </p>
+          <p className="text-sm font-semibold">{creditorName}</p>
+          <p className="text-xs">{creditorCpf}</p>
+        </div>
       </div>
       <Separator orientation="horizontal" className="border-dashed my-4" />
       <div className="flex justify-between items-center text-xs text-muted-foreground">
