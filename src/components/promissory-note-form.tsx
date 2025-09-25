@@ -44,19 +44,20 @@ const formSchema = z.object({
 
 type PromissoryNoteFormProps = {
   onGenerate: (data: PromissoryNoteData) => void;
+  client?: { id: string; name: string, address: string, contactInformation: string };
 };
 
-export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
+export function PromissoryNoteForm({ onGenerate, client }: PromissoryNoteFormProps) {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       creditorName: "",
       creditorCpf: "",
-      clientName: "",
+      clientName: client?.name || "",
       clientCpf: "",
-      clientAddress: "",
-      clientContact: "",
+      clientAddress: client?.address || "",
+      clientContact: client?.contactInformation || "",
       productReference: "",
       totalValue: "" as unknown as number,
       installments: 1,
@@ -75,7 +76,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline">Insira os Detalhes</CardTitle>
+        <CardTitle className="font-headline">Insira os Detalhes da Nota</CardTitle>
         <CardDescription>Forneça as informações necessárias para criar os documentos.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -117,7 +118,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
                   <FormItem>
                     <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4" /> Nome do Cliente</FormLabel>
                     <FormControl>
-                      <Input placeholder="João da Silva" {...field} />
+                      <Input placeholder="João da Silva" {...field} disabled={!!client} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -144,7 +145,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
                 <FormItem>
                   <FormLabel className="flex items-center"><MapPin className="mr-2 h-4 w-4" /> Endereço do Cliente</FormLabel>
                   <FormControl>
-                    <Input placeholder="Rua Principal, 123, Cidade, Estado" {...field} />
+                    <Input placeholder="Rua Principal, 123, Cidade, Estado" {...field} disabled={!!client} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -157,7 +158,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
                 <FormItem>
                   <FormLabel className="flex items-center"><Phone className="mr-2 h-4 w-4" /> Contato do Cliente (Opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="email@exemplo.com ou (11) 98765-4321" {...field} />
+                    <Input placeholder="email@exemplo.com ou (11) 98765-4321" {...field} disabled={!!client} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
