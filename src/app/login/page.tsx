@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AtSign, Fingerprint, Ghost, Loader2 } from 'lucide-react';
+import { AtSign, Fingerprint, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +27,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useUser } from '@/firebase';
 import {
-  initiateAnonymousSignIn,
   initiateEmailSignIn,
   initiateEmailSignUp,
 } from '@/firebase/non-blocking-login';
@@ -46,9 +45,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Local error handler for auth errors from the global listener
-  const [authError, setAuthError] = useState<FirebaseError | null>(null);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -64,7 +60,6 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  // This will now listen for errors from onAuthStateChanged
   useEffect(() => {
     if (!auth) return;
 
@@ -75,9 +70,6 @@ export default function LoginPage() {
         let title = 'Ocorreu um erro';
         let description = 'Por favor, tente novamente mais tarde.';
         
-        // This is a simplified version, as the error from onAuthStateChanged
-        // might not have a specific code like direct sign-in method calls.
-        // For more specific errors, you'd need a more robust global error handling strategy.
         if (error instanceof FirebaseError) {
            switch (error.code) {
             case 'auth/user-not-found':
@@ -122,11 +114,6 @@ export default function LoginPage() {
   const handleSignUp = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
     initiateEmailSignUp(auth, values.email, values.password);
-  };
-
-  const handleAnonymousLogin = () => {
-    setIsSubmitting(true);
-    initiateAnonymousSignIn(auth);
   };
 
   if (isUserLoading || user) {
@@ -184,7 +171,7 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 pt-4">
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Entrar
@@ -202,27 +189,6 @@ export default function LoginPage() {
               </div>
             </form>
           </Form>
-
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Ou continue com
-              </span>
-            </div>
-          </div>
-
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={handleAnonymousLogin}
-            disabled={isSubmitting}
-          >
-            <Ghost className="mr-2 h-4 w-4" />
-            Acesso Anônimo
-          </Button>
         </CardContent>
       </Card>
     </main>
