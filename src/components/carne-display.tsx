@@ -39,7 +39,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
       paidCheckboxes.forEach(checkbox => {
         if (checkbox.checked) {
           const slip = checkbox.closest('.slip-to-print');
-          const stamp = slip?.querySelector('.absolute.top-1\\/2') as HTMLElement;
+          const stamp = slip?.querySelector('.paid-stamp-area') as HTMLElement;
           if (stamp) {
             stamp.style.display = 'block';
             paidElements.push(stamp);
@@ -56,31 +56,31 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
 
       let promises = slips.map(slip => {
         const pdfArea = slip.querySelector<HTMLElement>('[id^="slip-"][id$="-pdf-area"]');
-        return html2canvas(pdfArea!, { scale: 2, backgroundColor: null });
+        return html2canvas(pdfArea!, { scale: 1, backgroundColor: null });
       });
 
       Promise.all(promises).then((canvases) => {
         let y = margin;
-        canvases.forEach((canvas) => {
-          const imgData = canvas.toDataURL("image/png");
+        canvases.forEach((canvas, index) => {
+          const imgData = canvas.toDataURL("image/jpeg", 0.7); // Use JPEG with quality 0.7
           const canvasWidth = canvas.width;
           const canvasHeight = canvas.height;
           const ratio = canvasWidth / canvasHeight;
           const imgWidth = availableWidth;
           const imgHeight = imgWidth / ratio;
           
-          if (y + imgHeight + margin > pdf.internal.pageSize.getHeight()) {
+          if (y > margin && y + imgHeight + margin > pdf.internal.pageSize.getHeight()) {
             pdf.addPage();
             y = margin;
           }
 
-          pdf.addImage(imgData, "PNG", margin, y, imgWidth, imgHeight);
+          pdf.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight);
           y += imgHeight + 10; // Add some space between slips
         });
         pdf.save("carne_pagamento.pdf");
         
         // Hide paid stamps again after generation
-        paidElements.forEach(el => el.style.display = '');
+        paidElements.forEach(el => el.style.display = 'none');
       });
     }
   };

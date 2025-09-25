@@ -30,18 +30,26 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     const input = document.getElementById("note-print-area");
     if (input) {
       html2canvas(input, { scale: 2 }).then((canvas) => {
-        const imgData = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
         const pdf = new jsPDF("p", "mm", "a4");
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
-        const width = pdfWidth - 20; // 10mm margin on each side
-        const height = width / ratio;
-        const yPosition = 10; // Top margin
+        
+        let imgWidth = pdfWidth - 20; // 10mm margin
+        let imgHeight = imgWidth / ratio;
 
-        pdf.addImage(imgData, "PNG", 10, yPosition, width, height);
+        if (imgHeight > pdfHeight - 20) {
+            imgHeight = pdfHeight - 20;
+            imgWidth = imgHeight * ratio;
+        }
+        
+        const x = 10;
+        const y = 10;
+
+        pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
         pdf.save("nota_promissoria.pdf");
       });
     }
@@ -88,8 +96,17 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           <strong>{productReference}</strong>.
         </p>
         <p>
-          O valor principal será pago em <strong>{installments}</strong> {installments === 1 ? <>parcela mensal de <strong>{installmentValueFormatted}</strong></> : <>parcelas mensais iguais de <strong>{installmentValueFormatted}</strong> cada</>}. O primeiro pagamento
-          será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
+          O valor principal será pago em{" "}
+          {installments === 1 ? (
+            <>
+              <strong>{installments}</strong> parcela mensal de <strong>{installmentValueFormatted}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{installments}</strong> parcelas mensais iguais de <strong>{installmentValueFormatted}</strong> cada
+            </>
+          )}
+          . O primeiro pagamento será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
           devidos no mesmo dia de cada mês consecutivo até que o principal seja
           pago integralmente.
         </p>
