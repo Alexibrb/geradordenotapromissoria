@@ -46,6 +46,9 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Local error handler for auth errors from the global listener
+  const [authError, setAuthError] = useState<FirebaseError | null>(null);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -61,39 +64,55 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleError = (error: unknown) => {
-    setIsSubmitting(false);
-    let title = 'Ocorreu um erro';
-    let description = 'Por favor, tente novamente mais tarde.';
+  // This will now listen for errors from onAuthStateChanged
+  useEffect(() => {
+    if (!auth) return;
 
-    if (error instanceof FirebaseError) {
-      switch (error.code) {
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-          title = 'Credenciais inválidas';
-          description = 'O e-mail ou a senha estão incorretos.';
-          break;
-        case 'auth/email-already-in-use':
-          title = 'E-mail já cadastrado';
-          description =
-            'Este e-mail já está em uso. Tente fazer login ou use outro e-mail.';
-          break;
-        case 'auth/invalid-email':
-          title = 'E-mail inválido';
-          description = 'O formato do e-mail fornecido não é válido.';
-          break;
-        default:
-          description = error.message;
-          break;
+    const unsubscribe = auth.onAuthStateChanged(
+      () => {}, // Success case is handled by the useUser hook
+      (error) => {
+        setIsSubmitting(false);
+        let title = 'Ocorreu um erro';
+        let description = 'Por favor, tente novamente mais tarde.';
+        
+        // This is a simplified version, as the error from onAuthStateChanged
+        // might not have a specific code like direct sign-in method calls.
+        // For more specific errors, you'd need a more robust global error handling strategy.
+        if (error instanceof FirebaseError) {
+           switch (error.code) {
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+            case 'auth/invalid-credential':
+              title = 'Credenciais inválidas';
+              description = 'O e-mail ou a senha estão incorretos.';
+              break;
+            case 'auth/email-already-in-use':
+              title = 'E-mail já cadastrado';
+              description =
+                'Este e-mail já está em uso. Tente fazer login ou use outro e-mail.';
+              break;
+            case 'auth/invalid-email':
+              title = 'E-mail inválido';
+              description = 'O formato do e-mail fornecido não é válido.';
+              break;
+            default:
+              title = 'Erro de Autenticação'
+              description = 'Não foi possível fazer login. Verifique suas credenciais.';
+              break;
+          }
+        }
+
+        toast({
+          variant: 'destructive',
+          title,
+          description,
+        });
       }
-    }
+    );
 
-    toast({
-      variant: 'destructive',
-      title,
-      description,
-    });
-  };
+    return () => unsubscribe();
+  }, [auth, toast]);
+
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
@@ -109,7 +128,6 @@ export default function LoginPage() {
     setIsSubmitting(true);
     initiateAnonymousSignIn(auth);
   };
-
 
   if (isUserLoading || user) {
     return (
