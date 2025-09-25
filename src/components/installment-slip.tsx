@@ -77,7 +77,7 @@ export function InstallmentSlip({
             }
 
             const x = (pdfWidth - imgWidth) / 2;
-            const y = (pdfHeight - imgHeight) / 2;
+            const y = 10; // Position from the top
 
             pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
             pdf.save(`comprovante_parcela_${installmentNumber}_${noteNumber}.pdf`);

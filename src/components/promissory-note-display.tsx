@@ -39,7 +39,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
         
-        let imgWidth = pdfWidth - 20; // 10mm margin
+        let imgWidth = pdfWidth - 20; // 10mm margin on each side
         let imgHeight = imgWidth / ratio;
 
         if (imgHeight > pdfHeight - 20) {
@@ -48,7 +48,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         }
         
         const x = 10;
-        const y = 10;
+        const y = 10; // Position from the top
 
         pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
         pdf.save(`nota_promissoria_${noteNumber}.pdf`);
