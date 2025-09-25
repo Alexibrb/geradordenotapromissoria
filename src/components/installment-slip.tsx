@@ -1,3 +1,5 @@
+"use client";
+
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { ptBR } from "date-fns/locale";
@@ -75,9 +77,10 @@ export function InstallmentSlip({
         </div>
       </div>
       <div className="mt-8 pt-4">
+        <p className="mb-2 text-center text-sm font-semibold">{creditorName}</p>
         <div className="w-3/4 mx-auto border-b border-foreground pb-1"></div>
-        <p className="mt-2 text-center text-sm">
-          Assinatura do Credor: <span className="font-signature text-2xl">{creditorName}</span>
+        <p className="mt-1 text-center text-xs text-muted-foreground">
+          Assinatura do Credor
         </p>
       </div>
       <Separator orientation="horizontal" className="border-dashed my-4" />
