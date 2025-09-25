@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // Adicionado para permitir Fast Refresh no ambiente do Firebase Studio.
+    allowedDevOrigins: ["*.cloudworkstations.dev"],
+  },
 };
 
 export default nextConfig;
