@@ -18,6 +18,7 @@ type InstallmentSlipProps = {
   dueDate: Date;
   clientName: string;
   clientCpf: string;
+  clientAddress: string;
   creditorName: string;
   creditorCpf: string;
   productReference: string;
@@ -32,6 +33,7 @@ export function InstallmentSlip({
   dueDate,
   clientName,
   clientCpf,
+  clientAddress,
   creditorName,
   creditorCpf,
   productReference,
@@ -115,6 +117,7 @@ export function InstallmentSlip({
             <div>
                 <p className="text-muted-foreground">Nome do Cliente</p>
                 <p className="font-semibold">{clientName} - {clientCpf}</p>
+                <p className="text-xs">{clientAddress}</p>
             </div>
             <div>
                 <p className="text-muted-foreground">Referência</p>
