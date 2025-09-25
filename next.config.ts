@@ -31,9 +31,10 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    // This is required to allow the Next.js dev server to work in this environment
-    allowedNextBundlerReactRoots: [process.cwd()],
+    // serverComponentsExternalPackages has been moved to the top level
   },
+  // This is required to allow the Next.js dev server to work in this environment
+  allowedNextBundlerReactRoots: [process.cwd()],
   serverExternalPackages: ['jspdf', 'html2canvas'],
 };
 
