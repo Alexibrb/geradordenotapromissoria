@@ -30,14 +30,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    // Adicionado para permitir Fast Refresh no ambiente do Firebase Studio.
-    serverComponentsExternalPackages: ['jspdf', 'html2canvas'],
-  },
-  // Adicionado para permitir Fast Refresh no ambiente do Firebase Studio.
-  devIndicators: {
-    buildActivity: false,
-  },
+  serverExternalPackages: ['jspdf', 'html2canvas'],
 };
 
 export default nextConfig;
