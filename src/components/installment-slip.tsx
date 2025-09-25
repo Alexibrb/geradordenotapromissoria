@@ -35,6 +35,16 @@ export function InstallmentSlip({
   productReference,
 }: InstallmentSlipProps) {
   const [isPaid, setIsPaid] = useState(false);
+  const [paidDate, setPaidDate] = useState<Date | null>(null);
+
+  const handlePaidChange = (checked: boolean) => {
+    setIsPaid(checked);
+    if (checked) {
+      setPaidDate(new Date());
+    } else {
+      setPaidDate(null);
+    }
+  };
 
   const handleGeneratePdf = () => {
     const input = document.getElementById(`slip-${installmentNumber}-pdf-area`);
@@ -57,7 +67,7 @@ export function InstallmentSlip({
         }
 
         const x = (pdfWidth - imgWidth) / 2;
-        const y = (pdfHeight - imgHeight) / 2;
+        const y = 10; // Top margin
 
         pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
         pdf.save(`comprovante_parcela_${installmentNumber}.pdf`);
@@ -68,8 +78,8 @@ export function InstallmentSlip({
   const checkboxId = `paid-checkbox-${installmentNumber}`;
 
   return (
-    <div className="bg-card border-2 border-dashed rounded-lg p-4 print-break-inside-avoid relative overflow-hidden">
-      <div id={`slip-${installmentNumber}-pdf-area`} className="bg-card p-4">
+    <div className="bg-card border-2 border-dashed rounded-lg p-4 print-break-inside-avoid overflow-hidden">
+      <div id={`slip-${installmentNumber}-pdf-area`} className="bg-card p-4 relative">
         <div className="flex justify-between items-start text-sm">
           <h3 className="font-bold text-lg">Comprovante de Pagamento</h3>
           <div className="text-right">
@@ -99,17 +109,22 @@ export function InstallmentSlip({
                 currency: "BRL",
               }).format(value)}
             </p>
-             {isPaid && (
-              <div className="absolute top-0 right-0 transform -rotate-12 -translate-y-2 translate-x-4 opacity-80 no-pdf">
-                <div className="border-4 border-green-500 rounded-md px-2 py-1">
-                  <span className="text-2xl font-bold text-green-500 uppercase tracking-wider">
-                    Pago
-                  </span>
-                </div>
-              </div>
-             )}
           </div>
         </div>
+        {isPaid && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-12 opacity-80 pointer-events-none">
+            <div className="border-4 border-green-500 rounded-md px-4 py-2 text-center">
+              <span className="text-3xl font-bold text-green-500 uppercase tracking-wider">
+                Pago
+              </span>
+              {paidDate && (
+                <span className="block text-xs font-semibold text-green-600 mt-1">
+                  {format(paidDate, "dd/MM/yyyy", { locale: ptBR })}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <div className="mt-8 pt-4">
           <div className="w-3/4 mx-auto text-center">
             <div className="border-b border-foreground pb-1">
@@ -122,16 +137,18 @@ export function InstallmentSlip({
           </div>
         </div>
       </div>
-      <Separator orientation="horizontal" className="border-dashed my-4" />
-      <div className="flex justify-between items-center text-xs text-muted-foreground">
-        <div className="flex items-center space-x-2 no-print">
-          <Checkbox id={checkboxId} checked={isPaid} onCheckedChange={(checked) => setIsPaid(!!checked)} />
-          <Label htmlFor={checkboxId}>Marcar como Pago</Label>
+      <div className="no-print">
+        <Separator orientation="horizontal" className="border-dashed my-4" />
+        <div className="flex justify-between items-center text-xs text-muted-foreground">
+          <div className="flex items-center space-x-2">
+            <Checkbox id={checkboxId} checked={isPaid} onCheckedChange={(checked) => handlePaidChange(!!checked)} />
+            <Label htmlFor={checkboxId}>Marcar como Pago</Label>
+          </div>
+          <Button onClick={handleGeneratePdf} variant="outline" size="sm">
+              <FileDown className="mr-2" />
+              Gerar PDF
+          </Button>
         </div>
-        <Button onClick={handleGeneratePdf} variant="outline" size="sm" className="no-print">
-            <FileDown className="mr-2" />
-            Gerar PDF
-        </Button>
       </div>
     </div>
   );

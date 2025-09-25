@@ -39,13 +39,9 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         const ratio = canvasWidth / canvasHeight;
         const width = pdfWidth - 20; // 10mm margin on each side
         const height = width / ratio;
+        const yPosition = 10; // Top margin
 
-        let position = 10;
-        if (height < pdfHeight - 20) {
-            position = (pdfHeight - height) / 2;
-        }
-
-        pdf.addImage(imgData, "PNG", 10, position, width, height);
+        pdf.addImage(imgData, "PNG", 10, yPosition, width, height);
         pdf.save("nota_promissoria.pdf");
       });
     }
