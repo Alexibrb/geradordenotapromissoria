@@ -15,6 +15,7 @@ type InstallmentSlipProps = {
   value: number;
   dueDate: Date;
   clientName: string;
+  clientCpf: string;
   creditorName: string;
   creditorCpf: string;
   productReference: string;
@@ -26,6 +27,7 @@ export function InstallmentSlip({
   value,
   dueDate,
   clientName,
+  clientCpf,
   creditorName,
   creditorCpf,
   productReference,
@@ -57,7 +59,7 @@ export function InstallmentSlip({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm relative">
         <div>
           <p className="text-muted-foreground">Nome do Cliente</p>
-          <p className="font-semibold">{clientName}</p>
+          <p className="font-semibold">{clientName} - {clientCpf}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Referência</p>
@@ -69,7 +71,7 @@ export function InstallmentSlip({
         </div>
         <div className="relative">
           <p className="text-muted-foreground">Valor da Parcela</p>
-          <p className="font-bold text-lg text-primary">
+          <p className="font-bold text-lg text-foreground">
             {new Intl.NumberFormat("pt-BR", {
               style: "currency",
               currency: "BRL",
