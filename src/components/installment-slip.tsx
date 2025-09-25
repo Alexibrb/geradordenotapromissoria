@@ -88,9 +88,10 @@ export function InstallmentSlip({
       </div>
       <div className="mt-8 pt-4">
         <div className="w-3/4 mx-auto text-center">
-          <div className="border-b border-foreground pb-1"></div>
-          <p className="text-sm font-semibold mt-1">{creditorName}</p>
-          <p className="text-xs">{creditorCpf}</p>
+          <div className="border-b border-foreground pb-1">
+            <p className="text-sm font-semibold">{creditorName}</p>
+            <p className="text-xs">{creditorCpf}</p>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
             Assinatura do Credor
           </p>
