@@ -1,4 +1,4 @@
-"use client";
+"use-client";
 
 import type { PromissoryNoteData } from "@/types";
 import { format } from "date-fns";
@@ -25,6 +25,9 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     paymentDate,
     installments,
     productReference,
+    paymentType,
+    hasDownPayment,
+    downPaymentValue,
   } = data;
 
   const handleGeneratePdf = () => {
@@ -63,11 +66,54 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
 
   const formattedDate = format(paymentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
   
-  const singleInstallmentValue = totalValue / installments;
+  const remainingValue = (totalValue || 0) - (downPaymentValue || 0);
+  const singleInstallmentValue = remainingValue / installments;
   const installmentValueFormatted = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   }).format(singleInstallmentValue);
+  const downPaymentValueFormatted = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(downPaymentValue || 0);
+
+  const renderPaymentTerms = () => {
+    if (paymentType === 'a-vista') {
+      return (
+        <p>
+          O valor principal será pago à vista em{" "}
+          <strong>{formattedDate}</strong>.
+        </p>
+      );
+    }
+
+    if (hasDownPayment && downPaymentValue) {
+      return (
+        <p>
+          O pagamento será feito com uma entrada de <strong>{downPaymentValueFormatted}</strong> paga em <strong>{formattedDate}</strong>, e o restante em{" "}
+          <strong>{installments}</strong> parcelas mensais de <strong>{installmentValueFormatted}</strong> cada. O primeiro pagamento da parcela será devido um mês após a data da entrada.
+        </p>
+      );
+    }
+    
+    return (
+       <p>
+          O valor principal será pago em{" "}
+          {installments === 1 ? (
+            <>
+              <strong>{installments}</strong> parcela única de <strong>{installmentValueFormatted}</strong>
+            </>
+          ) : (
+            <>
+              <strong>{installments}</strong> parcelas mensais iguais de <strong>{installmentValueFormatted}</strong> cada
+            </>
+          )}
+          . O primeiro pagamento será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
+          devidos no mesmo dia de cada mês consecutivo até que o principal seja
+          pago integralmente.
+        </p>
+    );
+  };
 
   return (
     <Card className="shadow-lg animate-in fade-in-50 duration-500">
@@ -99,21 +145,9 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           Esta nota refere-se ao produto/serviço:{" "}
           <strong>{productReference}</strong>.
         </p>
-        <p>
-          O valor principal será pago em{" "}
-          {installments === 1 ? (
-            <>
-              <strong>{installments}</strong> parcela mensal de <strong>{installmentValueFormatted}</strong>
-            </>
-          ) : (
-            <>
-              <strong>{installments}</strong> parcelas mensais iguais de <strong>{installmentValueFormatted}</strong> cada
-            </>
-          )}
-          . O primeiro pagamento será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
-          devidos no mesmo dia de cada mês consecutivo até que o principal seja
-          pago integralmente.
-        </p>
+        
+        {renderPaymentTerms()}
+        
         <p>
           O atraso nos pagamentos por até 03 meses, acarretará na perda da propriedade e posse do imóvel, sem fazer jus a indenização ou ressarcimento de valores já efetuados pelo comprador.
         </p>

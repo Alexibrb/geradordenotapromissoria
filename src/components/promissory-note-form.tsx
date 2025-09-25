@@ -16,11 +16,12 @@ import {
   Send,
   Briefcase,
   Fingerprint,
+  Wallet,
 } from "lucide-react";
 import { useEffect } from 'react';
 
 import { cn } from "@/lib/utils";
-import type { PromissoryNoteData } from "@/types";
+import type { PromissoryNoteData, PaymentType } from "@/types";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,6 +30,9 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+
 
 const formSchema = z.object({
   creditorName: z.string().min(3, { message: "O nome do credor deve ter pelo menos 3 caracteres." }),
@@ -41,6 +45,25 @@ const formSchema = z.object({
   totalValue: z.coerce.number().positive({ message: "O valor deve ser um número positivo." }),
   paymentDate: z.date({ required_error: "A data de início do pagamento é obrigatória." }),
   installments: z.coerce.number().int().min(1, { message: "É necessária pelo menos uma parcela." }).max(120, { message: "Não pode exceder 120 parcelas." }),
+  paymentType: z.enum(['a-vista', 'a-prazo'], { required_error: "Selecione o tipo de pagamento."}),
+  hasDownPayment: z.boolean().optional(),
+  downPaymentValue: z.coerce.number().optional(),
+}).refine(data => {
+    if (data.paymentType === 'a-prazo' && data.hasDownPayment) {
+        return data.downPaymentValue && data.downPaymentValue > 0;
+    }
+    return true;
+}, {
+    message: "O valor da entrada é obrigatório.",
+    path: ["downPaymentValue"],
+}).refine(data => {
+    if (data.paymentType === 'a-prazo' && data.hasDownPayment && data.downPaymentValue) {
+        return data.downPaymentValue < data.totalValue;
+    }
+    return true;
+}, {
+    message: "A entrada não pode ser maior ou igual ao valor total.",
+    path: ["downPaymentValue"],
 });
 
 type PromissoryNoteFormProps = {
@@ -63,18 +86,44 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
       clientContact: client?.contactInformation || "",
       productReference: "",
       totalValue: "" as unknown as number,
+      paymentType: "a-prazo",
       installments: 1,
+      hasDownPayment: false,
+      downPaymentValue: 0,
     },
   });
   
+  const paymentType = form.watch("paymentType");
+  const hasDownPayment = form.watch("hasDownPayment");
+
   useEffect(() => {
     if (initialData) {
-      form.reset(initialData);
+      form.reset({
+        ...initialData,
+        paymentDate: initialData.paymentDate ? new Date(initialData.paymentDate) : new Date(),
+      });
     }
   }, [initialData, form]);
+  
+  useEffect(() => {
+    if (paymentType === 'a-vista') {
+        form.setValue('installments', 1);
+        form.setValue('hasDownPayment', false);
+    }
+  }, [paymentType, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onGenerate(values);
+    const dataToGenerate = {...values};
+    if (dataToGenerate.paymentType === 'a-vista') {
+        dataToGenerate.installments = 1;
+        dataToGenerate.hasDownPayment = false;
+        dataToGenerate.downPaymentValue = 0;
+    } else if (!dataToGenerate.hasDownPayment) {
+        dataToGenerate.downPaymentValue = 0;
+    }
+    
+    onGenerate(dataToGenerate);
+
     if (!isEditing) {
       toast({
         title: "Documentos Gerados!",
@@ -188,40 +237,111 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="totalValue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><CircleDollarSign className="mr-2 h-4 w-4" /> Valor Total (R$)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="1000,00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+            
+            <FormField
+              control={form.control}
+              name="paymentType"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel className="flex items-center"><Wallet className="mr-2 h-4 w-4" /> Tipo de Pagamento</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="a-prazo" />
+                        </FormControl>
+                        <FormLabel className="font-normal">A Prazo</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="a-vista" />
+                        </FormControl>
+                        <FormLabel className="font-normal">À Vista</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="totalValue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center"><CircleDollarSign className="mr-2 h-4 w-4" /> Valor Total (R$)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="1000,00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {paymentType === 'a-prazo' && (
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="hasDownPayment"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Pagamento com Entrada?</FormLabel>
+                        <FormDescription>
+                          Marque se haverá um valor de entrada.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                {hasDownPayment && (
+                    <FormField
+                    control={form.control}
+                    name="downPaymentValue"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center"><CircleDollarSign className="mr-2 h-4 w-4" /> Valor da Entrada (R$)</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="200,00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="installments"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><Hash className="mr-2 h-4 w-4" /> Parcelas</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                <FormField
+                  control={form.control}
+                  name="installments"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Hash className="mr-2 h-4 w-4" /> Número de Parcelas</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="1" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+            
             <FormField
               control={form.control}
               name="paymentDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Data do Primeiro Pagamento</FormLabel>
+                  <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Data do {paymentType === 'a-prazo' ? 'Primeiro Pagamento' : 'Pagamento'}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>

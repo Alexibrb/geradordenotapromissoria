@@ -22,6 +22,7 @@ type InstallmentSlipProps = {
   creditorCpf: string;
   productReference: string;
   noteNumber?: string;
+  isDownPayment: boolean;
 };
 
 export function InstallmentSlip({
@@ -35,6 +36,7 @@ export function InstallmentSlip({
   creditorCpf,
   productReference,
   noteNumber,
+  isDownPayment
 }: InstallmentSlipProps) {
   const [isPaid, setIsPaid] = useState(false);
   const [paidDate, setPaidDate] = useState<Date | null>(null);
@@ -80,7 +82,7 @@ export function InstallmentSlip({
             const y = 10; // Position from the top
 
             pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
-            pdf.save(`comprovante_parcela_${installmentNumber}_${noteNumber}.pdf`);
+            pdf.save(`comprovante_${isDownPayment ? 'entrada' : `parcela_${installmentNumber}`}_${noteNumber}.pdf`);
 
             // Hide paid stamp again after generation
             if (isPaid && stamp) {
@@ -90,19 +92,22 @@ export function InstallmentSlip({
     }
   };
 
-  const checkboxId = `paid-checkbox-${noteNumber}-${installmentNumber}`;
+  const slipId = isDownPayment ? `down-payment` : `${noteNumber}-${installmentNumber}`;
+  const checkboxId = `paid-checkbox-${slipId}`;
+  
+  const titleText = isDownPayment ? 'Comprovante de Entrada' : 'Comprovante de Pagamento';
+  const installmentText = isDownPayment ? 'Entrada' : `Parcela ${installmentNumber} de ${totalInstallments}`;
 
   return (
     <div id={`slip-container-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg overflow-hidden print-break-inside-avoid">
         <div id={`slip-${installmentNumber}-pdf-area`} className="bg-card p-4 relative">
             <div className="flex justify-between items-start text-sm">
             <div>
-              <h3 className="font-bold text-lg">Comprovante de Pagamento</h3>
+              <h3 className="font-bold text-lg">{titleText}</h3>
               {noteNumber && <p className="text-xs text-muted-foreground">Ref. Nota Nº {noteNumber}</p>}
             </div>
             <div className="text-right">
-                <p className="font-semibold">Parcela</p>
-                <p>{installmentNumber} de {totalInstallments}</p>
+                <p className="font-semibold">{installmentText}</p>
             </div>
             </div>
             <Separator className="my-3" />
@@ -120,7 +125,7 @@ export function InstallmentSlip({
                 <p className="font-semibold">{format(dueDate, "dd/MM/yyyy", { locale: ptBR })}</p>
             </div>
             <div className="relative">
-                <p className="text-muted-foreground">Valor da Parcela</p>
+                <p className="text-muted-foreground">Valor</p>
                 <p className="font-bold text-lg text-black">
                 {new Intl.NumberFormat("pt-BR", {
                     style: "currency",

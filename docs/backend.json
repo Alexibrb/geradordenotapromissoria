@@ -68,6 +68,19 @@
         "numberOfInstallments": {
           "type": "number",
           "description": "The number of installments for the promissory note."
+        },
+        "paymentType": {
+          "type": "string",
+          "enum": ["a-vista", "a-prazo"],
+          "description": "The payment type for the note."
+        },
+        "hasDownPayment": {
+          "type": "boolean",
+          "description": "Indicates if the installment plan includes a down payment."
+        },
+        "downPaymentValue": {
+          "type": "number",
+          "description": "The value of the down payment, if applicable."
         }
       },
       "required": [
@@ -76,7 +89,8 @@
         "productServiceReference",
         "value",
         "paymentDate",
-        "numberOfInstallments"
+        "numberOfInstallments",
+        "paymentType"
       ]
     },
     "Payment": {

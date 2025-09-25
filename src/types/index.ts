@@ -1,5 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
+export type PaymentType = 'a-vista' | 'a-prazo';
+
 export type PromissoryNoteData = {
   clientName: string;
   clientAddress: string;
@@ -11,7 +13,10 @@ export type PromissoryNoteData = {
   totalValue: number;
   paymentDate: Date;
   installments: number;
-  noteNumber?: string; // Adicionado
+  noteNumber?: string;
+  paymentType: PaymentType;
+  hasDownPayment?: boolean;
+  downPaymentValue?: number;
 };
 
 export interface Client {
@@ -34,5 +39,8 @@ export interface PromissoryNote {
   clientCpf: string;
   clientAddress: string;
   clientName: string;
-  noteNumber: string; // Adicionado
+  noteNumber: string;
+  paymentType: PaymentType;
+  hasDownPayment?: boolean;
+  downPaymentValue?: number;
 }

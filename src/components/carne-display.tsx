@@ -15,21 +15,76 @@ type CarneDisplayProps = {
 };
 
 export function CarneDisplay({ data }: CarneDisplayProps) {
-  const { totalValue, installments, paymentDate, clientName, clientCpf, productReference, creditorName, creditorCpf, noteNumber } = data;
-  const installmentValue = totalValue / installments;
+  const { 
+      totalValue, 
+      installments, 
+      paymentDate, 
+      clientName, 
+      clientCpf, 
+      productReference, 
+      creditorName, 
+      creditorCpf, 
+      noteNumber,
+      paymentType,
+      hasDownPayment,
+      downPaymentValue
+  } = data;
 
-  const installmentSlips = Array.from({ length: installments }).map((_, i) => ({
-    installmentNumber: i + 1,
-    totalInstallments: installments,
-    value: installmentValue,
-    dueDate: addMonths(paymentDate, i),
-    clientName,
-    clientCpf,
-    creditorName,
-    creditorCpf,
-    productReference,
-    noteNumber,
-  }));
+  let installmentSlips = [];
+  
+  if (paymentType === 'a-vista') {
+     installmentSlips.push({
+      installmentNumber: 1,
+      totalInstallments: 1,
+      value: totalValue,
+      dueDate: paymentDate,
+      clientName,
+      clientCpf,
+      creditorName,
+      creditorCpf,
+      productReference,
+      noteNumber,
+      isDownPayment: false,
+    });
+  } else { // a-prazo
+      const remainingValue = totalValue - (downPaymentValue || 0);
+      const installmentValue = installments > 0 ? remainingValue / installments : 0;
+      
+      if (hasDownPayment && downPaymentValue) {
+        installmentSlips.push({
+            installmentNumber: 0, // Using 0 to denote down payment
+            totalInstallments: installments,
+            value: downPaymentValue,
+            dueDate: paymentDate,
+            clientName,
+            clientCpf,
+            creditorName,
+            creditorCpf,
+            productReference,
+            noteNumber,
+            isDownPayment: true,
+        });
+      }
+
+      const firstInstallmentDate = hasDownPayment ? addMonths(paymentDate, 1) : paymentDate;
+
+      for (let i = 0; i < installments; i++) {
+        installmentSlips.push({
+            installmentNumber: i + 1,
+            totalInstallments: installments,
+            value: installmentValue,
+            dueDate: addMonths(firstInstallmentDate, i),
+            clientName,
+            clientCpf,
+            creditorName,
+            creditorCpf,
+            productReference,
+            noteNumber,
+            isDownPayment: false,
+        });
+      }
+  }
+
 
   const handleGeneratePdfAll = () => {
     const input = document.getElementById("carne-print-area");
@@ -86,6 +141,8 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
     }
   };
 
+  const totalSlips = installmentSlips.length;
+
   return (
     <Card className="shadow-lg animate-in fade-in-50 duration-500">
       <CardHeader>
@@ -93,7 +150,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
           <div>
             <CardTitle className="font-headline">Comprovantes de Pagamento</CardTitle>
             <CardDescription>
-              Foram gerados {installments} comprovantes, um para cada parcela.
+              Foram gerados {totalSlips} comprovantes.
             </CardDescription>
           </div>
           <Button onClick={handleGeneratePdfAll} className="mt-4 sm:mt-0 no-print">
@@ -104,8 +161,8 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
       </CardHeader>
       <CardContent>
         <div id="carne-print-area" className="space-y-6">
-          {installmentSlips.map((slipData) => (
-            <React.Fragment key={slipData.installmentNumber}>
+          {installmentSlips.map((slipData, index) => (
+            <React.Fragment key={index}>
               <div className="slip-to-print">
                 <InstallmentSlip {...slipData} />
               </div>

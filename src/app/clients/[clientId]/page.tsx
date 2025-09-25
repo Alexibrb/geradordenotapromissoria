@@ -45,25 +45,32 @@ function ClientDetailPage() {
 
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote({
-      ...note,
+      clientName: note.clientName,
+      clientAddress: note.clientAddress,
+      clientCpf: note.clientCpf,
+      creditorName: note.creditorName,
+      creditorCpf: note.creditorCpf,
       paymentDate: note.paymentDate.toDate(),
       totalValue: note.value,
       installments: note.numberOfInstallments,
       productReference: note.productServiceReference,
       noteNumber: note.noteNumber,
+      paymentType: note.paymentType || 'a-prazo',
+      hasDownPayment: note.hasDownPayment || false,
+      downPaymentValue: note.downPaymentValue || 0,
     });
   };
 
   const handleDeleteNote = (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation();
-    if (!user) return;
+    if (!user || !noteId) return;
     const noteDocRef = doc(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', noteId);
     deleteDocumentNonBlocking(noteDocRef);
     toast({
       title: 'Nota excluída',
       description: 'A nota promissória foi removida.',
     });
-    if (selectedNote && selectedNote.id === noteId) {
+    if (selectedNote && selectedNote.noteNumber === notes?.find(n => n.id === noteId)?.noteNumber) {
       setSelectedNote(null);
     }
   };
@@ -122,7 +129,7 @@ function ClientDetailPage() {
               notes.map((note) => (
                 <Card
                   key={note.id}
-                  className={`cursor-pointer hover:shadow-md transition-shadow ${selectedNote && selectedNote.id === note.id ? 'border-primary' : ''}`}
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${selectedNote && selectedNote.noteNumber === note.noteNumber ? 'border-primary' : ''}`}
                   onClick={() => handleSelectNote(note)}
                 >
                   <CardHeader className="flex flex-row items-center justify-between pb-2">

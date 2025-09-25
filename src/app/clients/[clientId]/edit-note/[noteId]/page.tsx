@@ -38,20 +38,27 @@ function EditNotePage() {
 
   useEffect(() => {
     if (note) {
-      const noteData = {
-        ...note,
+      const noteData: PromissoryNoteData = {
+        clientName: note.clientName,
+        clientAddress: note.clientAddress,
+        clientCpf: note.clientCpf,
+        creditorName: note.creditorName,
+        creditorCpf: note.creditorCpf,
         totalValue: note.value,
         installments: note.numberOfInstallments,
         paymentDate: note.paymentDate.toDate(),
         productReference: note.productServiceReference,
         noteNumber: note.noteNumber,
+        paymentType: note.paymentType || 'a-prazo',
+        hasDownPayment: note.hasDownPayment || false,
+        downPaymentValue: note.downPaymentValue || 0,
       };
       setFormData(noteData);
     }
   }, [note]);
 
   const handleUpdate = async (updatedFormData: PromissoryNoteData) => {
-    if (!user || !note) {
+    if (!user || !note || !noteDocRef) {
       toast({
         variant: 'destructive',
         title: 'Erro',
