@@ -44,6 +44,8 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     currency: "BRL",
   }).format(totalValue / installments);
 
+  const installmentText = installments === 1 ? 'parcela mensal igual' : 'parcelas mensais iguais';
+
 
   return (
     <Card className="shadow-lg animate-in fade-in-50 duration-500">
@@ -73,8 +75,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           <strong>{productReference}</strong>.
         </p>
         <p>
-          O valor principal será pago em <strong>{installments}</strong> parcelas mensais
-          iguais de <strong>{installmentValue}</strong> cada. O primeiro pagamento
+          O valor principal será pago em <strong>{installments}</strong> {installmentText} de <strong>{installmentValue}</strong> cada. O primeiro pagamento
           será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
           devidos no mesmo dia de cada mês consecutivo até que o principal seja
           pago integralmente.
