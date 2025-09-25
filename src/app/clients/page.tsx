@@ -102,7 +102,7 @@ function ClientsPage() {
     setClientName(client.name);
     setClientAddress(client.address);
     setClientCpf(client.cpf);
-    setClientContact(client.contactInformation);
+    setClientContact(client.contactInformation || '');
     setIsEditDialogOpen(true);
   };
 
