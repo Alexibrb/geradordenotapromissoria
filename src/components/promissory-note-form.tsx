@@ -47,6 +47,7 @@ type PromissoryNoteFormProps = {
 };
 
 export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
