@@ -87,10 +87,10 @@ function AddNotePage() {
             </Button>
           <header className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">
-              Bem-vindo, {client.name}
+              GERAR NOTA PROMISSÓRIA
             </h1>
             <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
-              Preencha os detalhes abaixo para criar e salvar uma nova nota promissória.
+              Preencha os detalhes abaixo para criar e salvar uma nova nota promissória para {client.name}.
             </p>
           </header>
 
