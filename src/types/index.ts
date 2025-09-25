@@ -17,6 +17,7 @@ export interface Client {
   id: string;
   name: string;
   address: string;
+  cpf: string;
   contactInformation: string;
 }
 

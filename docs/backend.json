@@ -19,6 +19,10 @@
           "type": "string",
           "description": "Client's address."
         },
+        "cpf": {
+          "type": "string",
+          "description": "Client's CPF number."
+        },
         "contactInformation": {
           "type": "string",
           "description": "Client's contact information (e.g., phone number, email)."
@@ -26,7 +30,8 @@
       },
       "required": [
         "name",
-        "address"
+        "address",
+        "cpf"
       ]
     },
     "PromissoryNote": {
