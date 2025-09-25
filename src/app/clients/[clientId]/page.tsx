@@ -58,6 +58,7 @@ function ClientDetailPage() {
       paymentType: note.paymentType || 'a-prazo',
       hasDownPayment: note.hasDownPayment || false,
       downPaymentValue: note.downPaymentValue || 0,
+      latePaymentClause: note.latePaymentClause || '',
     });
   };
 

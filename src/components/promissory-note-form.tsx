@@ -17,11 +17,12 @@ import {
   Briefcase,
   Fingerprint,
   Wallet,
+  FileWarning,
 } from "lucide-react";
 import { useEffect } from 'react';
 
 import { cn } from "@/lib/utils";
-import type { PromissoryNoteData, PaymentType } from "@/types";
+import type { PromissoryNoteData } from "@/types";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -32,6 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 
 const formSchema = z.object({
@@ -48,6 +50,7 @@ const formSchema = z.object({
   paymentType: z.enum(['a-vista', 'a-prazo'], { required_error: "Selecione o tipo de pagamento."}),
   hasDownPayment: z.boolean().optional(),
   downPaymentValue: z.coerce.number().optional(),
+  latePaymentClause: z.string().optional(),
 }).refine(data => {
     if (data.paymentType === 'a-prazo' && data.hasDownPayment) {
         return data.downPaymentValue && data.downPaymentValue > 0;
@@ -90,6 +93,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
       installments: 1,
       hasDownPayment: false,
       downPaymentValue: 0,
+      latePaymentClause: "O atraso nos pagamentos por até 03 meses, acarretará na perda da propriedade e posse do imóvel, sem fazer jus a indenização ou ressarcimento de valores já efetuados pelo comprador.",
     },
   });
   
@@ -118,6 +122,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
         dataToGenerate.installments = 1;
         dataToGenerate.hasDownPayment = false;
         dataToGenerate.downPaymentValue = 0;
+        dataToGenerate.latePaymentClause = '';
     } else if (!dataToGenerate.hasDownPayment) {
         dataToGenerate.downPaymentValue = 0;
     }
@@ -329,6 +334,26 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
                       <FormControl>
                         <Input type="number" min="1" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="latePaymentClause"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><FileWarning className="mr-2 h-4 w-4" /> Cláusula de Atraso de Pagamento</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Digite aqui a cláusula que aparecerá na nota em caso de pagamento a prazo..."
+                          className="resize-y"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Esta cláusula só será exibida na nota se o tipo de pagamento for 'A Prazo'.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

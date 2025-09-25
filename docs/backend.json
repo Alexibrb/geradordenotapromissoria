@@ -81,6 +81,10 @@
         "downPaymentValue": {
           "type": "number",
           "description": "The value of the down payment, if applicable."
+        },
+        "latePaymentClause": {
+          "type": "string",
+          "description": "A specific clause to be included in the note for late payments, only applicable for installment plans."
         }
       },
       "required": [

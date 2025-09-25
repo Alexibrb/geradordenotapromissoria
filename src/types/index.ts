@@ -17,6 +17,7 @@ export type PromissoryNoteData = {
   paymentType: PaymentType;
   hasDownPayment?: boolean;
   downPaymentValue?: number;
+  latePaymentClause?: string;
 };
 
 export interface Client {
@@ -43,4 +44,5 @@ export interface PromissoryNote {
   paymentType: PaymentType;
   hasDownPayment?: boolean;
   downPaymentValue?: number;
+  latePaymentClause?: string;
 }

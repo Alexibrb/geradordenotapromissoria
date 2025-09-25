@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { doc, Timestamp, setDoc } from 'firebase/firestore';
+import { doc, Timestamp } from 'firebase/firestore';
 import type { Client, PromissoryNote, PromissoryNoteData } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { PromissoryNoteForm } from '@/components/promissory-note-form';
@@ -52,6 +52,7 @@ function EditNotePage() {
         paymentType: note.paymentType || 'a-prazo',
         hasDownPayment: note.hasDownPayment || false,
         downPaymentValue: note.downPaymentValue || 0,
+        latePaymentClause: note.latePaymentClause || '',
       };
       setFormData(noteData);
     }

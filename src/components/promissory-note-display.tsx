@@ -28,6 +28,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     paymentType,
     hasDownPayment,
     downPaymentValue,
+    latePaymentClause,
   } = data;
 
   const handleGeneratePdf = () => {
@@ -67,7 +68,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
   const formattedDate = format(paymentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
   
   const remainingValue = (totalValue || 0) - (downPaymentValue || 0);
-  const singleInstallmentValue = remainingValue / installments;
+  const singleInstallmentValue = installments > 0 ? remainingValue / installments : 0;
   const installmentValueFormatted = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -148,9 +149,11 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         
         {renderPaymentTerms()}
         
-        <p>
-          O atraso nos pagamentos por até 03 meses, acarretará na perda da propriedade e posse do imóvel, sem fazer jus a indenização ou ressarcimento de valores já efetuados pelo comprador.
-        </p>
+        {paymentType === 'a-prazo' && latePaymentClause && (
+          <p>
+            {latePaymentClause}
+          </p>
+        )}
         <div className="mt-12 pt-8 border-t flex justify-between">
             <div className="w-2/5 text-center">
                 <div className="w-full border-b border-foreground pb-1"></div>
