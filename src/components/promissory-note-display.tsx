@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Printer } from "lucide-react";
+import { porExtenso } from "numero-por-extenso";
 
 type PromissoryNoteDisplayProps = {
   data: PromissoryNoteData;
@@ -38,13 +39,21 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     currency: "BRL",
   }).format(totalValue);
 
+  const valueInWords = porExtenso(totalValue, { modo: 'monetario' });
+
   const formattedDate = format(paymentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
-  const installmentValue = new Intl.NumberFormat("pt-BR", {
+  
+  const singleInstallmentValue = totalValue / installments;
+  const installmentValueFormatted = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(totalValue / installments);
+  }).format(singleInstallmentValue);
+  const installmentValueInWords = porExtenso(singleInstallmentValue, { modo: 'monetario' });
 
-  const installmentText = installments === 1 ? 'parcela mensal igual' : 'parcelas mensais iguais';
+
+  const installmentText = installments === 1 
+    ? `parcela mensal de ${installmentValueFormatted} (${installmentValueInWords})` 
+    : `parcelas mensais iguais de ${installmentValueFormatted} (${installmentValueInWords}) cada`;
 
 
   return (
@@ -68,14 +77,14 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           <strong>{clientCpf}</strong>, residente em <strong>{clientAddress}</strong> (doravante "o Devedor"), promete
           pagar à ordem de <strong>{creditorName}</strong>, inscrito no CPF/CNPJ sob o nº{" "}
           <strong>{creditorCpf}</strong> (doravante "o Credor"), a quantia principal de{" "}
-          <strong>{formattedValue}</strong>.
+          <strong>{formattedValue} ({valueInWords})</strong>.
         </p>
         <p>
           Esta nota refere-se ao produto/serviço:{" "}
           <strong>{productReference}</strong>.
         </p>
         <p>
-          O valor principal será pago em <strong>{installments}</strong> {installmentText} de <strong>{installmentValue}</strong> cada. O primeiro pagamento
+          O valor principal será pago em <strong>{installments}</strong> {installmentText}. O primeiro pagamento
           será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
           devidos no mesmo dia de cada mês consecutivo até que o principal seja
           pago integralmente.
