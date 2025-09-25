@@ -1,6 +1,8 @@
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { ptBR } from "date-fns/locale";
+import { Button } from "./ui/button";
+import { Printer } from "lucide-react";
 
 type InstallmentSlipProps = {
   installmentNumber: number;
@@ -22,17 +24,18 @@ export function InstallmentSlip({
 
   const handlePrint = () => {
     const printContent = document.getElementById(`slip-${installmentNumber}`);
-    if (printContent) {
-      printContent.classList.add("print-container");
+    const parent = printContent?.parentElement;
+    if (printContent && parent) {
+      parent.classList.add("print-container");
       window.print();
-      printContent.classList.remove("print-container");
+      parent.classList.remove("print-container");
     }
   };
 
   return (
     <div id={`slip-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg p-4 print-break-inside-avoid">
-      <div className="flex justify-between items-start text-sm">
-        <h3 className="font-bold text-lg">Boleto de Pagamento</h3>
+       <div className="flex justify-between items-start text-sm">
+        <h3 className="font-bold text-lg">Comprovante de Pagamento</h3>
         <div className="text-right">
           <p className="font-semibold">Parcela</p>
           <p>{installmentNumber} de {totalInstallments}</p>
@@ -53,7 +56,7 @@ export function InstallmentSlip({
           <p className="font-semibold">{format(dueDate, "dd/MM/yyyy", { locale: ptBR })}</p>
         </div>
         <div>
-          <p className="text-muted-foreground">Valor a Pagar</p>
+          <p className="text-muted-foreground">Valor Pago</p>
           <p className="font-bold text-lg text-primary">
             {new Intl.NumberFormat("pt-BR", {
               style: "currency",
@@ -63,9 +66,12 @@ export function InstallmentSlip({
         </div>
       </div>
       <Separator orientation="horizontal" className="border-dashed my-4" />
-      <div className="text-xs text-muted-foreground">
-        <p>Este é um boleto de nota promissória. O pagamento deve ser feito na data de vencimento ou antes. </p>
-        <p>Para dúvidas, entre em contato conosco com seus detalhes de referência.</p>
+      <div className="flex justify-between items-center text-xs text-muted-foreground">
+        <p>Este documento serve como comprovante do pagamento da parcela.</p>
+        <Button onClick={handlePrint} variant="outline" size="sm" className="no-print">
+            <Printer className="mr-2" />
+            Imprimir
+        </Button>
       </div>
     </div>
   );

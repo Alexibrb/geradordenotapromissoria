@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Printer } from "lucide-react";
 import { InstallmentSlip } from "@/components/installment-slip";
 import React from "react";
-import { ptBR } from 'date-fns/locale';
 
 type CarneDisplayProps = {
   data: PromissoryNoteData;
@@ -43,14 +42,14 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="font-headline">Carnê de Pagamento</CardTitle>
+            <CardTitle className="font-headline">Comprovantes de Pagamento</CardTitle>
             <CardDescription>
-              Um carnê de pagamento foi gerado para todas as {installments} parcelas.
+              Foram gerados {installments} comprovantes, um para cada parcela.
             </CardDescription>
           </div>
           <Button onClick={handlePrintAll} className="mt-4 sm:mt-0 no-print">
             <Printer className="mr-2" />
-            Imprimir Carnê
+            Imprimir Todos
           </Button>
         </div>
       </CardHeader>
