@@ -84,7 +84,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           <strong>{productReference}</strong>.
         </p>
         <p>
-          O valor principal será pago em <strong>{installments}</strong> {installmentText}. O primeiro pagamento
+          O valor principal será pago em <strong>{installments}</strong> {installments === 1 ? `parcela mensal de ${installmentValueFormatted} (${installmentValueInWords})` : `${installmentText}`}. O primeiro pagamento
           será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
           devidos no mesmo dia de cada mês consecutivo até que o principal seja
           pago integralmente.
