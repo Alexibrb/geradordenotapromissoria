@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut } from 'lucide-react';
 import { ProtectedRoute, useUser } from '@/firebase/auth/use-user';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import type { Client } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,10 +35,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useRouter } from 'next/navigation';
+
 
 function ClientsPage() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const auth = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
 
   const clientsCollection = useMemoFirebase(() => 
@@ -91,66 +96,77 @@ function ClientsPage() {
       description: 'O cliente e suas notas foram removidos.',
     });
   };
+  
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
 
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8">
         <header className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Meus Clientes</h1>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="mr-2" />
-                Adicionar Cliente
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Novo Cliente</DialogTitle>
-                <DialogDescription>
-                  Insira as informações do novo cliente.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="client-name">Nome do Cliente</Label>
-                  <Input
-                    id="client-name"
-                    value={newClientName}
-                    onChange={(e) => setNewClientName(e.target.value)}
-                    placeholder="João da Silva"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="client-address">Endereço</Label>
-                  <Input
-                    id="client-address"
-                    value={newClientAddress}
-                    onChange={(e) => setNewClientAddress(e.target.value)}
-                    placeholder="Rua Exemplo, 123"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="client-contact">Contato (Email/Telefone)</Label>
-                  <Input
-                    id="client-contact"
-                    value={newClientContact}
-                    onChange={(e) => setNewClientContact(e.target.value)}
-                    placeholder="contato@email.com"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  Cancelar
+          <div className="flex items-center gap-2">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="mr-2" />
+                  Adicionar Cliente
                 </Button>
-                <Button onClick={handleAddClient}>Salvar Cliente</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Adicionar Novo Cliente</DialogTitle>
+                  <DialogDescription>
+                    Insira as informações do novo cliente.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="client-name">Nome do Cliente</Label>
+                    <Input
+                      id="client-name"
+                      value={newClientName}
+                      onChange={(e) => setNewClientName(e.target.value)}
+                      placeholder="João da Silva"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="client-address">Endereço</Label>
+                    <Input
+                      id="client-address"
+                      value={newClientAddress}
+                      onChange={(e) => setNewClientAddress(e.target.value)}
+                      placeholder="Rua Exemplo, 123"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="client-contact">Contato (Email/Telefone)</Label>
+                    <Input
+                      id="client-contact"
+                      value={newClientContact}
+                      onChange={(e) => setNewClientContact(e.target.value)}
+                      placeholder="contato@email.com"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleAddClient}>Salvar Cliente</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Button onClick={handleLogout} variant="outline">
+              <LogOut className="mr-2" />
+              Sair
+            </Button>
+          </div>
         </header>
 
         {isLoading ? (
