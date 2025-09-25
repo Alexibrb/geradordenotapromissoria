@@ -17,6 +17,7 @@ import {
   Briefcase,
   Fingerprint,
 } from "lucide-react";
+import { useEffect } from 'react';
 
 import { cn } from "@/lib/utils";
 import type { PromissoryNoteData } from "@/types";
@@ -44,18 +45,20 @@ const formSchema = z.object({
 
 type PromissoryNoteFormProps = {
   onGenerate: (data: PromissoryNoteData) => void;
-  client?: { id: string; name: string, address: string, contactInformation: string };
+  client?: { id: string; name: string, address: string, cpf: string, contactInformation: string };
+  initialData?: PromissoryNoteData;
+  isEditing?: boolean;
 };
 
-export function PromissoryNoteForm({ onGenerate, client }: PromissoryNoteFormProps) {
+export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing = false }: PromissoryNoteFormProps) {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       creditorName: "",
       creditorCpf: "",
       clientName: client?.name || "",
-      clientCpf: "",
+      clientCpf: client?.cpf || "",
       clientAddress: client?.address || "",
       clientContact: client?.contactInformation || "",
       productReference: "",
@@ -63,21 +66,29 @@ export function PromissoryNoteForm({ onGenerate, client }: PromissoryNoteFormPro
       installments: 1,
     },
   });
+  
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onGenerate(values);
-    toast({
-      title: "Documentos Gerados!",
-      description: "Sua nota promissória e carnê de pagamento estão prontos.",
-      className: "bg-accent text-accent-foreground",
-    });
+    if (!isEditing) {
+      toast({
+        title: "Documentos Gerados!",
+        description: "Sua nota promissória e carnê de pagamento estão prontos.",
+        className: "bg-accent text-accent-foreground",
+      });
+    }
   }
 
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline">Insira os Detalhes da Nota</CardTitle>
-        <CardDescription>Forneça as informações necessárias para criar os documentos.</CardDescription>
+        <CardTitle className="font-headline">{isEditing ? 'Edite os Detalhes da Nota' : 'Insira os Detalhes da Nota'}</CardTitle>
+        <CardDescription>Forneça as informações necessárias para {isEditing ? 'atualizar' : 'criar'} os documentos.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -118,7 +129,7 @@ export function PromissoryNoteForm({ onGenerate, client }: PromissoryNoteFormPro
                   <FormItem>
                     <FormLabel className="flex items-center"><User className="mr-2 h-4 w-4" /> Nome do Cliente</FormLabel>
                     <FormControl>
-                      <Input placeholder="João da Silva" {...field} disabled={!!client} />
+                      <Input placeholder="João da Silva" {...field} disabled={!!client && !isEditing} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,7 +156,7 @@ export function PromissoryNoteForm({ onGenerate, client }: PromissoryNoteFormPro
                 <FormItem>
                   <FormLabel className="flex items-center"><MapPin className="mr-2 h-4 w-4" /> Endereço do Cliente</FormLabel>
                   <FormControl>
-                    <Input placeholder="Rua Principal, 123, Cidade, Estado" {...field} disabled={!!client} />
+                    <Input placeholder="Rua Principal, 123, Cidade, Estado" {...field} disabled={!!client && !isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -158,7 +169,7 @@ export function PromissoryNoteForm({ onGenerate, client }: PromissoryNoteFormPro
                 <FormItem>
                   <FormLabel className="flex items-center"><Phone className="mr-2 h-4 w-4" /> Contato do Cliente (Opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="email@exemplo.com ou (11) 98765-4321" {...field} disabled={!!client} />
+                    <Input placeholder="email@exemplo.com ou (11) 98765-4321" {...field} disabled={!!client && !isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -245,7 +256,7 @@ export function PromissoryNoteForm({ onGenerate, client }: PromissoryNoteFormPro
               )}
             />
             <Button type="submit" className="w-full" size="lg">
-              Gerar Documentos
+              {isEditing ? 'Salvar Alterações' : 'Gerar Documentos'}
               <Send className="ml-2 h-4 w-4"/>
             </Button>
           </form>

@@ -9,7 +9,7 @@ import type { Client, PromissoryNote, PromissoryNoteData } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Trash2, MoreHorizontal } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, FileText, Trash2, MoreHorizontal, Edit } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 import { format } from 'date-fns';
@@ -53,7 +53,8 @@ function ClientDetailPage() {
     });
   };
 
-  const handleDeleteNote = async (noteId: string) => {
+  const handleDeleteNote = (e: React.MouseEvent, noteId: string) => {
+    e.stopPropagation();
     if (!user) return;
     const noteDocRef = doc(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', noteId);
     deleteDocumentNonBlocking(noteDocRef);
@@ -64,6 +65,11 @@ function ClientDetailPage() {
     if (selectedNote && selectedNote.id === noteId) {
       setSelectedNote(null);
     }
+  };
+
+  const handleEditNote = (e: React.MouseEvent, noteId: string) => {
+    e.stopPropagation();
+    router.push(`/clients/${clientId}/edit-note/${noteId}`);
   };
 
   if (isClientLoading || areNotesLoading) {
@@ -124,12 +130,16 @@ function ClientDetailPage() {
                     </CardTitle>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteNote(note.id); }} className="text-destructive focus:text-destructive">
+                        <DropdownMenuItem onClick={(e) => handleEditNote(e, note.id)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => handleDeleteNote(e, note.id)} className="text-destructive focus:text-destructive">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Excluir
                         </DropdownMenuItem>
