@@ -36,13 +36,6 @@ export function InstallmentSlip({
 
   return (
     <div id={`slip-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg p-4 print-break-inside-avoid relative overflow-hidden">
-       <div className="absolute top-8 right-8 transform rotate-12">
-        <div className="border-4 border-green-500 rounded-md p-2">
-          <span className="text-3xl font-bold text-green-500 uppercase tracking-wider">
-            Pago
-          </span>
-        </div>
-      </div>
       <div className="flex justify-between items-start text-sm">
         <h3 className="font-bold text-lg">Comprovante de Pagamento</h3>
         <div className="text-right">
@@ -51,7 +44,7 @@ export function InstallmentSlip({
         </div>
       </div>
       <Separator className="my-3" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm relative">
         <div>
           <p className="text-muted-foreground">Nome do Cliente</p>
           <p className="font-semibold">{clientName}</p>
@@ -64,7 +57,7 @@ export function InstallmentSlip({
           <p className="text-muted-foreground">Data de Vencimento</p>
           <p className="font-semibold">{format(dueDate, "dd/MM/yyyy", { locale: ptBR })}</p>
         </div>
-        <div>
+        <div className="relative">
           <p className="text-muted-foreground">Valor Pago</p>
           <p className="font-bold text-lg text-primary">
             {new Intl.NumberFormat("pt-BR", {
@@ -72,6 +65,13 @@ export function InstallmentSlip({
               currency: "BRL",
             }).format(value)}
           </p>
+           <div className="absolute top-0 right-0 transform -rotate-12 -translate-y-2 translate-x-4 opacity-80">
+            <div className="border-4 border-green-500 rounded-md px-2 py-1">
+              <span className="text-2xl font-bold text-green-500 uppercase tracking-wider">
+                Pago
+              </span>
+            </div>
+          </div>
         </div>
       </div>
       <div className="mt-8 pt-4">
