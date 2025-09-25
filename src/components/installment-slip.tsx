@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { ptBR } from "date-fns/locale";
 import { Button } from "./ui/button";
 import { Printer } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 type InstallmentSlipProps = {
   installmentNumber: number;
@@ -25,6 +28,7 @@ export function InstallmentSlip({
   creditorName,
   productReference,
 }: InstallmentSlipProps) {
+  const [isPaid, setIsPaid] = useState(false);
 
   const handlePrint = () => {
     const printContent = document.getElementById(`slip-${installmentNumber}`);
@@ -35,6 +39,8 @@ export function InstallmentSlip({
       parent.classList.remove("print-container");
     }
   };
+
+  const checkboxId = `paid-checkbox-${installmentNumber}`;
 
   return (
     <div id={`slip-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg p-4 print-break-inside-avoid relative overflow-hidden">
@@ -60,20 +66,22 @@ export function InstallmentSlip({
           <p className="font-semibold">{format(dueDate, "dd/MM/yyyy", { locale: ptBR })}</p>
         </div>
         <div className="relative">
-          <p className="text-muted-foreground">Valor Pago</p>
+          <p className="text-muted-foreground">Valor da Parcela</p>
           <p className="font-bold text-lg text-primary">
             {new Intl.NumberFormat("pt-BR", {
               style: "currency",
               currency: "BRL",
             }).format(value)}
           </p>
-           <div className="absolute top-0 right-0 transform -rotate-12 -translate-y-2 translate-x-4 opacity-80">
-            <div className="border-4 border-green-500 rounded-md px-2 py-1">
-              <span className="text-2xl font-bold text-green-500 uppercase tracking-wider">
-                Pago
-              </span>
+           {isPaid && (
+            <div className="absolute top-0 right-0 transform -rotate-12 -translate-y-2 translate-x-4 opacity-80">
+              <div className="border-4 border-green-500 rounded-md px-2 py-1">
+                <span className="text-2xl font-bold text-green-500 uppercase tracking-wider">
+                  Pago
+                </span>
+              </div>
             </div>
-          </div>
+           )}
         </div>
       </div>
       <div className="mt-8 pt-4">
@@ -85,7 +93,10 @@ export function InstallmentSlip({
       </div>
       <Separator orientation="horizontal" className="border-dashed my-4" />
       <div className="flex justify-between items-center text-xs text-muted-foreground">
-        <p>Este documento serve como comprovante do pagamento da parcela.</p>
+        <div className="flex items-center space-x-2 no-print">
+          <Checkbox id={checkboxId} checked={isPaid} onCheckedChange={(checked) => setIsPaid(!!checked)} />
+          <Label htmlFor={checkboxId}>Marcar como Pago</Label>
+        </div>
         <Button onClick={handlePrint} variant="outline" size="sm" className="no-print">
             <Printer className="mr-2" />
             Imprimir

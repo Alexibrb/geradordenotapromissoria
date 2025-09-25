@@ -87,8 +87,9 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
                 <p className="mt-2 text-center">Assinatura do Devedor: {clientName}</p>
             </div>
             <div className="w-2/5">
+                <p className="mb-2 text-center text-sm font-semibold">{creditorName}</p>
                 <div className="w-full border-b border-foreground pb-1"></div>
-                <p className="mt-2 text-center">Assinatura do Credor: {creditorName}</p>
+                <p className="mt-1 text-center text-xs text-muted-foreground">Assinatura do Credor</p>
             </div>
         </div>
       </CardContent>
