@@ -80,9 +80,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           pago integralmente.
         </p>
         <p>
-          Em caso de inadimplência no pagamento de qualquer uma das referidas parcelas
-          quando as mesmas se vencerem, o valor total do referido
-          principal remanescente não pago tornar-se-á imediatamente devido e pagável.
+          O atraso nos pagamentos por até 03 meses, acarretará na perda da propriedade e posse do imóvel, sem fazer jus a indenização ou ressarcimento de valores já efetuados pelo comprador.
         </p>
         <div className="mt-12 pt-8 border-t flex justify-between">
             <div className="w-2/5 text-center">
