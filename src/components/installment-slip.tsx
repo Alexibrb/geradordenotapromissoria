@@ -21,6 +21,7 @@ type InstallmentSlipProps = {
   creditorName: string;
   creditorCpf: string;
   productReference: string;
+  noteNumber?: string;
 };
 
 export function InstallmentSlip({
@@ -33,6 +34,7 @@ export function InstallmentSlip({
   creditorName,
   creditorCpf,
   productReference,
+  noteNumber,
 }: InstallmentSlipProps) {
   const [isPaid, setIsPaid] = useState(false);
   const [paidDate, setPaidDate] = useState<Date | null>(null);
@@ -78,7 +80,7 @@ export function InstallmentSlip({
             const y = (pdfHeight - imgHeight) / 2;
 
             pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
-            pdf.save(`comprovante_parcela_${installmentNumber}.pdf`);
+            pdf.save(`comprovante_parcela_${installmentNumber}_${noteNumber}.pdf`);
 
             // Hide paid stamp again after generation
             if (isPaid && stamp) {
@@ -88,13 +90,16 @@ export function InstallmentSlip({
     }
   };
 
-  const checkboxId = `paid-checkbox-${installmentNumber}`;
+  const checkboxId = `paid-checkbox-${noteNumber}-${installmentNumber}`;
 
   return (
     <div id={`slip-container-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg overflow-hidden print-break-inside-avoid">
         <div id={`slip-${installmentNumber}-pdf-area`} className="bg-card p-4 relative">
             <div className="flex justify-between items-start text-sm">
-            <h3 className="font-bold text-lg">Comprovante de Pagamento</h3>
+            <div>
+              <h3 className="font-bold text-lg">Comprovante de Pagamento</h3>
+              {noteNumber && <p className="text-xs text-muted-foreground">Ref. Nota Nº {noteNumber}</p>}
+            </div>
             <div className="text-right">
                 <p className="font-semibold">Parcela</p>
                 <p>{installmentNumber} de {totalInstallments}</p>

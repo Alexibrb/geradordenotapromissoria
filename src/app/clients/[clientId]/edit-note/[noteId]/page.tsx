@@ -12,6 +12,8 @@ import { Loader, ArrowLeft, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
+import { CarneDisplay } from '@/components/carne-display';
 
 function EditNotePage() {
   const { clientId, noteId } = useParams();
@@ -32,21 +34,23 @@ function EditNotePage() {
   );
   const { data: client, isLoading: isClientLoading } = useDoc<Client>(clientDocRef);
   
-  const [initialData, setInitialData] = useState<PromissoryNoteData | null>(null);
+  const [formData, setFormData] = useState<PromissoryNoteData | null>(null);
 
   useEffect(() => {
     if (note) {
-      setInitialData({
+      const noteData = {
         ...note,
         totalValue: note.value,
         installments: note.numberOfInstallments,
         paymentDate: note.paymentDate.toDate(),
         productReference: note.productServiceReference,
-      });
+        noteNumber: note.noteNumber,
+      };
+      setFormData(noteData);
     }
   }, [note]);
 
-  const handleUpdate = async (formData: PromissoryNoteData) => {
+  const handleUpdate = async (updatedFormData: PromissoryNoteData) => {
     if (!user || !note) {
       toast({
         variant: 'destructive',
@@ -56,13 +60,17 @@ function EditNotePage() {
       return;
     }
     
+    // Preserve the original noteNumber
+    const finalFormData = { ...updatedFormData, noteNumber: note.noteNumber };
+    setFormData(finalFormData);
+
     const noteToUpdate = {
-      ...formData,
+      ...finalFormData,
       clientId: clientId as string,
-      paymentDate: Timestamp.fromDate(formData.paymentDate),
-      value: formData.totalValue,
-      numberOfInstallments: formData.installments,
-      productServiceReference: formData.productReference,
+      paymentDate: Timestamp.fromDate(finalFormData.paymentDate),
+      value: finalFormData.totalValue,
+      numberOfInstallments: finalFormData.installments,
+      productServiceReference: finalFormData.productReference,
     };
     
     // Remove fields from PromissoryNoteData that are not in PromissoryNote
@@ -101,17 +109,17 @@ function EditNotePage() {
             </Button>
           <header className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">
-              EDITAR NOTA PROMISSÓRIA
+              EDITAR NOTA PROMISSÓRIA {note.noteNumber ? `(Nº ${note.noteNumber})` : ''}
             </h1>
             <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
               Altere os detalhes da nota promissória para {client.name}.
             </p>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
             <div className="lg:col-span-2">
-              {initialData ? (
-                 <PromissoryNoteForm onGenerate={handleUpdate} client={client} initialData={initialData} isEditing />
+              {formData ? (
+                 <PromissoryNoteForm onGenerate={handleUpdate} client={client} initialData={formData} isEditing />
               ) : (
                 <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
                     <CardContent className="text-center p-8">
@@ -120,6 +128,23 @@ function EditNotePage() {
                         Carregando dados da nota...
                         </p>
                     </CardContent>
+                </Card>
+              )}
+            </div>
+             <div className="lg:col-span-3 space-y-8">
+              {formData ? (
+                <>
+                  <PromissoryNoteDisplay data={formData} />
+                  <CarneDisplay data={formData} />
+                </>
+              ) : (
+                <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
+                  <CardContent className="text-center p-8">
+                    <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      A visualização do documento aparecerá aqui.
+                    </p>
+                  </CardContent>
                 </Card>
               )}
             </div>

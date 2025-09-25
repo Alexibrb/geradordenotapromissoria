@@ -44,6 +44,10 @@
           "type": "string",
           "description": "Unique identifier for the promissory note."
         },
+        "noteNumber": {
+          "type": "string",
+          "description": "Unique identifier number for the promissory note, generated from timestamp."
+        },
         "clientId": {
           "type": "string",
           "description": "Reference to Client."
@@ -67,6 +71,7 @@
         }
       },
       "required": [
+        "noteNumber",
         "clientId",
         "productServiceReference",
         "value",

@@ -15,7 +15,7 @@ type CarneDisplayProps = {
 };
 
 export function CarneDisplay({ data }: CarneDisplayProps) {
-  const { totalValue, installments, paymentDate, clientName, clientCpf, productReference, creditorName, creditorCpf } = data;
+  const { totalValue, installments, paymentDate, clientName, clientCpf, productReference, creditorName, creditorCpf, noteNumber } = data;
   const installmentValue = totalValue / installments;
 
   const installmentSlips = Array.from({ length: installments }).map((_, i) => ({
@@ -28,6 +28,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
     creditorName,
     creditorCpf,
     productReference,
+    noteNumber,
   }));
 
   const handleGeneratePdfAll = () => {
@@ -77,7 +78,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
           pdf.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight);
           y += imgHeight + 10; // Add some space between slips
         });
-        pdf.save("carne_pagamento.pdf");
+        pdf.save(`carne_pagamento_${noteNumber}.pdf`);
         
         // Hide paid stamps again after generation
         paidElements.forEach(el => el.style.display = 'none');

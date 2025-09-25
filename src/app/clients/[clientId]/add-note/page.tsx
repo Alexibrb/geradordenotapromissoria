@@ -14,6 +14,7 @@ import { FileText, Loader, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { format } from 'date-fns';
 
 function AddNotePage() {
   const { clientId } = useParams();
@@ -37,17 +38,19 @@ function AddNotePage() {
       return;
     }
     
-    setGeneratedData(formData);
+    const noteNumber = format(new Date(), 'yyyyMMddHHmmss');
+    const dataWithNumber = { ...formData, noteNumber };
+    setGeneratedData(dataWithNumber);
     
     const notesCollectionRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes');
     
     const noteToSave = {
-      ...formData,
+      ...dataWithNumber,
       clientId: client.id,
-      paymentDate: Timestamp.fromDate(formData.paymentDate),
-      value: formData.totalValue,
-      numberOfInstallments: formData.installments,
-      productServiceReference: formData.productReference,
+      paymentDate: Timestamp.fromDate(dataWithNumber.paymentDate),
+      value: dataWithNumber.totalValue,
+      numberOfInstallments: dataWithNumber.installments,
+      productServiceReference: dataWithNumber.productReference,
     };
     
     // Remove fields from PromissoryNoteData that are not in PromissoryNote

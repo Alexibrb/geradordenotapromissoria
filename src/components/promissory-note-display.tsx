@@ -15,6 +15,7 @@ type PromissoryNoteDisplayProps = {
 
 export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
   const {
+    noteNumber,
     clientName,
     clientCpf,
     clientAddress,
@@ -50,7 +51,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         const y = 10;
 
         pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
-        pdf.save("nota_promissoria.pdf");
+        pdf.save(`nota_promissoria_${noteNumber}.pdf`);
       });
     }
   };
@@ -83,7 +84,10 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         </div>
       </CardHeader>
       <CardContent id="note-print-area" className="prose prose-sm max-w-none bg-card p-6">
-        <h2 className="text-center font-bold text-xl mb-6">NOTA PROMISSÓRIA</h2>
+        <div className="flex justify-between items-start mb-6">
+          <h2 className="text-center font-bold text-xl">NOTA PROMISSÓRIA</h2>
+          {noteNumber && <span className="font-mono text-xs">Nº {noteNumber}</span>}
+        </div>
         <p>
           Pelo valor recebido, o signatário, <strong>{clientName}</strong>, inscrito no CPF sob o nº{" "}
           <strong>{clientCpf}</strong>, residente em <strong>{clientAddress}</strong> (doravante "o Devedor"), promete

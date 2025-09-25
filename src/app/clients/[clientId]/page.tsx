@@ -50,6 +50,7 @@ function ClientDetailPage() {
       totalValue: note.value,
       installments: note.numberOfInstallments,
       productReference: note.productServiceReference,
+      noteNumber: note.noteNumber,
     });
   };
 
@@ -126,7 +127,7 @@ function ClientDetailPage() {
                 >
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-md font-medium">
-                      {note.productServiceReference}
+                      Nota #{note.noteNumber}
                     </CardTitle>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -147,6 +148,9 @@ function ClientDetailPage() {
                     </DropdownMenu>
                   </CardHeader>
                   <CardContent>
+                     <p className="text-sm text-muted-foreground">
+                      {note.productServiceReference}
+                    </p>
                     <p className="text-sm font-bold">
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(note.value)}
                     </p>

@@ -11,6 +11,7 @@ export type PromissoryNoteData = {
   totalValue: number;
   paymentDate: Date;
   installments: number;
+  noteNumber?: string; // Adicionado
 };
 
 export interface Client {
@@ -22,7 +23,7 @@ export interface Client {
 }
 
 export interface PromissoryNote {
-  id: string;
+  id:string;
   clientId: string;
   productServiceReference: string;
   value: number;
@@ -33,4 +34,5 @@ export interface PromissoryNote {
   clientCpf: string;
   clientAddress: string;
   clientName: string;
+  noteNumber: string; // Adicionado
 }
