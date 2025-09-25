@@ -49,7 +49,7 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
       clientAddress: "",
       clientContact: "",
       productReference: "",
-      totalValue: undefined,
+      totalValue: "" as unknown as number, // Alterado de undefined
       installments: 1,
     },
   });
