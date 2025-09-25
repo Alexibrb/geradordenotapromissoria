@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Client": {
@@ -24,10 +25,8 @@
         }
       },
       "required": [
-        "id",
         "name",
-        "address",
-        "contactInformation"
+        "address"
       ]
     },
     "PromissoryNote": {
@@ -42,7 +41,7 @@
         },
         "clientId": {
           "type": "string",
-          "description": "Reference to Client. (Relationship: Client 1:N PromissoryNote)"
+          "description": "Reference to Client."
         },
         "productServiceReference": {
           "type": "string",
@@ -63,7 +62,6 @@
         }
       },
       "required": [
-        "id",
         "clientId",
         "productServiceReference",
         "value",
@@ -83,7 +81,7 @@
         },
         "promissoryNoteId": {
           "type": "string",
-          "description": "Reference to PromissoryNote. (Relationship: PromissoryNote 1:N Payment)"
+          "description": "Reference to PromissoryNote."
         },
         "paymentDate": {
           "type": "string",
@@ -100,82 +98,75 @@
         }
       },
       "required": [
-        "id",
         "promissoryNoteId",
         "paymentDate",
         "amount"
       ]
+    },
+     "User": {
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user (matches auth UID)."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address."
+        }
+      },
+      "required": ["id", "email"]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
     "structure": [
+       {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": { "$ref": "#/entities/User" },
+          "description": "Stores user profile information. Document ID must match the user's auth UID."
+        }
+      },
       {
-        "path": "/clients/{clientId}",
+        "path": "/users/{userId}/clients/{clientId}",
         "definition": {
           "entityName": "Client",
           "schema": {
-            "$ref": "#/backend/entities/Client"
+            "$ref": "#/entities/Client"
           },
-          "description": "Stores client information.  Path-based ownership: only the user with the corresponding `clientId` can access documents at this path.",
-          "params": [
-            {
-              "name": "clientId",
-              "description": "The unique identifier for the client."
-            }
-          ]
+          "description": "Stores client information for a specific user. Path-based ownership: only the authenticated user can access their own clients."
         }
       },
       {
-        "path": "/clients/{clientId}/promissoryNotes/{promissoryNoteId}",
+        "path": "/users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}",
         "definition": {
           "entityName": "PromissoryNote",
           "schema": {
-            "$ref": "#/backend/entities/PromissoryNote"
+            "$ref": "#/entities/PromissoryNote"
           },
-          "description": "Stores promissory notes associated with a client. Path-based ownership: documents are owned by the client specified in the path (`clientId`).",
-          "params": [
-            {
-              "name": "clientId",
-              "description": "The unique identifier for the client who owns this promissory note."
-            },
-            {
-              "name": "promissoryNoteId",
-              "description": "The unique identifier for the promissory note."
-            }
-          ]
+          "description": "Stores promissory notes for a specific client of a user. Path-based ownership ensures data privacy."
         }
       },
       {
-        "path": "/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}",
+        "path": "/users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}",
         "definition": {
           "entityName": "Payment",
           "schema": {
-            "$ref": "#/backend/entities/Payment"
+            "$ref": "#/entities/Payment"
           },
-          "description": "Stores payment information for a specific promissory note. Path-based ownership: documents are owned by the client (`clientId`) and promissory note (`promissoryNoteId`) specified in the path.",
-          "params": [
-            {
-              "name": "clientId",
-              "description": "The unique identifier for the client who owns the promissory note to which this payment applies."
-            },
-            {
-              "name": "promissoryNoteId",
-              "description": "The unique identifier for the promissory note to which this payment applies."
-            },
-            {
-              "name": "paymentId",
-              "description": "The unique identifier for the payment."
-            }
-          ]
+          "description": "Stores payment information for a specific promissory note. Path-based ownership ensures data privacy."
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage clients, promissory notes, and payments effectively. It uses path-based ownership for clients and their related data (promissory notes and payments), ensuring clear ownership and simplified security rules. This structure facilitates the creation of payment receipts and promissory notes as requested. Each client owns their data, and the system can easily scale and maintain data integrity.\n\nSpecifically, the structure achieves Authorization Independence by ensuring that subcollections are nested under the user's document. This avoids the need for complex `get()` calls in security rules to check parent document data. Path-based ownership inherently supports QAPs by limiting list operations to resources owned by the user. The data structure uses Structural Segregation, data for each entity (`Client`, `PromissoryNote`, and `Payment`) is stored in separate collections tailored to their specific access requirements."
+    "reasoning": "The Firestore structure is designed for a multi-user application. Each user's data (clients, promissory notes, payments) is stored in subcollections under their unique user document in the `users` collection. This enforces data isolation and simplifies security rules, as access control is based on the `userId` in the path."
   }
 }
