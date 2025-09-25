@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Printer } from "lucide-react";
-import { porExtenso } from "numero-por-extenso";
+import porExtenso from "numero-por-extenso";
 
 type PromissoryNoteDisplayProps = {
   data: PromissoryNoteData;
@@ -84,7 +84,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           <strong>{productReference}</strong>.
         </p>
         <p>
-          O valor principal será pago em <strong>{installments}</strong> {installments === 1 ? `parcela mensal de ${installmentValueFormatted} (${installmentValueInWords})` : `${installmentText}`}. O primeiro pagamento
+          O valor principal será pago em <strong>{installments}</strong> {installments === 1 ? `parcela mensal de ${installmentValueFormatted} (${installmentValueInWords})` : `parcelas mensais iguais de ${installmentValueFormatted} (${installmentValueInWords}) cada`}. O primeiro pagamento
           será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
           devidos no mesmo dia de cada mês consecutivo até que o principal seja
           pago integralmente.
