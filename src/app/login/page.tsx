@@ -60,53 +60,56 @@ export default function LoginPage() {
       router.replace('/clients');
     }
   }, [user, isUserLoading, router]);
+  
+  const handleError = (error: FirebaseError) => {
+    setIsSubmitting(false);
+    let title = 'Ocorreu um erro';
+    let description = 'Por favor, tente novamente mais tarde.';
+    
+    switch (error.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            title = 'Credenciais inválidas';
+            description = 'O e-mail ou a senha estão incorretos.';
+            break;
+        case 'auth/email-already-in-use':
+            title = 'E-mail já cadastrado';
+            description = 'Este e-mail já está em uso. Tente fazer login ou use outro e-mail.';
+            break;
+        case 'auth/invalid-email':
+            title = 'E-mail inválido';
+            description = 'O formato do e-mail fornecido não é válido.';
+            break;
+        default:
+            title = 'Erro de Autenticação';
+            description = `Não foi possível autenticar. (${error.code})`;
+            break;
+    }
+
+    toast({
+        variant: 'destructive',
+        title,
+        description,
+    });
+  }
 
   useEffect(() => {
     if (!auth) return;
-
-    // This listener handles successful authentication and redirects, but also catches errors.
+    
     const unsubscribe = onAuthStateChanged(auth, 
       (user) => {
         if (user) {
           setIsSubmitting(false);
           router.replace('/clients');
+        } else {
+            // This handles the case where a user signs out or their token expires
+            setIsSubmitting(false);
         }
-        // If no user, do nothing, just stay on the login page.
       }, 
       (error) => {
-        setIsSubmitting(false);
-        let title = 'Ocorreu um erro';
-        let description = 'Por favor, tente novamente mais tarde.';
-        
-        if (error instanceof FirebaseError) {
-           switch (error.code) {
-            case 'auth/user-not-found':
-            case 'auth/wrong-password':
-            case 'auth/invalid-credential':
-              title = 'Credenciais inválidas';
-              description = 'O e-mail ou a senha estão incorretos.';
-              break;
-            case 'auth/email-already-in-use':
-              title = 'E-mail já cadastrado';
-              description =
-                'Este e-mail já está em uso. Tente fazer login ou use outro e-mail.';
-              break;
-            case 'auth/invalid-email':
-              title = 'E-mail inválido';
-              description = 'O formato do e-mail fornecido não é válido.';
-              break;
-            default:
-              title = 'Erro de Autenticação'
-              description = 'Não foi possível autenticar. Verifique suas credenciais.';
-              break;
-          }
-        }
-
-        toast({
-          variant: 'destructive',
-          title,
-          description,
-        });
+        // This top-level listener catches more fundamental auth state issues
+        handleError(error as FirebaseError);
       }
     );
 
@@ -116,12 +119,12 @@ export default function LoginPage() {
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    initiateEmailSignIn(auth, values.email, values.password);
+    initiateEmailSignIn(auth, values.email, values.password, handleError);
   };
   
   const handleSignUp = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    initiateEmailSignUp(auth, values.email, values.password);
+    initiateEmailSignUp(auth, values.email, values.password, handleError);
   };
 
   if (isUserLoading || user) {
@@ -143,7 +146,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit(handleLogin)(); }} className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"
@@ -187,11 +190,11 @@ export default function LoginPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={form.handleSubmit(handleSignUp)}
+                  onClick={(e) => { e.preventDefault(); form.handleSubmit(handleSignUp)(); }}
                   className="w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Criar Conta
                 </Button>
               </div>
