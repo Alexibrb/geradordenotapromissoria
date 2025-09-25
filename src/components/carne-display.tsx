@@ -4,9 +4,11 @@ import type { PromissoryNoteData } from "@/types";
 import { addMonths } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Printer } from "lucide-react";
+import { FileDown } from "lucide-react";
 import { InstallmentSlip } from "@/components/installment-slip";
 import React from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type CarneDisplayProps = {
   data: PromissoryNoteData;
@@ -28,15 +30,37 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
     productReference,
   }));
 
-  const handlePrintAll = () => {
-    const printContent = document.getElementById("carne-print-area");
-    if (printContent) {
-      const parent = printContent.parentElement;
-      if (parent) {
-        parent.classList.add("print-container");
-        window.print();
-        parent.classList.remove("print-container");
-      }
+  const handleGeneratePdfAll = () => {
+    const input = document.getElementById("carne-print-area");
+    if (input) {
+      const slips = Array.from(input.querySelectorAll<HTMLElement>('.slip-to-print'));
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const margin = 10;
+      const availableWidth = pdfWidth - margin * 2;
+
+      let promises = slips.map(slip => html2canvas(slip, { scale: 2, backgroundColor: null }));
+
+      Promise.all(promises).then((canvases) => {
+        let y = margin;
+        canvases.forEach((canvas, index) => {
+          const imgData = canvas.toDataURL("image/png");
+          const canvasWidth = canvas.width;
+          const canvasHeight = canvas.height;
+          const ratio = canvasWidth / canvasHeight;
+          const imgWidth = availableWidth;
+          const imgHeight = imgWidth / ratio;
+          
+          if (y + imgHeight + margin > pdf.internal.pageSize.getHeight()) {
+            pdf.addPage();
+            y = margin;
+          }
+
+          pdf.addImage(imgData, "PNG", margin, y, imgWidth, imgHeight);
+          y += imgHeight + 10; // Add some space between slips
+        });
+        pdf.save("carne_pagamento.pdf");
+      });
     }
   };
 
@@ -50,18 +74,19 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
               Foram gerados {installments} comprovantes, um para cada parcela.
             </CardDescription>
           </div>
-          <Button onClick={handlePrintAll} className="mt-4 sm:mt-0 no-print">
-            <Printer className="mr-2" />
-            Imprimir Todos
+          <Button onClick={handleGeneratePdfAll} className="mt-4 sm:mt-0 no-print">
+            <FileDown className="mr-2" />
+            Gerar PDF de Todos
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         <div id="carne-print-area" className="space-y-6">
-          {installmentSlips.map((slipData, index) => (
+          {installmentSlips.map((slipData) => (
             <React.Fragment key={slipData.installmentNumber}>
-              <InstallmentSlip {...slipData} />
-              {(index + 1) < installmentSlips.length && <div className="print-break-after"></div>}
+              <div className="slip-to-print">
+                <InstallmentSlip {...slipData} />
+              </div>
             </React.Fragment>
           ))}
         </div>

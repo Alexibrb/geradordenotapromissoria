@@ -5,7 +5,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Printer } from "lucide-react";
+import { FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type PromissoryNoteDisplayProps = {
   data: PromissoryNoteData;
@@ -24,12 +26,28 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     productReference,
   } = data;
 
-  const handlePrint = () => {
-    const printContent = document.getElementById("note-print-area");
-    if (printContent) {
-      printContent.classList.add("print-container");
-      window.print();
-      printContent.classList.remove("print-container");
+  const handleGeneratePdf = () => {
+    const input = document.getElementById("note-print-area");
+    if (input) {
+      html2canvas(input, { scale: 2 }).then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasWidth / canvasHeight;
+        const width = pdfWidth - 20; // 10mm margin on each side
+        const height = width / ratio;
+
+        let position = 10;
+        if (height < pdfHeight - 20) {
+            position = (pdfHeight - height) / 2;
+        }
+
+        pdf.addImage(imgData, "PNG", 10, position, width, height);
+        pdf.save("nota_promissoria.pdf");
+      });
     }
   };
 
@@ -59,13 +77,13 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
               <CardTitle className="font-headline">Nota Promissória Gerada</CardTitle>
               <CardDescription>Revise o documento gerado abaixo.</CardDescription>
             </div>
-            <Button onClick={handlePrint} className="mt-4 sm:mt-0 no-print">
-              <Printer className="mr-2" />
-              Imprimir Nota
+            <Button onClick={handleGeneratePdf} className="mt-4 sm:mt-0 no-print">
+              <FileDown className="mr-2" />
+              Gerar PDF da Nota
             </Button>
         </div>
       </CardHeader>
-      <CardContent id="note-print-area" className="prose prose-sm max-w-none">
+      <CardContent id="note-print-area" className="prose prose-sm max-w-none bg-card p-6">
         <h2 className="text-center font-bold text-xl mb-6">NOTA PROMISSÓRIA</h2>
         <p>
           Pelo valor recebido, o signatário, <strong>{clientName}</strong>, inscrito no CPF sob o nº{" "}
