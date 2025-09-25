@@ -1,0 +1,181 @@
+{
+  "entities": {
+    "Client": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Client",
+      "type": "object",
+      "description": "Represents a client associated with promissory notes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the client."
+        },
+        "name": {
+          "type": "string",
+          "description": "Client's full name."
+        },
+        "address": {
+          "type": "string",
+          "description": "Client's address."
+        },
+        "contactInformation": {
+          "type": "string",
+          "description": "Client's contact information (e.g., phone number, email)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "address",
+        "contactInformation"
+      ]
+    },
+    "PromissoryNote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PromissoryNote",
+      "type": "object",
+      "description": "Represents a promissory note.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the promissory note."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to Client. (Relationship: Client 1:N PromissoryNote)"
+        },
+        "productServiceReference": {
+          "type": "string",
+          "description": "Reference to the product or service associated with the note."
+        },
+        "value": {
+          "type": "number",
+          "description": "The total value of the promissory note."
+        },
+        "paymentDate": {
+          "type": "string",
+          "description": "The initial payment date for the promissory note.",
+          "format": "date-time"
+        },
+        "numberOfInstallments": {
+          "type": "number",
+          "description": "The number of installments for the promissory note."
+        }
+      },
+      "required": [
+        "id",
+        "clientId",
+        "productServiceReference",
+        "value",
+        "paymentDate",
+        "numberOfInstallments"
+      ]
+    },
+    "Payment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Payment",
+      "type": "object",
+      "description": "Represents a payment made towards a promissory note.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the payment."
+        },
+        "promissoryNoteId": {
+          "type": "string",
+          "description": "Reference to PromissoryNote. (Relationship: PromissoryNote 1:N Payment)"
+        },
+        "paymentDate": {
+          "type": "string",
+          "description": "The date the payment was made.",
+          "format": "date-time"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount paid."
+        },
+        "receiptNumber": {
+          "type": "string",
+          "description": "Receipt number for the payment"
+        }
+      },
+      "required": [
+        "id",
+        "promissoryNoteId",
+        "paymentDate",
+        "amount"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/clients/{clientId}",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/backend/entities/Client"
+          },
+          "description": "Stores client information.  Path-based ownership: only the user with the corresponding `clientId` can access documents at this path.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier for the client."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/promissoryNotes/{promissoryNoteId}",
+        "definition": {
+          "entityName": "PromissoryNote",
+          "schema": {
+            "$ref": "#/backend/entities/PromissoryNote"
+          },
+          "description": "Stores promissory notes associated with a client. Path-based ownership: documents are owned by the client specified in the path (`clientId`).",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier for the client who owns this promissory note."
+            },
+            {
+              "name": "promissoryNoteId",
+              "description": "The unique identifier for the promissory note."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}",
+        "definition": {
+          "entityName": "Payment",
+          "schema": {
+            "$ref": "#/backend/entities/Payment"
+          },
+          "description": "Stores payment information for a specific promissory note. Path-based ownership: documents are owned by the client (`clientId`) and promissory note (`promissoryNoteId`) specified in the path.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier for the client who owns the promissory note to which this payment applies."
+            },
+            {
+              "name": "promissoryNoteId",
+              "description": "The unique identifier for the promissory note to which this payment applies."
+            },
+            {
+              "name": "paymentId",
+              "description": "The unique identifier for the payment."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage clients, promissory notes, and payments effectively. It uses path-based ownership for clients and their related data (promissory notes and payments), ensuring clear ownership and simplified security rules. This structure facilitates the creation of payment receipts and promissory notes as requested. Each client owns their data, and the system can easily scale and maintain data integrity.\n\nSpecifically, the structure achieves Authorization Independence by ensuring that subcollections are nested under the user's document. This avoids the need for complex `get()` calls in security rules to check parent document data. Path-based ownership inherently supports QAPs by limiting list operations to resources owned by the user. The data structure uses Structural Segregation, data for each entity (`Client`, `PromissoryNote`, and `Payment`) is stored in separate collections tailored to their specific access requirements."
+  }
+}
