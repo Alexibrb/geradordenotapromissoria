@@ -35,8 +35,15 @@ export function InstallmentSlip({
   };
 
   return (
-    <div id={`slip-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg p-4 print-break-inside-avoid">
-       <div className="flex justify-between items-start text-sm">
+    <div id={`slip-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg p-4 print-break-inside-avoid relative overflow-hidden">
+       <div className="absolute top-8 right-8 transform rotate-12">
+        <div className="border-4 border-green-500 rounded-md p-2">
+          <span className="text-3xl font-bold text-green-500 uppercase tracking-wider">
+            Pago
+          </span>
+        </div>
+      </div>
+      <div className="flex justify-between items-start text-sm">
         <h3 className="font-bold text-lg">Comprovante de Pagamento</h3>
         <div className="text-right">
           <p className="font-semibold">Parcela</p>
