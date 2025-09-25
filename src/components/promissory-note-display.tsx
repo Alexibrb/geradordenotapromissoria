@@ -51,8 +51,8 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
   const installmentValueInWords = porExtenso(singleInstallmentValue, { modo: 'monetario' });
 
 
-  const installmentText = installments === 1 
-    ? `parcela mensal de ${installmentValueFormatted} (${installmentValueInWords})` 
+  const installmentText = installments === 1
+    ? `parcela mensal de ${installmentValueFormatted} (${installmentValueInWords})`
     : `parcelas mensais iguais de ${installmentValueFormatted} (${installmentValueInWords}) cada`;
 
 
