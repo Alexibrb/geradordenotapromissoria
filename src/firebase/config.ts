@@ -1,8 +1,8 @@
 export const firebaseConfig = {
-  "projectId": "studio-5821712896-e4420",
-  "appId": "1:1055841893871:web:a771366a7e9365d29e4a1a",
-  "apiKey": "AIzaSyB9iIxfdcOWL-Mvcb-qm8i6NoslLRS_yaA",
-  "authDomain": "studio-5821712896-e4420.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "1055841893871"
+  apiKey: "AIzaSyBIv69MODK4Pn9TEpmUpm36ZH1X6zOSgXU",
+  authDomain: "notapromissoria-e7a26.firebaseapp.com",
+  projectId: "notapromissoria-e7a26",
+  storageBucket: "notapromissoria-e7a26.appspot.com",
+  messagingSenderId: "354752536875",
+  appId: "1:354752536875:web:0f913fdb4610c87f7fe56e"
 };
