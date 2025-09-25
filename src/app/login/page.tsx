@@ -95,36 +95,19 @@ export default function LoginPage() {
     });
   };
 
-  const handleLogin = async (values: z.infer<typeof loginSchema>) => {
+  const handleLogin = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({ title: 'Login bem-sucedido!' });
-      // The useEffect will handle redirection
-    } catch (error) {
-      handleError(error);
-    }
+    initiateEmailSignIn(auth, values.email, values.password);
   };
   
-  const handleSignUp = async (values: z.infer<typeof loginSchema>) => {
+  const handleSignUp = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    try {
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
-      toast({ title: 'Conta criada com sucesso!' });
-      // The useEffect will handle redirection
-    } catch (error) {
-      handleError(error);
-    }
+    initiateEmailSignUp(auth, values.email, values.password);
   };
 
-  const handleAnonymousLogin = async () => {
+  const handleAnonymousLogin = () => {
     setIsSubmitting(true);
-    try {
-      await signInAnonymously(auth);
-      toast({ title: 'Login anônimo bem-sucedido!' });
-    } catch (error) {
-      handleError(error);
-    }
+    initiateAnonymousSignIn(auth);
   };
 
 
@@ -226,36 +209,4 @@ export default function LoginPage() {
       </Card>
     </main>
   );
-}
-
-function createUserWithEmailAndPassword(auth: import("@firebase/auth").Auth, email: string, password: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-        initiateEmailSignUp(auth, email, password);
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            unsubscribe();
-            if(user) resolve(user);
-            else reject(new Error('Signup failed'));
-        }, reject);
-    });
-}
-function signInWithEmailAndPassword(auth: import("@firebase/auth").Auth, email: string, password: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-        initiateEmailSignIn(auth, email, password);
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            unsubscribe();
-            if(user) resolve(user);
-            else reject(new Error('Signin failed'));
-        }, reject);
-    });
-}
-
-function signInAnonymously(auth: import("@firebase/auth").Auth): Promise<any> {
-    return new Promise((resolve, reject) => {
-        initiateAnonymousSignIn(auth);
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            unsubscribe();
-            if(user) resolve(user);
-            else reject(new Error('Anonymous signin failed'));
-        }, reject);
-    });
 }
