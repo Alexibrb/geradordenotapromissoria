@@ -88,11 +88,13 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
       );
     }
 
+    const paymentDay = format(paymentDate, "dd");
+
     if (hasDownPayment && downPaymentValue) {
       return (
         <p>
           O pagamento será feito com uma entrada de <strong>{downPaymentValueFormatted}</strong> paga em <strong>{formattedDate}</strong>, e o restante em{" "}
-          <strong>{installments}</strong> parcelas mensais de <strong>{installmentValueFormatted}</strong> cada. O primeiro pagamento da parcela será devido um mês após a data da entrada.
+          <strong>{installments}</strong> parcelas mensais de <strong>{installmentValueFormatted}</strong> cada. O primeiro pagamento da parcela será devido todo dia <strong>{paymentDay}</strong> de cada mês subsequente.
         </p>
       );
     }
