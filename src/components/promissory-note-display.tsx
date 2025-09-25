@@ -15,6 +15,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
   const {
     clientName,
     clientAddress,
+    creditorName,
     totalValue,
     paymentDate,
     installments,
@@ -61,7 +62,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         <p>
           Pelo valor recebido, o signatário, <strong>{clientName}</strong>, residente em{" "}
           <strong>{clientAddress}</strong> (doravante "o Devedor"), promete
-          pagar à ordem do credor a quantia principal de{" "}
+          pagar à ordem de <strong>{creditorName}</strong> (doravante "o Credor") a quantia principal de{" "}
           <strong>{formattedValue}</strong>.
         </p>
         <p>
@@ -80,10 +81,14 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
           quando as mesmas se vencerem, o valor total do referido
           principal remanescente não pago tornar-se-á imediatamente devido e pagável.
         </p>
-        <div className="mt-12 pt-8 border-t">
-            <div className="w-full">
-                <div className="w-3/4 border-b border-foreground pb-1"></div>
-                <p className="mt-2">Assinatura do Devedor: {clientName}</p>
+        <div className="mt-12 pt-8 border-t flex justify-between">
+            <div className="w-2/5">
+                <div className="w-full border-b border-foreground pb-1"></div>
+                <p className="mt-2 text-center">Assinatura do Devedor: {clientName}</p>
+            </div>
+            <div className="w-2/5">
+                <div className="w-full border-b border-foreground pb-1"></div>
+                <p className="mt-2 text-center">Assinatura do Credor: {creditorName}</p>
             </div>
         </div>
       </CardContent>

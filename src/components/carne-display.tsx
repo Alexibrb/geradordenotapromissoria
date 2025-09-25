@@ -13,7 +13,7 @@ type CarneDisplayProps = {
 };
 
 export function CarneDisplay({ data }: CarneDisplayProps) {
-  const { totalValue, installments, paymentDate, clientName, productReference } = data;
+  const { totalValue, installments, paymentDate, clientName, productReference, creditorName } = data;
   const installmentValue = totalValue / installments;
 
   const installmentSlips = Array.from({ length: installments }).map((_, i) => ({
@@ -22,6 +22,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
     value: installmentValue,
     dueDate: addMonths(paymentDate, i),
     clientName,
+    creditorName,
     productReference,
   }));
 

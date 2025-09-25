@@ -10,6 +10,7 @@ type InstallmentSlipProps = {
   value: number;
   dueDate: Date;
   clientName: string;
+  creditorName: string;
   productReference: string;
 };
 
@@ -19,6 +20,7 @@ export function InstallmentSlip({
   value,
   dueDate,
   clientName,
+  creditorName,
   productReference,
 }: InstallmentSlipProps) {
 
@@ -64,6 +66,10 @@ export function InstallmentSlip({
             }).format(value)}
           </p>
         </div>
+      </div>
+      <div className="mt-8 pt-4">
+        <div className="w-3/4 mx-auto border-b border-foreground pb-1"></div>
+        <p className="mt-2 text-center text-sm">Assinatura do Credor: {creditorName}</p>
       </div>
       <Separator orientation="horizontal" className="border-dashed my-4" />
       <div className="flex justify-between items-center text-xs text-muted-foreground">

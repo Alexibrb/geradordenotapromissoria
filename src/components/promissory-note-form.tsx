@@ -14,6 +14,7 @@ import {
   Calendar as CalendarIcon,
   Hash,
   Send,
+  Briefcase,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
+  creditorName: z.string().min(3, { message: "O nome do credor deve ter pelo menos 3 caracteres." }),
   clientName: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   clientAddress: z.string().min(10, { message: "Por favor, insira um endereço completo e válido." }),
   clientContact: z.string().min(7, { message: "Por favor, insira um telefone ou e-mail válido." }),
@@ -45,11 +47,12 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      creditorName: "",
       clientName: "",
       clientAddress: "",
       clientContact: "",
       productReference: "",
-      totalValue: "" as unknown as number, // Alterado de undefined
+      totalValue: "" as unknown as number,
       installments: 1,
     },
   });
@@ -72,6 +75,19 @@ export function PromissoryNoteForm({ onGenerate }: PromissoryNoteFormProps) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="creditorName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center"><Briefcase className="mr-2 h-4 w-4" /> Nome do Credor</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Sua Empresa LTDA" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="clientName"
