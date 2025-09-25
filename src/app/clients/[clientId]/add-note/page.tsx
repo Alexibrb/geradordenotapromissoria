@@ -46,6 +46,7 @@ function AddNotePage() {
     
     const noteToSave = {
       ...dataWithNumber,
+      clientContact: dataWithNumber.clientContact || '',
       clientId: client.id,
       paymentDate: Timestamp.fromDate(dataWithNumber.paymentDate),
       value: dataWithNumber.totalValue,

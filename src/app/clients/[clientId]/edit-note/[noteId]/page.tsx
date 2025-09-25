@@ -42,6 +42,7 @@ function EditNotePage() {
         clientName: note.clientName,
         clientAddress: note.clientAddress,
         clientCpf: note.clientCpf,
+        clientContact: note.clientContact,
         creditorName: note.creditorName,
         creditorCpf: note.creditorCpf,
         totalValue: note.value,
@@ -74,6 +75,7 @@ function EditNotePage() {
 
     const noteToUpdate = {
       ...finalFormData,
+      clientContact: finalFormData.clientContact || '',
       clientId: clientId as string,
       paymentDate: Timestamp.fromDate(finalFormData.paymentDate),
       value: finalFormData.totalValue,

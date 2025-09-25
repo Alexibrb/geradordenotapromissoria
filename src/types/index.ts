@@ -40,6 +40,7 @@ export interface PromissoryNote {
   clientCpf: string;
   clientAddress: string;
   clientName: string;
+  clientContact?: string;
   noteNumber: string;
   paymentType: PaymentType;
   hasDownPayment?: boolean;
