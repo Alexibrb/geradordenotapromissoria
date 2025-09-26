@@ -382,12 +382,12 @@ function ClientsPage() {
           <div className="grid grid-cols-1 gap-4">
             {filteredClients.map((client) => (
               <Card key={client.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-4 flex items-center justify-between">
-                    <div className='flex-1 min-w-0'>
+                <CardContent className="p-4 flex flex-wrap items-center justify-between gap-4">
+                    <div className='flex-1 min-w-[200px]'>
                         <Link href={`/clients/${client.id}`} className="font-semibold truncate hover:underline">{client.name}</Link>
                         <p className="text-sm text-muted-foreground truncate">CPF: {client.cpf}</p>
                     </div>
-                    <div className="flex items-center gap-2 ml-4">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                          <Link href={`/clients/${client.id}`} passHref>
                             <Button variant="outline" size="sm">
                               Ver Notas
