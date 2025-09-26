@@ -168,13 +168,13 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
             <div className="w-2/5 text-center">
                 <div className="w-full border-b border-foreground pb-1"></div>
                 <p className="mt-1 text-sm">Assinatura do Devedor</p>
-                <p className="font-semibold text-sm leading-tight">{clientName}</p>
+                <p className="font-semibold text-sm leading-tight mt-1">{clientName}</p>
                 <p className="text-xs leading-tight">{clientCpf}</p>
             </div>
             <div className="w-2/5 text-center">
                 <div className="w-full border-b border-foreground pb-1"></div>
                  <p className="mt-1 text-sm">Assinatura do Credor</p>
-                <p className="font-semibold text-sm leading-tight">{creditorName}</p>
+                <p className="font-semibold text-sm leading-tight mt-1">{creditorName}</p>
                 <p className="text-xs leading-tight">{creditorCpf}</p>
             </div>
         </div>
