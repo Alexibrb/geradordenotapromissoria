@@ -80,9 +80,9 @@ type PromissoryNoteFormProps = {
 
 export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing = false }: PromissoryNoteFormProps) {
   const { toast } = useToast();
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
+  
+  const getSafeInitialData = (data?: PromissoryNoteData) => {
+    const defaults = {
       header: "",
       creditorName: "",
       creditorCpf: "",
@@ -91,13 +91,39 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
       clientAddress: client?.address || "",
       clientContact: client?.contactInformation || "",
       productReference: "",
-      totalValue: "" as unknown as number,
-      paymentType: "a-prazo",
+      totalValue: 0,
+      paymentType: "a-prazo" as const,
       installments: 1,
+      paymentDate: new Date(),
       hasDownPayment: false,
       downPaymentValue: 0,
       latePaymentClause: "O atraso nos pagamentos por até 03 meses, acarretará na perda da propriedade e posse do imóvel, sem fazer jus a indenização ou ressarcimento de valores já efetuados pelo comprador.",
-    },
+    };
+
+    if (!data) return defaults;
+
+    return {
+      header: data.header || defaults.header,
+      creditorName: data.creditorName || defaults.creditorName,
+      creditorCpf: data.creditorCpf || defaults.creditorCpf,
+      clientName: data.clientName || defaults.clientName,
+      clientCpf: data.clientCpf || defaults.clientCpf,
+      clientAddress: data.clientAddress || defaults.clientAddress,
+      clientContact: data.clientContact || defaults.clientContact,
+      productReference: data.productReference || defaults.productReference,
+      totalValue: data.totalValue || defaults.totalValue,
+      paymentType: data.paymentType || defaults.paymentType,
+      installments: data.installments || defaults.installments,
+      paymentDate: data.paymentDate ? new Date(data.paymentDate) : defaults.paymentDate,
+      hasDownPayment: data.hasDownPayment || defaults.hasDownPayment,
+      downPaymentValue: data.downPaymentValue || defaults.downPaymentValue,
+      latePaymentClause: data.latePaymentClause || defaults.latePaymentClause,
+    }
+  };
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: getSafeInitialData(initialData),
   });
   
   const paymentType = form.watch("paymentType");
@@ -105,10 +131,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
 
   useEffect(() => {
     if (initialData) {
-      form.reset({
-        ...initialData,
-        paymentDate: initialData.paymentDate ? new Date(initialData.paymentDate) : new Date(),
-      });
+      form.reset(getSafeInitialData(initialData));
     }
   }, [initialData, form]);
   
