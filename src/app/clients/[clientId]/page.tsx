@@ -51,6 +51,7 @@ function ClientDetailPage() {
       clientCpf: note.clientCpf,
       creditorName: note.creditorName,
       creditorCpf: note.creditorCpf,
+      creditorAddress: note.creditorAddress,
       paymentDate: note.paymentDate.toDate(),
       totalValue: note.value,
       installments: note.numberOfInstallments,

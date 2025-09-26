@@ -185,5 +185,3 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
     </Card>
   );
 }
-
-    
