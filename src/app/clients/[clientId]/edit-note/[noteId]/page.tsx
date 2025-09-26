@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { doc, Timestamp } from 'firebase/firestore';
-import type { Client, PromissoryNote, PromissoryNoteData, UserSettings } from '@/types';
+import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { doc, collection, query, where, getDocs, Timestamp, addDoc } from 'firebase/firestore';
+import type { Client, PromissoryNote, PromissoryNoteData, UserSettings, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { PromissoryNoteForm } from '@/components/promissory-note-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader, ArrowLeft, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 
@@ -27,6 +27,13 @@ function EditNotePage() {
     [firestore, user, clientId, noteId]
   );
   const { data: note, isLoading: isNoteLoading } = useDoc<PromissoryNote>(noteDocRef);
+
+  const paymentsQuery = useMemoFirebase(() =>
+    user ? query(collection(noteDocRef!, 'payments')) : null,
+    [user, noteDocRef]
+  );
+  const { data: payments, isLoading: arePaymentsLoading } = useCollection<Payment>(paymentsQuery);
+
 
   const clientDocRef = useMemoFirebase(() => 
     user ? doc(firestore, 'users', user.uid, 'clients', clientId as string) : null,
@@ -107,8 +114,41 @@ function EditNotePage() {
         router.push(`/clients/${clientId}`);
     }, 1500);
   };
+  
+    const handlePaymentStatusChange = async (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => {
+     if (!user || !note) return;
 
-  if (isNoteLoading || isClientLoading || areSettingsLoading) {
+     const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', note.id, 'payments');
+
+     if (isPaid) {
+        const paymentData: Omit<Payment, 'id'> = {
+            promissoryNoteId: note.id,
+            paymentDate: new Date(),
+            amount: value,
+            installmentNumber: installmentNumber,
+            isDownPayment: isDownPayment
+        };
+        addDocumentNonBlocking(paymentsRef, paymentData);
+        toast({
+            title: `Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Paga!`,
+            description: 'O pagamento foi registrado com sucesso.',
+            className: 'bg-accent text-accent-foreground',
+        });
+     } else {
+        const q = query(paymentsRef, where("installmentNumber", "==", installmentNumber));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+            deleteDocumentNonBlocking(doc.ref);
+             toast({
+                title: `Pagamento da Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Revertido`,
+                variant: 'destructive',
+            });
+        });
+     }
+  };
+
+
+  if (isNoteLoading || isClientLoading || areSettingsLoading || arePaymentsLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader className="animate-spin" /></div>;
   }
 
@@ -152,7 +192,11 @@ function EditNotePage() {
               {formData ? (
                 <>
                   <PromissoryNoteDisplay data={formData} />
-                  <CarneDisplay data={formData} />
+                  <CarneDisplay 
+                    data={formData} 
+                    payments={payments || []}
+                    onPaymentStatusChange={handlePaymentStatusChange}
+                   />
                 </>
               ) : (
                 <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
@@ -173,5 +217,3 @@ function EditNotePage() {
 }
 
 export default EditNotePage;
-
-    

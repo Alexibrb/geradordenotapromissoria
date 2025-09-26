@@ -12,7 +12,7 @@ import html2canvas from "html2canvas";
 
 type CarneDisplayProps = {
   data: PromissoryNoteData;
-  payments: Payment[];
+  payments?: Payment[];
   onPaymentStatusChange: (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => void;
 };
 
@@ -34,7 +34,7 @@ type SlipData = {
     isDownPayment: boolean;
 };
 
-export function CarneDisplay({ data, payments, onPaymentStatusChange }: CarneDisplayProps) {
+export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: CarneDisplayProps) {
   const [filter, setFilter] = useState<'pending' | 'paid' | 'all'>('pending');
   const { 
       header,
@@ -247,5 +247,3 @@ export function CarneDisplay({ data, payments, onPaymentStatusChange }: CarneDis
     </Card>
   );
 }
-
-    

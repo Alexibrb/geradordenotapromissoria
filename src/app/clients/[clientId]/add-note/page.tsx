@@ -111,7 +111,7 @@ function AddNotePage() {
               {generatedData ? (
                 <>
                   <PromissoryNoteDisplay data={generatedData} />
-                  <CarneDisplay data={generatedData} />
+                  <CarneDisplay data={generatedData} onPaymentStatusChange={() => {}} />
                 </>
               ) : (
                 <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
@@ -132,5 +132,3 @@ function AddNotePage() {
 }
 
 export default AddNotePage;
-
-    
