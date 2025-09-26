@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search } from 'lucide-react';
 import { ProtectedRoute, useUser } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
@@ -69,6 +69,9 @@ function ClientsPage() {
   const [settingsCreditorName, setSettingsCreditorName] = useState('');
   const [settingsCreditorCpf, setSettingsCreditorCpf] = useState('');
   const [settingsCreditorAddress, setSettingsCreditorAddress] = useState('');
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredClients, setFilteredClients] = useState<Client[] | null>(clients);
 
 
   useEffect(() => {
@@ -79,6 +82,21 @@ function ClientsPage() {
       setSettingsCreditorAddress(settings.creditorAddress || '');
     }
   }, [settings]);
+  
+  useEffect(() => {
+    if (clients) {
+      const lowercasedFilter = searchTerm.toLowerCase().trim();
+      if (!lowercasedFilter) {
+        setFilteredClients(clients);
+        return;
+      }
+      const filteredData = clients.filter(client =>
+        client.name.toLowerCase().includes(lowercasedFilter) ||
+        client.cpf.replace(/[.\-]/g, '').includes(lowercasedFilter.replace(/[.\-]/g, ''))
+      );
+      setFilteredClients(filteredData);
+    }
+  }, [searchTerm, clients]);
 
 
   const resetForm = () => {
@@ -195,7 +213,7 @@ function ClientsPage() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8">
-        <header className="flex items-center justify-between mb-8">
+        <header className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold tracking-tight">Meus Clientes</h1>
           <div className="flex items-center gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
@@ -308,6 +326,19 @@ function ClientsPage() {
             </Button>
           </div>
         </header>
+        
+        <div className="mb-8">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                    type="text"
+                    placeholder="Buscar cliente por nome ou CPF..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-full"
+                />
+            </div>
+        </div>
 
         {/* Edit Client Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) resetForm(); }}>
@@ -347,9 +378,9 @@ function ClientsPage() {
           <div className="flex justify-center">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
-        ) : clients && clients.length > 0 ? (
+        ) : filteredClients && filteredClients.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {clients.map((client) => (
+            {filteredClients.map((client) => (
               <Card key={client.id} className="hover:shadow-lg transition-shadow flex flex-col">
                 <CardHeader className="flex flex-row items-start justify-between pb-2">
                   <div className="flex-1">
@@ -393,9 +424,9 @@ function ClientsPage() {
         ) : (
           <div className="text-center py-12 border-2 border-dashed rounded-lg">
              <UserIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Nenhum cliente encontrado</h3>
+            <h3 className="mt-4 text-lg font-semibold">{clients && clients.length > 0 ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Comece adicionando seu primeiro cliente para criar notas promissórias.
+              {clients && clients.length > 0 ? 'Tente uma busca diferente ou adicione um novo cliente.' : 'Comece adicionando seu primeiro cliente para criar notas promissórias.'}
             </p>
              <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
@@ -413,5 +444,3 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
-
-    
