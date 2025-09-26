@@ -213,9 +213,9 @@ function ClientsPage() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8">
-        <header className="flex items-center justify-between mb-4">
+        <header className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4 md:gap-0">
           <h1 className="text-3xl font-bold tracking-tight">Meus Clientes</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
               <DialogTrigger asChild>
                 <Button>
