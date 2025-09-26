@@ -10,6 +10,7 @@ export type PromissoryNoteData = {
   clientContact?: string;
   creditorName: string;
   creditorCpf: string;
+  creditorAddress: string;
   productReference: string;
   totalValue: number;
   paymentDate: Date;
@@ -39,6 +40,7 @@ export interface PromissoryNote {
   numberOfInstallments: number;
   creditorName: string;
   creditorCpf: string;
+  creditorAddress: string;
   clientCpf: string;
   clientAddress: string;
   clientName: string;
@@ -54,6 +56,9 @@ export interface UserSettings {
   header?: string;
   creditorName?: string;
   creditorCpf?: string;
+  creditorAddress?: string;
 }
+
+    
 
     

@@ -26,6 +26,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
       productReference, 
       creditorName, 
       creditorCpf, 
+      creditorAddress,
       noteNumber,
       paymentType,
       hasDownPayment,
@@ -46,6 +47,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
       clientAddress,
       creditorName,
       creditorCpf,
+      creditorAddress,
       productReference,
       noteNumber,
       isDownPayment: false,
@@ -66,6 +68,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
             clientAddress,
             creditorName,
             creditorCpf,
+            creditorAddress,
             productReference,
             noteNumber,
             isDownPayment: true,
@@ -86,6 +89,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
             clientAddress,
             creditorName,
             creditorCpf,
+            creditorAddress,
             productReference,
             noteNumber,
             isDownPayment: false,
@@ -181,3 +185,5 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
     </Card>
   );
 }
+
+    

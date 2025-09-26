@@ -22,6 +22,7 @@ type InstallmentSlipProps = {
   clientAddress: string;
   creditorName: string;
   creditorCpf: string;
+  creditorAddress: string;
   productReference: string;
   noteNumber?: string;
   isDownPayment: boolean;
@@ -38,6 +39,7 @@ export function InstallmentSlip({
   clientAddress,
   creditorName,
   creditorCpf,
+  creditorAddress,
   productReference,
   noteNumber,
   isDownPayment
@@ -108,6 +110,7 @@ export function InstallmentSlip({
              {header && (
                 <div className="text-center mb-4 border-b pb-2">
                     <h2 className="text-lg font-semibold uppercase tracking-wider">{header}</h2>
+                    {creditorAddress && <p className="text-xs text-muted-foreground">{creditorAddress}</p>}
                 </div>
             )}
             <div className="flex justify-between items-start text-sm">
@@ -186,3 +189,5 @@ export function InstallmentSlip({
     </div>
   );
 }
+
+    

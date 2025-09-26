@@ -164,6 +164,10 @@
         "creditorCpf": {
           "type": "string",
           "description": "Default CPF/CNPJ of the creditor."
+        },
+        "creditorAddress": {
+          "type": "string",
+          "description": "Default address of the creditor."
         }
       }
     }
@@ -227,5 +231,6 @@
     "reasoning": "The Firestore structure is designed for a multi-user application. Each user's data (clients, promissory notes, payments) is stored in subcollections under their unique user document in the `users` collection. This enforces data isolation and simplifies security rules, as access control is based on the `userId` in the path. User-specific settings are stored in a single document for easy retrieval."
   }
 }
+    
 
     

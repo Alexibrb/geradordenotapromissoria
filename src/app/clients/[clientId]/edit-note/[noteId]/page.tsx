@@ -49,6 +49,7 @@ function EditNotePage() {
         clientContact: note.clientContact,
         creditorName: note.creditorName,
         creditorCpf: note.creditorCpf,
+        creditorAddress: note.creditorAddress,
         totalValue: note.value,
         installments: note.numberOfInstallments,
         paymentDate: note.paymentDate.toDate(),
@@ -86,6 +87,7 @@ function EditNotePage() {
       numberOfInstallments: finalFormData.installments,
       productServiceReference: finalFormData.productReference,
       header: finalFormData.header || '',
+      creditorAddress: finalFormData.creditorAddress || '',
     };
     
     // Remove fields from PromissoryNoteData that are not in PromissoryNote

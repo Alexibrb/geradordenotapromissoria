@@ -68,12 +68,15 @@ function ClientsPage() {
   const [settingsHeader, setSettingsHeader] = useState('');
   const [settingsCreditorName, setSettingsCreditorName] = useState('');
   const [settingsCreditorCpf, setSettingsCreditorCpf] = useState('');
+  const [settingsCreditorAddress, setSettingsCreditorAddress] = useState('');
+
 
   useEffect(() => {
     if (settings) {
       setSettingsHeader(settings.header || '');
       setSettingsCreditorName(settings.creditorName || '');
       setSettingsCreditorCpf(settings.creditorCpf || '');
+      setSettingsCreditorAddress(settings.creditorAddress || '');
     }
   }, [settings]);
 
@@ -173,6 +176,7 @@ function ClientsPage() {
       header: settingsHeader,
       creditorName: settingsCreditorName,
       creditorCpf: settingsCreditorCpf,
+      creditorAddress: settingsCreditorAddress,
     };
     setDocumentNonBlocking(settingsDocRef, settingsData, { merge: true });
     toast({
@@ -277,6 +281,10 @@ function ClientsPage() {
                         <div className="space-y-2">
                             <Label htmlFor="settings-header">Cabeçalho (Opcional)</Label>
                             <Input id="settings-header" value={settingsHeader} onChange={(e) => setSettingsHeader(e.target.value)} placeholder="Nome da sua empresa ou serviço" />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="settings-creditor-address">Endereço do Credor</Label>
+                            <Input id="settings-creditor-address" value={settingsCreditorAddress} onChange={(e) => setSettingsCreditorAddress(e.target.value)} placeholder="Endereço da sua empresa" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="settings-creditor-name">Nome do Credor</Label>

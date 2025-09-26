@@ -22,6 +22,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     clientAddress,
     creditorName,
     creditorCpf,
+    creditorAddress,
     totalValue,
     paymentDate,
     installments,
@@ -137,6 +138,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         {header && (
           <div className="text-center mb-6 border-b pb-4">
               <h1 className="text-xl font-bold uppercase tracking-wider">{header}</h1>
+              {creditorAddress && <p className="text-xs text-muted-foreground">{creditorAddress}</p>}
           </div>
         )}
         <div className="flex justify-between items-start mb-6">
@@ -180,3 +182,5 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     </Card>
   );
 }
+
+    

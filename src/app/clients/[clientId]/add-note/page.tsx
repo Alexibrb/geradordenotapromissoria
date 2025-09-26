@@ -56,6 +56,7 @@ function AddNotePage() {
       numberOfInstallments: dataWithNumber.installments,
       productServiceReference: dataWithNumber.productReference,
       header: dataWithNumber.header || '',
+      creditorAddress: dataWithNumber.creditorAddress || '',
     };
     
     // Remove fields from PromissoryNoteData that are not in PromissoryNote
