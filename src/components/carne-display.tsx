@@ -206,7 +206,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
               {paidCount} de {allInstallmentSlips.length} parcelas pagas. Total pago: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPaidAmount)}
             </CardDescription>
           </div>
-           <div className="flex items-center gap-2 mt-4 sm:mt-0 no-print">
+           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-4 sm:mt-0 no-print">
              <Button onClick={() => setFilter('pending')} variant={filter === 'pending' ? 'secondary' : 'outline'} size="sm"><CircleOff className="mr-2"/>Pendentes</Button>
              <Button onClick={() => setFilter('paid')} variant={filter === 'paid' ? 'secondary' : 'outline'} size="sm"><CheckCircle className="mr-2"/>Pagas</Button>
              <Button onClick={() => setFilter('all')} variant={filter === 'all' ? 'secondary' : 'outline'} size="sm"><Receipt className="mr-2"/>Todas</Button>
