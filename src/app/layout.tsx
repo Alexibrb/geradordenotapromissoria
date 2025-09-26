@@ -6,6 +6,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 export const metadata: Metadata = {
   title: 'Gerador de Nota Promissória',
   description: 'Gere notas promissórias e carnês de pagamento.',
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
