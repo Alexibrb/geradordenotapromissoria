@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, where, getDocs, collectionGroup, orderBy } from 'firebase/firestore';
+import { collection, doc, query, where, getDocs, collectionGroup, orderBy, addDoc } from 'firebase/firestore';
 import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
@@ -263,5 +263,3 @@ function ClientDetailPage() {
 }
 
 export default ClientDetailPage;
-
-    
