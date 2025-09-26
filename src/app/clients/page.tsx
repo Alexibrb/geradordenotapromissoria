@@ -379,44 +379,39 @@ function ClientsPage() {
             <Loader className="h-8 w-8 animate-spin" />
           </div>
         ) : filteredClients && filteredClients.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 gap-4">
             {filteredClients.map((client) => (
-              <Card key={client.id} className="hover:shadow-lg transition-shadow flex flex-col">
-                <CardHeader className="flex flex-row items-start justify-between pb-2">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg font-medium">
-                      {client.name}
-                    </CardTitle>
-                  </div>
-                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0 flex-shrink-0">
-                        <span className="sr-only">Abrir menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                       <DropdownMenuItem onClick={() => handleEditClient(client)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDeleteClient(client.id)} className="text-destructive focus:text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </CardHeader>
-                <CardContent className="flex-grow flex flex-col justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground truncate">{client.address}</p>
-                    <p className="text-sm text-muted-foreground truncate">CPF: {client.cpf}</p>
-                  </div>
-                  <Link href={`/clients/${client.id}`} passHref>
-                    <Button variant="link" className="px-0 pt-4 mt-auto">
-                      Ver Notas Promissórias
-                    </Button>
-                  </Link>
+              <Card key={client.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 flex items-center justify-between">
+                    <div className='flex-1 min-w-0'>
+                        <Link href={`/clients/${client.id}`} className="font-semibold truncate hover:underline">{client.name}</Link>
+                        <p className="text-sm text-muted-foreground truncate">CPF: {client.cpf}</p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                         <Link href={`/clients/${client.id}`} passHref>
+                            <Button variant="outline" size="sm">
+                              Ver Notas
+                            </Button>
+                          </Link>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0 flex-shrink-0">
+                                <span className="sr-only">Abrir menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditClient(client)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteClient(client.id)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </CardContent>
               </Card>
             ))}
