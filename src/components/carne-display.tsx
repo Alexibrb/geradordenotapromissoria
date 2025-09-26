@@ -38,6 +38,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
   if (paymentType === 'a-vista') {
      installmentSlips.push({
       header,
+      slipId: `${noteNumber}-1`,
       installmentNumber: 1,
       totalInstallments: 1,
       value: totalValue,
@@ -59,6 +60,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
       if (hasDownPayment && downPaymentValue) {
         installmentSlips.push({
             header,
+            slipId: `${noteNumber}-entrada`,
             installmentNumber: 0, // Using 0 to denote down payment
             totalInstallments: installments,
             value: downPaymentValue,
@@ -80,6 +82,7 @@ export function CarneDisplay({ data }: CarneDisplayProps) {
       for (let i = 0; i < installments; i++) {
         installmentSlips.push({
             header,
+            slipId: `${noteNumber}-${i + 1}`,
             installmentNumber: i + 1,
             totalInstallments: installments,
             value: installmentValue,

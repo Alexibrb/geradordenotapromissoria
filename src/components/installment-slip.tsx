@@ -13,6 +13,7 @@ import html2canvas from "html2canvas";
 
 type InstallmentSlipProps = {
   header?: string;
+  slipId: string;
   installmentNumber: number;
   totalInstallments: number;
   value: number;
@@ -30,6 +31,7 @@ type InstallmentSlipProps = {
 
 export function InstallmentSlip({
   header,
+  slipId,
   installmentNumber,
   totalInstallments,
   value,
@@ -57,8 +59,8 @@ export function InstallmentSlip({
   };
 
   const handleGeneratePdf = () => {
-    const slipElement = document.getElementById(`slip-container-${installmentNumber}`);
-    const pdfArea = slipElement?.querySelector<HTMLElement>(`#slip-${installmentNumber}-pdf-area`);
+    const slipElement = document.getElementById(`slip-container-${slipId}`);
+    const pdfArea = slipElement?.querySelector<HTMLElement>(`#slip-${slipId}-pdf-area`);
     
     if (pdfArea && slipElement) {
         // Show paid stamp if checked for the PDF
@@ -97,16 +99,15 @@ export function InstallmentSlip({
         });
     }
   };
-
-  const slipId = isDownPayment ? `down-payment` : `${noteNumber}-${installmentNumber}`;
+  
   const checkboxId = `paid-checkbox-${slipId}`;
   
   const titleText = isDownPayment ? 'Comprovante de Entrada' : 'Comprovante de Pagamento';
   const installmentText = isDownPayment ? 'Entrada' : `Parcela ${installmentNumber} de ${totalInstallments}`;
 
   return (
-    <div id={`slip-container-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg overflow-hidden print-break-inside-avoid">
-        <div id={`slip-${installmentNumber}-pdf-area`} className="bg-card p-4 relative">
+    <div id={`slip-container-${slipId}`} className="bg-card border-2 border-dashed rounded-lg overflow-hidden print-break-inside-avoid">
+        <div id={`slip-${slipId}-pdf-area`} className="bg-card p-4 relative">
              {header && (
                 <div className="text-center mb-4 border-b pb-2">
                     <h2 className="text-lg font-semibold uppercase tracking-wider">{header}</h2>
@@ -116,7 +117,7 @@ export function InstallmentSlip({
             <div className="flex justify-between items-start text-sm">
             <div>
               <h3 className="font-bold text-lg">{titleText}</h3>
-              {noteNumber && <p className="text-xs text-muted-foreground">Ref. Nota Nº {noteNumber}</p>}
+              {noteNumber && <p className="text-xs text-muted-foreground">Ref. Doc. {slipId}</p>}
             </div>
             <div className="text-right">
                 <p className="font-semibold">{installmentText}</p>
