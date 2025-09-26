@@ -379,7 +379,7 @@ function ClientsPage() {
             <Loader className="h-8 w-8 animate-spin" />
           </div>
         ) : filteredClients && filteredClients.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {filteredClients.map((client) => (
               <Card key={client.id} className="hover:shadow-lg transition-shadow flex flex-col">
                 <CardHeader className="flex flex-row items-start justify-between pb-2">
