@@ -14,16 +14,14 @@ import {
   Calendar as CalendarIcon,
   Hash,
   Send,
-  Briefcase,
   Fingerprint,
   Wallet,
   FileWarning,
-  Heading,
 } from "lucide-react";
 import { useEffect } from 'react';
 
 import { cn } from "@/lib/utils";
-import type { PromissoryNoteData } from "@/types";
+import type { PromissoryNoteData, UserSettings } from "@/types";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -39,8 +37,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
   header: z.string().optional(),
-  creditorName: z.string().min(3, { message: "O nome do credor deve ter pelo menos 3 caracteres." }),
-  creditorCpf: z.string().min(11, { message: "O CPF do credor deve ter 11 dígitos." }),
+  creditorName: z.string(),
+  creditorCpf: z.string(),
   clientName: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
   clientCpf: z.string().min(11, { message: "O CPF do cliente deve ter 11 dígitos." }),
   clientAddress: z.string().min(10, { message: "Por favor, insira um endereço completo e válido." }),
@@ -75,17 +73,18 @@ type PromissoryNoteFormProps = {
   onGenerate: (data: PromissoryNoteData) => void;
   client?: { id: string; name: string, address: string, cpf: string, contactInformation: string };
   initialData?: PromissoryNoteData;
+  settings?: UserSettings;
   isEditing?: boolean;
 };
 
-export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing = false }: PromissoryNoteFormProps) {
+export function PromissoryNoteForm({ onGenerate, client, initialData, settings, isEditing = false }: PromissoryNoteFormProps) {
   const { toast } = useToast();
   
-  const getSafeInitialData = (data?: PromissoryNoteData) => {
+  const getSafeInitialData = (data?: PromissoryNoteData, currentSettings?: UserSettings) => {
     const defaults = {
-      header: "",
-      creditorName: "",
-      creditorCpf: "",
+      header: currentSettings?.header || "",
+      creditorName: currentSettings?.creditorName || "",
+      creditorCpf: currentSettings?.creditorCpf || "",
       clientName: client?.name || "",
       clientCpf: client?.cpf || "",
       clientAddress: client?.address || "",
@@ -123,17 +122,15 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: getSafeInitialData(initialData),
+    defaultValues: getSafeInitialData(initialData, settings),
   });
   
   const paymentType = form.watch("paymentType");
   const hasDownPayment = form.watch("hasDownPayment");
 
   useEffect(() => {
-    if (initialData) {
-      form.reset(getSafeInitialData(initialData));
-    }
-  }, [initialData, form]);
+    form.reset(getSafeInitialData(initialData, settings));
+  }, [initialData, settings, form]);
   
   useEffect(() => {
     if (paymentType === 'a-vista') {
@@ -173,50 +170,6 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="header"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center"><Heading className="mr-2 h-4 w-4" /> Cabeçalho (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome da sua empresa ou serviço" {...field} />
-                  </FormControl>
-                   <FormDescription>
-                    Este texto aparecerá no topo de todos os documentos.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="creditorName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><Briefcase className="mr-2 h-4 w-4" /> Nome do Credor</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Sua Empresa LTDA" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="creditorCpf"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><Fingerprint className="mr-2 h-4 w-4" /> CPF/CNPJ do Credor</FormLabel>
-                    <FormControl>
-                      <Input placeholder="00.000.000/0001-00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -452,3 +405,5 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
     </Card>
   );
 }
+
+    

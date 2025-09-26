@@ -147,6 +147,25 @@
         }
       },
       "required": ["id", "email"]
+    },
+    "UserSettings": {
+      "title": "UserSettings",
+      "type": "object",
+      "description": "Stores user-specific settings for generating notes.",
+      "properties": {
+        "header": {
+          "type": "string",
+          "description": "Default header text for promissory notes."
+        },
+        "creditorName": {
+          "type": "string",
+          "description": "Default name of the creditor."
+        },
+        "creditorCpf": {
+          "type": "string",
+          "description": "Default CPF/CNPJ of the creditor."
+        }
+      }
     }
   },
   "auth": {
@@ -193,8 +212,20 @@
           },
           "description": "Stores payment information for a specific promissory note. Path-based ownership ensures data privacy."
         }
+      },
+      {
+        "path": "/users/{userId}/settings/appSettings",
+        "definition": {
+          "entityName": "UserSettings",
+          "schema": {
+            "$ref": "#/entities/UserSettings"
+          },
+          "description": "Stores application settings for a specific user. A single document 'appSettings' holds all settings."
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed for a multi-user application. Each user's data (clients, promissory notes, payments) is stored in subcollections under their unique user document in the `users` collection. This enforces data isolation and simplifies security rules, as access control is based on the `userId` in the path."
+    "reasoning": "The Firestore structure is designed for a multi-user application. Each user's data (clients, promissory notes, payments) is stored in subcollections under their unique user document in the `users` collection. This enforces data isolation and simplifies security rules, as access control is based on the `userId` in the path. User-specific settings are stored in a single document for easy retrieval."
   }
 }
+
+    

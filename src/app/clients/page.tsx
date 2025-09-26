@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings } from 'lucide-react';
 import { ProtectedRoute, useUser } from '@/firebase/auth/use-user';
-import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import type { Client } from '@/types';
+import type { Client, UserSettings } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -47,17 +47,36 @@ function ClientsPage() {
   const clientsCollection = useMemoFirebase(() => 
     user ? collection(firestore, 'users', user.uid, 'clients') : null
   , [firestore, user]);
-  
   const { data: clients, isLoading } = useCollection<Client>(clientsCollection);
+
+  const settingsDocRef = useMemoFirebase(() =>
+    user ? doc(firestore, 'users', user.uid, 'settings', 'appSettings') : null
+  , [firestore, user]);
+  const { data: settings } = useDoc<UserSettings>(settingsDocRef);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [currentClient, setCurrentClient] = useState<Client | null>(null);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 
+  const [currentClient, setCurrentClient] = useState<Client | null>(null);
+  
   const [clientName, setClientName] = useState('');
   const [clientAddress, setClientAddress] = useState('');
   const [clientCpf, setClientCpf] = useState('');
   const [clientContact, setClientContact] = useState('');
+
+  const [settingsHeader, setSettingsHeader] = useState('');
+  const [settingsCreditorName, setSettingsCreditorName] = useState('');
+  const [settingsCreditorCpf, setSettingsCreditorCpf] = useState('');
+
+  useEffect(() => {
+    if (settings) {
+      setSettingsHeader(settings.header || '');
+      setSettingsCreditorName(settings.creditorName || '');
+      setSettingsCreditorCpf(settings.creditorCpf || '');
+    }
+  }, [settings]);
+
 
   const resetForm = () => {
     setClientName('');
@@ -68,7 +87,7 @@ function ClientsPage() {
   };
 
   const handleAddClient = async () => {
-    if (!user) return;
+    if (!user || !clientsCollection) return;
     if (clientName.trim() === '' || clientAddress.trim() === '' || clientCpf.trim() === '') {
       toast({
         variant: 'destructive',
@@ -85,7 +104,7 @@ function ClientsPage() {
       contactInformation: clientContact,
     };
     
-    addDocumentNonBlocking(clientsCollection!, clientData);
+    addDocumentNonBlocking(clientsCollection, clientData);
 
     toast({
       title: 'Sucesso!',
@@ -146,6 +165,22 @@ function ClientsPage() {
       title: 'Cliente excluído',
       description: 'O cliente e suas notas foram removidos.',
     });
+  };
+
+  const handleSaveSettings = async () => {
+    if (!user || !settingsDocRef) return;
+    const settingsData = {
+      header: settingsHeader,
+      creditorName: settingsCreditorName,
+      creditorCpf: settingsCreditorCpf,
+    };
+    setDocumentNonBlocking(settingsDocRef, settingsData, { merge: true });
+    toast({
+      title: 'Sucesso!',
+      description: 'Configurações salvas.',
+      className: 'bg-accent text-accent-foreground',
+    });
+    setIsSettingsDialogOpen(false);
   };
   
   const handleLogout = async () => {
@@ -222,6 +257,43 @@ function ClientsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* Settings Dialog */}
+            <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline">
+                        <Settings className="mr-2" />
+                        Configurações
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Configurações da Nota</DialogTitle>
+                        <DialogDescription>
+                            Defina as informações padrão para o credor e o cabeçalho das notas.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="settings-header">Cabeçalho (Opcional)</Label>
+                            <Input id="settings-header" value={settingsHeader} onChange={(e) => setSettingsHeader(e.target.value)} placeholder="Nome da sua empresa ou serviço" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="settings-creditor-name">Nome do Credor</Label>
+                            <Input id="settings-creditor-name" value={settingsCreditorName} onChange={(e) => setSettingsCreditorName(e.target.value)} placeholder="Sua Empresa LTDA" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="settings-creditor-cpf">CPF/CNPJ do Credor</Label>
+                            <Input id="settings-creditor-cpf" value={settingsCreditorCpf} onChange={(e) => setSettingsCreditorCpf(e.target.value)} placeholder="00.000.000/0001-00" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsSettingsDialogOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleSaveSettings}>Salvar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <Button onClick={handleLogout} variant="outline">
               <LogOut className="mr-2" />
               Sair
@@ -333,3 +405,5 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+
+    

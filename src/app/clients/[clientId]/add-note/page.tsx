@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, doc, addDoc, Timestamp } from 'firebase/firestore';
-import type { Client, PromissoryNoteData } from '@/types';
+import type { Client, PromissoryNoteData, UserSettings } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { PromissoryNoteForm } from '@/components/promissory-note-form';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
@@ -25,6 +25,9 @@ function AddNotePage() {
 
   const clientDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid, 'clients', clientId as string) : null, [firestore, user, clientId]);
   const { data: client, isLoading: isClientLoading } = useDoc<Client>(clientDocRef);
+
+  const settingsDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid, 'settings', 'appSettings') : null, [firestore, user]);
+  const { data: settings, isLoading: areSettingsLoading } = useDoc<UserSettings>(settingsDocRef);
   
   const [generatedData, setGeneratedData] = useState<PromissoryNoteData | null>(null);
 
@@ -74,7 +77,7 @@ function AddNotePage() {
     }, 2000);
   };
 
-  if (isClientLoading) {
+  if (isClientLoading || areSettingsLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader className="animate-spin" /></div>;
   }
 
@@ -101,7 +104,7 @@ function AddNotePage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
             <div className="lg:col-span-2">
-              <PromissoryNoteForm onGenerate={handleGenerateAndSave} client={client} />
+              <PromissoryNoteForm onGenerate={handleGenerateAndSave} client={client} settings={settings || undefined} />
             </div>
             <div className="lg:col-span-3 space-y-8">
               {generatedData ? (
@@ -128,3 +131,5 @@ function AddNotePage() {
 }
 
 export default AddNotePage;
+
+    

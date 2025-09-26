@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { doc, Timestamp } from 'firebase/firestore';
-import type { Client, PromissoryNote, PromissoryNoteData } from '@/types';
+import type { Client, PromissoryNote, PromissoryNoteData, UserSettings } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { PromissoryNoteForm } from '@/components/promissory-note-form';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,6 +33,9 @@ function EditNotePage() {
     [firestore, user, clientId]
   );
   const { data: client, isLoading: isClientLoading } = useDoc<Client>(clientDocRef);
+
+  const settingsDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid, 'settings', 'appSettings') : null, [firestore, user]);
+  const { data: settings, isLoading: areSettingsLoading } = useDoc<UserSettings>(settingsDocRef);
   
   const [formData, setFormData] = useState<PromissoryNoteData | null>(null);
 
@@ -103,7 +106,7 @@ function EditNotePage() {
     }, 1500);
   };
 
-  if (isNoteLoading || isClientLoading) {
+  if (isNoteLoading || isClientLoading || areSettingsLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader className="animate-spin" /></div>;
   }
 
@@ -131,7 +134,7 @@ function EditNotePage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
             <div className="lg:col-span-2">
               {formData ? (
-                 <PromissoryNoteForm onGenerate={handleUpdate} client={client} initialData={formData} isEditing />
+                 <PromissoryNoteForm onGenerate={handleUpdate} client={client} initialData={formData} settings={settings || undefined} isEditing />
               ) : (
                 <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
                     <CardContent className="text-center p-8">
@@ -168,3 +171,5 @@ function EditNotePage() {
 }
 
 export default EditNotePage;
+
+    

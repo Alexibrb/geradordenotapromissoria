@@ -49,3 +49,11 @@ export interface PromissoryNote {
   downPaymentValue?: number;
   latePaymentClause?: string;
 }
+
+export interface UserSettings {
+  header?: string;
+  creditorName?: string;
+  creditorCpf?: string;
+}
+
+    
