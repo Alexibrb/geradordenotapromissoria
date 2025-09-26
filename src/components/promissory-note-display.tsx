@@ -15,6 +15,7 @@ type PromissoryNoteDisplayProps = {
 
 export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
   const {
+    header,
     noteNumber,
     clientName,
     clientCpf,
@@ -133,6 +134,11 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         </div>
       </CardHeader>
       <CardContent id="note-print-area" className="prose prose-sm max-w-none bg-card p-6">
+        {header && (
+          <div className="text-center mb-6 border-b pb-4">
+              <h1 className="text-xl font-bold uppercase tracking-wider">{header}</h1>
+          </div>
+        )}
         <div className="flex justify-between items-start mb-6">
           <h2 className="text-center font-bold text-xl">NOTA PROMISSÓRIA</h2>
           {noteNumber && <span className="font-mono text-xs">Nº {noteNumber}</span>}

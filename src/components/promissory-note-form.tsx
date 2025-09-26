@@ -18,6 +18,7 @@ import {
   Fingerprint,
   Wallet,
   FileWarning,
+  Heading,
 } from "lucide-react";
 import { useEffect } from 'react';
 
@@ -37,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 
 const formSchema = z.object({
+  header: z.string().optional(),
   creditorName: z.string().min(3, { message: "O nome do credor deve ter pelo menos 3 caracteres." }),
   creditorCpf: z.string().min(11, { message: "O CPF do credor deve ter 11 dígitos." }),
   clientName: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres." }),
@@ -81,6 +83,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
+      header: "",
       creditorName: "",
       creditorCpf: "",
       clientName: client?.name || "",
@@ -147,6 +150,22 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="header"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center"><Heading className="mr-2 h-4 w-4" /> Cabeçalho (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nome da sua empresa ou serviço" {...field} />
+                  </FormControl>
+                   <FormDescription>
+                    Este texto aparecerá no topo de todos os documentos.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -366,7 +385,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, isEditing 
               name="paymentDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Data do {paymentType === 'a-prazo' ? 'Primeiro Pagamento' : 'Pagamento'}</FormLabel>
+                  <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Data do {paymentType === 'a-prazo' ? (hasDownPayment ? 'Pagamento da Entrada' : 'Primeiro Pagamento') : 'Pagamento'}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>

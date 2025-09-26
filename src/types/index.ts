@@ -3,6 +3,7 @@ import { Timestamp } from "firebase/firestore";
 export type PaymentType = 'a-vista' | 'a-prazo';
 
 export type PromissoryNoteData = {
+  header?: string;
   clientName: string;
   clientAddress: string;
   clientCpf: string;
@@ -30,6 +31,7 @@ export interface Client {
 
 export interface PromissoryNote {
   id:string;
+  header?: string;
   clientId: string;
   productServiceReference: string;
   value: number;

@@ -45,6 +45,7 @@ function ClientDetailPage() {
 
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote({
+      header: note.header,
       clientName: note.clientName,
       clientAddress: note.clientAddress,
       clientCpf: note.clientCpf,

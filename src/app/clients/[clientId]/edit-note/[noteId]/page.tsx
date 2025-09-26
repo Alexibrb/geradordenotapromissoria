@@ -39,6 +39,7 @@ function EditNotePage() {
   useEffect(() => {
     if (note) {
       const noteData: PromissoryNoteData = {
+        header: note.header,
         clientName: note.clientName,
         clientAddress: note.clientAddress,
         clientCpf: note.clientCpf,
@@ -81,6 +82,7 @@ function EditNotePage() {
       value: finalFormData.totalValue,
       numberOfInstallments: finalFormData.installments,
       productServiceReference: finalFormData.productReference,
+      header: finalFormData.header || '',
     };
     
     // Remove fields from PromissoryNoteData that are not in PromissoryNote

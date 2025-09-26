@@ -12,6 +12,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 type InstallmentSlipProps = {
+  header?: string;
   installmentNumber: number;
   totalInstallments: number;
   value: number;
@@ -27,6 +28,7 @@ type InstallmentSlipProps = {
 };
 
 export function InstallmentSlip({
+  header,
   installmentNumber,
   totalInstallments,
   value,
@@ -103,6 +105,11 @@ export function InstallmentSlip({
   return (
     <div id={`slip-container-${installmentNumber}`} className="bg-card border-2 border-dashed rounded-lg overflow-hidden print-break-inside-avoid">
         <div id={`slip-${installmentNumber}-pdf-area`} className="bg-card p-4 relative">
+             {header && (
+                <div className="text-center mb-4 border-b pb-2">
+                    <h2 className="text-lg font-semibold uppercase tracking-wider">{header}</h2>
+                </div>
+            )}
             <div className="flex justify-between items-start text-sm">
             <div>
               <h3 className="font-bold text-lg">{titleText}</h3>
@@ -114,43 +121,44 @@ export function InstallmentSlip({
             </div>
             <Separator className="my-3" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm relative">
-            <div>
-                <p className="text-muted-foreground">Nome do Cliente</p>
-                <p className="font-semibold">{clientName} - {clientCpf}</p>
-                <p className="text-xs">{clientAddress}</p>
-            </div>
-            <div>
-                <p className="text-muted-foreground">Referência</p>
-                <p className="font-semibold">{productReference}</p>
-            </div>
-            <div>
-                <p className="text-muted-foreground">Data de Vencimento</p>
-                <p className="font-semibold">{format(dueDate, "dd/MM/yyyy", { locale: ptBR })}</p>
-            </div>
-            <div className="relative">
-                <p className="text-muted-foreground">Valor</p>
-                <p className="font-bold text-lg text-black">
-                {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                }).format(value)}
-                </p>
-            </div>
-            </div>
-            <div className="paid-stamp-area" style={{ display: isPaid ? 'block' : 'none' }}>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -rotate-12 opacity-80 pointer-events-none">
-                    <div className="border-4 border-green-500 rounded-md px-4 py-2 text-center">
-                    <span className="text-3xl font-bold text-green-500 uppercase tracking-wider">
-                        Pago
-                    </span>
-                    {paidDate && (
-                        <span className="block text-xs font-semibold text-green-600 mt-1">
-                        {format(paidDate, "dd/MM/yyyy", { locale: ptBR })}
-                        </span>
-                    )}
+                <div>
+                    <p className="text-muted-foreground">Nome do Cliente</p>
+                    <p className="font-semibold">{clientName} - {clientCpf}</p>
+                    <p className="text-xs">{clientAddress}</p>
+                </div>
+                <div>
+                    <p className="text-muted-foreground">Referência</p>
+                    <p className="font-semibold">{productReference}</p>
+                </div>
+                <div>
+                    <p className="text-muted-foreground">Data de Vencimento</p>
+                    <p className="font-semibold">{format(dueDate, "dd/MM/yyyy", { locale: ptBR })}</p>
+                </div>
+                <div className="relative">
+                    <p className="text-muted-foreground">Valor</p>
+                    <p className="font-bold text-lg text-black">
+                    {new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                    }).format(value)}
+                    </p>
+                     <div className="paid-stamp-area" style={{ display: isPaid ? 'block' : 'none' }}>
+                        <div className="absolute -bottom-2 right-0 transform -rotate-12 opacity-80 pointer-events-none">
+                            <div className="border-4 border-green-500 rounded-md px-4 py-2 text-center">
+                            <span className="text-3xl font-bold text-green-500 uppercase tracking-wider">
+                                Pago
+                            </span>
+                            {paidDate && (
+                                <span className="block text-xs font-semibold text-green-600 mt-1">
+                                {format(paidDate, "dd/MM/yyyy", { locale: ptBR })}
+                                </span>
+                            )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+           
             <div className="mt-8 pt-4">
             <div className="w-3/4 mx-auto text-center">
                 <div className="border-b border-foreground pb-1">
