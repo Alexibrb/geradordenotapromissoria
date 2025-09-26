@@ -44,31 +44,21 @@ function ClientDetailPage() {
     const fetchPayments = async () => {
         setLoadingPayments(true);
         const paymentsData: Payment[] = [];
-        if (notes.length > 0) {
-            const noteIds = notes.map(n => n.id);
-            // Firestore 'in' query is limited to 30 items. If more notes, we need multiple queries.
-            const chunks = [];
-            for (let i = 0; i < noteIds.length; i += 30) {
-                chunks.push(noteIds.slice(i, i + 30));
-            }
-
-            for (const chunk of chunks) {
-                 const paymentsQuery = query(
-                    collectionGroup(firestore, 'payments'),
-                    where('promissoryNoteId', 'in', chunk)
-                );
-                const paymentsSnapshot = await getDocs(paymentsQuery);
-                paymentsSnapshot.forEach(doc => {
-                    paymentsData.push({ id: doc.id, ...doc.data() } as Payment);
-                });
-            }
+        // Instead of a single collectionGroup query, iterate through each note
+        // to fetch its payments. This respects the path-based security rules.
+        for (const note of notes) {
+            const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', note.id, 'payments');
+            const paymentsSnapshot = await getDocs(paymentsRef);
+            paymentsSnapshot.forEach(doc => {
+                paymentsData.push({ id: doc.id, ...doc.data() } as Payment);
+            });
         }
         setAllPayments(paymentsData);
         setLoadingPayments(false);
     };
 
     fetchPayments();
-  }, [user, firestore, notes]);
+  }, [user, firestore, notes, clientId]);
 
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote(note);
@@ -118,8 +108,9 @@ function ClientDetailPage() {
             installmentNumber: installmentNumber,
             isDownPayment: isDownPayment
         };
-        const newPayment = await addDoc(paymentsRef, paymentData);
-        setAllPayments([...allPayments, { id: newPayment.id, ...paymentData }]);
+        const newPaymentDoc = await addDoc(paymentsRef, paymentData);
+        const newPayment = { id: newPaymentDoc.id, ...paymentData } as Payment;
+        setAllPayments([...allPayments, newPayment]);
          toast({
             title: `Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Paga!`,
             description: 'O pagamento foi registrado com sucesso.',
@@ -272,3 +263,5 @@ function ClientDetailPage() {
 }
 
 export default ClientDetailPage;
+
+    

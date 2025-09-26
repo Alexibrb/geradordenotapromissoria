@@ -28,7 +28,7 @@ type SlipData = {
     clientAddress: string;
     creditorName: string;
     creditorCpf: string;
-    creditorAddress: string;
+    creditorAddress?: string;
     productReference: string;
     noteNumber?: string;
     isDownPayment: boolean;
@@ -64,12 +64,12 @@ export function CarneDisplay({ data, payments, onPaymentStatusChange }: CarneDis
         totalInstallments: 1,
         value: totalValue,
         dueDate: paymentDate,
-        clientName,
-        clientCpf,
-        clientAddress,
-        creditorName,
-        creditorCpf,
-        creditorAddress,
+        clientName: clientName,
+        clientCpf: clientCpf,
+        clientAddress: clientAddress,
+        creditorName: creditorName,
+        creditorCpf: creditorCpf,
+        creditorAddress: creditorAddress,
         productReference,
         noteNumber,
         isDownPayment: false,
@@ -86,12 +86,12 @@ export function CarneDisplay({ data, payments, onPaymentStatusChange }: CarneDis
               totalInstallments: installments,
               value: downPaymentValue,
               dueDate: paymentDate,
-              clientName,
-              clientCpf,
-              clientAddress,
-              creditorName,
-              creditorCpf,
-              creditorAddress,
+              clientName: clientName,
+              clientCpf: clientCpf,
+              clientAddress: clientAddress,
+              creditorName: creditorName,
+              creditorCpf: creditorCpf,
+              creditorAddress: creditorAddress,
               productReference,
               noteNumber,
               isDownPayment: true,
@@ -108,12 +108,12 @@ export function CarneDisplay({ data, payments, onPaymentStatusChange }: CarneDis
               totalInstallments: installments,
               value: installmentValue,
               dueDate: addMonths(firstInstallmentDate, i),
-              clientName,
-              clientCpf,
-              clientAddress,
-              creditorName,
-              creditorCpf,
-              creditorAddress,
+              clientName: clientName,
+              clientCpf: clientCpf,
+              clientAddress: clientAddress,
+              creditorName: creditorName,
+              creditorCpf: creditorCpf,
+              creditorAddress: creditorAddress,
               productReference,
               noteNumber,
               isDownPayment: false,
@@ -247,3 +247,5 @@ export function CarneDisplay({ data, payments, onPaymentStatusChange }: CarneDis
     </Card>
   );
 }
+
+    
