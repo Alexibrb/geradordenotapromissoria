@@ -4,12 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, Timestamp, addDoc, query, where } from 'firebase/firestore';
+import { collection, doc, deleteDoc, Timestamp, addDoc, query, where, getDocs } from 'firebase/firestore';
 import type { Client, PromissoryNote, PromissoryNoteData, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Trash2, MoreHorizontal, Edit } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, FileText, Trash2, MoreHorizontal, Edit, Receipt, StickyNote } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 import { format } from 'date-fns';
@@ -31,6 +31,8 @@ function ClientDetailPage() {
   const { toast } = useToast();
   
   const [selectedNote, setSelectedNote] = useState<PromissoryNote | null>(null);
+  const [activeView, setActiveView] = useState<'note' | 'slips'>('note');
+
 
   const clientDocRef = useMemoFirebase(() => 
     user ? doc(firestore, 'users', user.uid, 'clients', clientId as string) : null
@@ -49,6 +51,7 @@ function ClientDetailPage() {
 
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote(note);
+    setActiveView('note'); // Reset to note view when a new note is selected
   };
 
   const handleDeleteNote = (e: React.MouseEvent, noteId: string) => {
@@ -86,18 +89,18 @@ function ClientDetailPage() {
         };
         addDocumentNonBlocking(paymentsRef, paymentData);
          toast({
-            title: `Parcela ${installmentNumber} Paga!`,
+            title: `Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Paga!`,
             description: 'O pagamento foi registrado com sucesso.',
             className: 'bg-accent text-accent-foreground',
         });
      } else {
         // Find and delete the payment document
         const q = query(paymentsRef, where("installmentNumber", "==", installmentNumber));
-        const querySnapshot = await (await import('firebase/firestore')).getDocs(q);
+        const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
             deleteDocumentNonBlocking(doc.ref);
              toast({
-                title: `Pagamento da Parcela ${installmentNumber} Revertido`,
+                title: `Pagamento da Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Revertido`,
                 variant: 'destructive',
             });
         });
@@ -222,14 +225,28 @@ function ClientDetailPage() {
           </div>
           <div className="lg:col-span-3 space-y-8">
             {selectedNoteData ? (
-              <>
-                <PromissoryNoteDisplay data={selectedNoteData} />
-                <CarneDisplay 
-                  data={selectedNoteData} 
-                  payments={payments || []}
-                  onPaymentStatusChange={handlePaymentStatusChange}
-                />
-              </>
+              <div>
+                <div className="flex gap-2 mb-4">
+                    <Button onClick={() => setActiveView('note')} variant={activeView === 'note' ? 'secondary' : 'outline'} className="w-full">
+                        <StickyNote className="mr-2"/>
+                        Ver Nota Promissória
+                    </Button>
+                    <Button onClick={() => setActiveView('slips')} variant={activeView === 'slips' ? 'secondary' : 'outline'} className="w-full">
+                        <Receipt className="mr-2"/>
+                        Ver Comprovantes
+                    </Button>
+                </div>
+                {activeView === 'note' && (
+                    <PromissoryNoteDisplay data={selectedNoteData} />
+                )}
+                {activeView === 'slips' && (
+                    <CarneDisplay 
+                        data={selectedNoteData} 
+                        payments={payments || []}
+                        onPaymentStatusChange={handlePaymentStatusChange}
+                    />
+                )}
+              </div>
             ) : (
               <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
                 <CardContent className="text-center p-8">
@@ -248,5 +265,3 @@ function ClientDetailPage() {
 }
 
 export default ClientDetailPage;
-
-    
