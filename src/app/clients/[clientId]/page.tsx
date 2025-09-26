@@ -1,27 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, Timestamp, addDoc, query, where, getDocs } from 'firebase/firestore';
-import type { Client, PromissoryNote, PromissoryNoteData, Payment } from '@/types';
+import { collection, doc, query, where, getDocs, collectionGroup, orderBy } from 'firebase/firestore';
+import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Trash2, MoreHorizontal, Edit, Receipt, StickyNote } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
-import { format } from 'date-fns';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-
+import { PromissoryNoteCard } from '@/components/promissory-note-card';
 
 function ClientDetailPage() {
   const { clientId } = useParams();
@@ -32,38 +25,76 @@ function ClientDetailPage() {
   
   const [selectedNote, setSelectedNote] = useState<PromissoryNote | null>(null);
   const [activeView, setActiveView] = useState<'note' | 'slips'>('note');
-
+  const [allPayments, setAllPayments] = useState<Payment[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(true);
 
   const clientDocRef = useMemoFirebase(() => 
     user ? doc(firestore, 'users', user.uid, 'clients', clientId as string) : null
   , [firestore, user, clientId]);
   const { data: client, isLoading: isClientLoading } = useDoc<Client>(clientDocRef);
 
-  const notesCollectionRef = useMemoFirebase(() => 
-    user ? collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes') : null
+  const notesQuery = useMemoFirebase(() => 
+    user ? query(collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes'), orderBy('paymentDate', 'desc')) : null
   , [firestore, user, clientId]);
-  const { data: notes, isLoading: areNotesLoading } = useCollection<PromissoryNote>(notesCollectionRef);
+  const { data: notes, isLoading: areNotesLoading } = useCollection<PromissoryNote>(notesQuery);
 
-  const paymentsCollectionRef = useMemoFirebase(() => 
-    user && selectedNote ? collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', selectedNote.id, 'payments') : null
-  , [firestore, user, clientId, selectedNote]);
-  const { data: payments } = useCollection<Payment>(paymentsCollectionRef);
+  useEffect(() => {
+    if (!user || !notes) return;
+
+    const fetchPayments = async () => {
+        setLoadingPayments(true);
+        const paymentsData: Payment[] = [];
+        if (notes.length > 0) {
+            const noteIds = notes.map(n => n.id);
+            // Firestore 'in' query is limited to 30 items. If more notes, we need multiple queries.
+            const chunks = [];
+            for (let i = 0; i < noteIds.length; i += 30) {
+                chunks.push(noteIds.slice(i, i + 30));
+            }
+
+            for (const chunk of chunks) {
+                 const paymentsQuery = query(
+                    collectionGroup(firestore, 'payments'),
+                    where('promissoryNoteId', 'in', chunk)
+                );
+                const paymentsSnapshot = await getDocs(paymentsQuery);
+                paymentsSnapshot.forEach(doc => {
+                    paymentsData.push({ id: doc.id, ...doc.data() } as Payment);
+                });
+            }
+        }
+        setAllPayments(paymentsData);
+        setLoadingPayments(false);
+    };
+
+    fetchPayments();
+  }, [user, firestore, notes]);
 
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote(note);
     setActiveView('note'); // Reset to note view when a new note is selected
   };
 
-  const handleDeleteNote = (e: React.MouseEvent, noteId: string) => {
+  const handleDeleteNote = async (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation();
     if (!user || !noteId) return;
+
     const noteDocRef = doc(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', noteId);
-    // TODO: Delete subcollection of payments
+    
+    // Delete associated payments first
+    const paymentsRef = collection(noteDocRef, 'payments');
+    const paymentsSnapshot = await getDocs(paymentsRef);
+    paymentsSnapshot.forEach((paymentDoc) => {
+        deleteDocumentNonBlocking(paymentDoc.ref);
+    });
+
     deleteDocumentNonBlocking(noteDocRef);
+
     toast({
       title: 'Nota excluída',
-      description: 'A nota promissória foi removida.',
+      description: 'A nota promissória e todos os seus pagamentos foram removidos.',
     });
+    
     if (selectedNote && selectedNote.id === noteId) {
       setSelectedNote(null);
     }
@@ -82,12 +113,13 @@ function ClientDetailPage() {
      if (isPaid) {
         const paymentData: Omit<Payment, 'id'> = {
             promissoryNoteId: selectedNote.id,
-            paymentDate: Timestamp.now(),
+            paymentDate: new Date(),
             amount: value,
             installmentNumber: installmentNumber,
             isDownPayment: isDownPayment
         };
-        addDocumentNonBlocking(paymentsRef, paymentData);
+        const newPayment = await addDoc(paymentsRef, paymentData);
+        setAllPayments([...allPayments, { id: newPayment.id, ...paymentData }]);
          toast({
             title: `Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Paga!`,
             description: 'O pagamento foi registrado com sucesso.',
@@ -99,6 +131,7 @@ function ClientDetailPage() {
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
             deleteDocumentNonBlocking(doc.ref);
+            setAllPayments(allPayments.filter(p => p.id !== doc.id));
              toast({
                 title: `Pagamento da Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Revertido`,
                 variant: 'destructive',
@@ -107,7 +140,7 @@ function ClientDetailPage() {
      }
   };
   
-  const getNoteData = (note: PromissoryNote | null): PromissoryNoteData | null => {
+  const getNoteData = (note: PromissoryNote | null) => {
     if (!note) return null;
     return {
         header: note.header,
@@ -131,8 +164,9 @@ function ClientDetailPage() {
   }
   
   const selectedNoteData = getNoteData(selectedNote);
+  const selectedNotePayments = selectedNote ? allPayments.filter(p => p.promissoryNoteId === selectedNote.id) : [];
 
-  if (isClientLoading || areNotesLoading) {
+  if (isClientLoading || areNotesLoading || loadingPayments) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader className="animate-spin" />
@@ -178,47 +212,20 @@ function ClientDetailPage() {
           <div className="lg:col-span-2 space-y-4">
             <h2 className="text-xl font-semibold">Notas Promissórias</h2>
             {notes && notes.length > 0 ? (
-              notes.map((note) => (
-                <Card
-                  key={note.id}
-                  className={`cursor-pointer hover:shadow-md transition-shadow ${selectedNote && selectedNote.id === note.id ? 'border-primary' : ''}`}
-                  onClick={() => handleSelectNote(note)}
-                >
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-md font-medium">
-                      Nota #{note.noteNumber}
-                    </CardTitle>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => handleEditNote(e, note.id)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => handleDeleteNote(e, note.id)} className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </CardHeader>
-                  <CardContent>
-                     <p className="text-sm text-muted-foreground">
-                      {note.productServiceReference}
-                    </p>
-                    <p className="text-sm font-bold">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(note.value)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Vencimento inicial: {format(note.paymentDate.toDate(), 'dd/MM/yyyy')}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))
+              notes.map((note) => {
+                const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
+                return (
+                  <PromissoryNoteCard
+                    key={note.id}
+                    note={note}
+                    payments={notePayments}
+                    isSelected={selectedNote?.id === note.id}
+                    onSelect={() => handleSelectNote(note)}
+                    onEdit={(e) => handleEditNote(e, note.id)}
+                    onDelete={(e) => handleDeleteNote(e, note.id)}
+                  />
+                );
+              })
             ) : (
               <p className="text-muted-foreground text-sm">Nenhuma nota encontrada para este cliente.</p>
             )}
@@ -242,7 +249,7 @@ function ClientDetailPage() {
                 {activeView === 'slips' && (
                     <CarneDisplay 
                         data={selectedNoteData} 
-                        payments={payments || []}
+                        payments={selectedNotePayments}
                         onPaymentStatusChange={handlePaymentStatusChange}
                     />
                 )}

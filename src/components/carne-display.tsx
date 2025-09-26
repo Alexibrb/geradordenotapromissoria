@@ -221,7 +221,9 @@ export function CarneDisplay({ data, payments, onPaymentStatusChange }: CarneDis
         <div id="carne-print-area" className="space-y-6">
           {filteredSlips.map((slipData) => {
             const isPaid = payments.some(p => p.installmentNumber === slipData.installmentNumber);
-            const paidDate = payments.find(p => p.installmentNumber === slipData.installmentNumber)?.paymentDate.toDate();
+            const paidInfo = payments.find(p => p.installmentNumber === slipData.installmentNumber);
+            const paidDate = paidInfo?.paymentDate ? (paidInfo.paymentDate instanceof Date ? paidInfo.paymentDate : paidInfo.paymentDate.toDate()) : undefined;
+
             return (
               <React.Fragment key={slipData.slipId}>
                 <div className="slip-to-print">
@@ -245,5 +247,3 @@ export function CarneDisplay({ data, payments, onPaymentStatusChange }: CarneDis
     </Card>
   );
 }
-
-    

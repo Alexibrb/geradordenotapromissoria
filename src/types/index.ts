@@ -55,7 +55,7 @@ export interface PromissoryNote {
 export interface Payment {
     id: string;
     promissoryNoteId: string;
-    paymentDate: Timestamp;
+    paymentDate: Date | Timestamp;
     amount: number;
     receiptNumber?: string;
     installmentNumber: number;
