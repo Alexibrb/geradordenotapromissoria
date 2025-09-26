@@ -52,12 +52,24 @@ export interface PromissoryNote {
   latePaymentClause?: string;
 }
 
+export interface Payment {
+    id: string;
+    promissoryNoteId: string;
+    paymentDate: Timestamp;
+    amount: number;
+    receiptNumber?: string;
+    installmentNumber: number;
+    isDownPayment: boolean;
+}
+
 export interface UserSettings {
   header?: string;
   creditorName?: string;
   creditorCpf?: string;
   creditorAddress?: string;
 }
+
+    
 
     
 

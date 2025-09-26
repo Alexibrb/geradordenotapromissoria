@@ -123,12 +123,21 @@
         "receiptNumber": {
           "type": "string",
           "description": "Receipt number for the payment"
+        },
+        "installmentNumber": {
+            "type": "number",
+            "description": "The specific installment number this payment refers to (0 for down payment)."
+        },
+        "isDownPayment": {
+            "type": "boolean",
+            "description": "Indicates if this payment is for the down payment."
         }
       },
       "required": [
         "promissoryNoteId",
         "paymentDate",
-        "amount"
+        "amount",
+        "installmentNumber"
       ]
     },
      "User": {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { ptBR } from "date-fns/locale";
@@ -27,6 +26,9 @@ type InstallmentSlipProps = {
   productReference: string;
   noteNumber?: string;
   isDownPayment: boolean;
+  isPaid: boolean;
+  paidDate?: Date;
+  onPaidChange: (checked: boolean) => void;
 };
 
 export function InstallmentSlip({
@@ -44,19 +46,11 @@ export function InstallmentSlip({
   creditorAddress,
   productReference,
   noteNumber,
-  isDownPayment
+  isDownPayment,
+  isPaid,
+  paidDate,
+  onPaidChange
 }: InstallmentSlipProps) {
-  const [isPaid, setIsPaid] = useState(false);
-  const [paidDate, setPaidDate] = useState<Date | null>(null);
-
-  const handlePaidChange = (checked: boolean) => {
-    setIsPaid(checked);
-    if (checked) {
-      setPaidDate(new Date());
-    } else {
-      setPaidDate(null);
-    }
-  };
 
   const handleGeneratePdf = () => {
     const slipElement = document.getElementById(`slip-container-${slipId}`);
@@ -65,12 +59,14 @@ export function InstallmentSlip({
     if (pdfArea && slipElement) {
         // Show paid stamp if checked for the PDF
         const stamp = slipElement.querySelector('.paid-stamp-area') as HTMLElement;
-        if (isPaid && stamp) {
-            stamp.style.display = 'block';
+        const wasVisible = stamp.style.display === 'block';
+
+        if (isPaid) {
+          stamp.style.display = 'block';
         }
 
         html2canvas(pdfArea, { scale: 1 }).then((canvas) => {
-            const imgData = canvas.toDataURL("image/jpeg", 0.7); // Use JPEG with quality 0.7
+            const imgData = canvas.toDataURL("image/jpeg", 0.7);
             const pdf = new jsPDF("p", "mm", "a5");
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -92,8 +88,8 @@ export function InstallmentSlip({
             pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
             pdf.save(`comprovante_${isDownPayment ? 'entrada' : `parcela_${installmentNumber}`}_${noteNumber}.pdf`);
 
-            // Hide paid stamp again after generation
-            if (isPaid && stamp) {
+            // Hide paid stamp again after generation if it wasn't visible before
+            if (!wasVisible) {
                 stamp.style.display = 'none';
             }
         });
@@ -147,7 +143,7 @@ export function InstallmentSlip({
                     }).format(value)}
                     </p>
                      <div className="paid-stamp-area" style={{ display: isPaid ? 'block' : 'none' }}>
-                        <div className="absolute -bottom-2 right-0 transform -rotate-12 opacity-80 pointer-events-none">
+                        <div className="absolute -bottom-2 -right-4 transform -rotate-12 opacity-80 pointer-events-none">
                             <div className="border-4 border-green-500 rounded-md px-4 py-2 text-center">
                             <span className="text-3xl font-bold text-green-500 uppercase tracking-wider">
                                 Pago
@@ -178,7 +174,7 @@ export function InstallmentSlip({
         <div className="no-print p-4 border-t-2 border-dashed">
             <div className="flex justify-between items-center text-xs text-muted-foreground">
                 <div className="flex items-center space-x-2">
-                    <Checkbox id={checkboxId} checked={isPaid} onCheckedChange={(checked) => handlePaidChange(!!checked)} />
+                    <Checkbox id={checkboxId} checked={isPaid} onCheckedChange={(checked) => onPaidChange(!!checked)} />
                     <Label htmlFor={checkboxId}>Marcar como Pago</Label>
                 </div>
                 <Button onClick={handleGeneratePdf} variant="outline" size="sm">
@@ -190,3 +186,5 @@ export function InstallmentSlip({
     </div>
   );
 }
+
+    

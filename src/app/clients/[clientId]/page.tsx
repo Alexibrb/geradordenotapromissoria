@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, doc, deleteDoc, Timestamp } from 'firebase/firestore';
-import type { Client, PromissoryNote, PromissoryNoteData } from '@/types';
+import { collection, doc, deleteDoc, Timestamp, addDoc, query, where } from 'firebase/firestore';
+import type { Client, PromissoryNote, PromissoryNoteData, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,7 +13,6 @@ import { Loader, ArrowLeft, Plus, FileText, Trash2, MoreHorizontal, Edit } from 
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
 function ClientDetailPage() {
@@ -31,7 +30,7 @@ function ClientDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [selectedNote, setSelectedNote] = useState<PromissoryNoteData | null>(null);
+  const [selectedNote, setSelectedNote] = useState<PromissoryNote | null>(null);
 
   const clientDocRef = useMemoFirebase(() => 
     user ? doc(firestore, 'users', user.uid, 'clients', clientId as string) : null
@@ -43,37 +42,26 @@ function ClientDetailPage() {
   , [firestore, user, clientId]);
   const { data: notes, isLoading: areNotesLoading } = useCollection<PromissoryNote>(notesCollectionRef);
 
+  const paymentsCollectionRef = useMemoFirebase(() => 
+    user && selectedNote ? collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', selectedNote.id, 'payments') : null
+  , [firestore, user, clientId, selectedNote]);
+  const { data: payments } = useCollection<Payment>(paymentsCollectionRef);
+
   const handleSelectNote = (note: PromissoryNote) => {
-    setSelectedNote({
-      header: note.header,
-      clientName: note.clientName,
-      clientAddress: note.clientAddress,
-      clientCpf: note.clientCpf,
-      creditorName: note.creditorName,
-      creditorCpf: note.creditorCpf,
-      creditorAddress: note.creditorAddress,
-      paymentDate: note.paymentDate.toDate(),
-      totalValue: note.value,
-      installments: note.numberOfInstallments,
-      productReference: note.productServiceReference,
-      noteNumber: note.noteNumber,
-      paymentType: note.paymentType || 'a-prazo',
-      hasDownPayment: note.hasDownPayment || false,
-      downPaymentValue: note.downPaymentValue || 0,
-      latePaymentClause: note.latePaymentClause || '',
-    });
+    setSelectedNote(note);
   };
 
   const handleDeleteNote = (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation();
     if (!user || !noteId) return;
     const noteDocRef = doc(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', noteId);
+    // TODO: Delete subcollection of payments
     deleteDocumentNonBlocking(noteDocRef);
     toast({
       title: 'Nota excluída',
       description: 'A nota promissória foi removida.',
     });
-    if (selectedNote && selectedNote.noteNumber === notes?.find(n => n.id === noteId)?.noteNumber) {
+    if (selectedNote && selectedNote.id === noteId) {
       setSelectedNote(null);
     }
   };
@@ -82,6 +70,64 @@ function ClientDetailPage() {
     e.stopPropagation();
     router.push(`/clients/${clientId}/edit-note/${noteId}`);
   };
+
+  const handlePaymentStatusChange = async (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => {
+     if (!user || !selectedNote) return;
+
+     const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', selectedNote.id, 'payments');
+
+     if (isPaid) {
+        const paymentData: Omit<Payment, 'id'> = {
+            promissoryNoteId: selectedNote.id,
+            paymentDate: Timestamp.now(),
+            amount: value,
+            installmentNumber: installmentNumber,
+            isDownPayment: isDownPayment
+        };
+        addDocumentNonBlocking(paymentsRef, paymentData);
+         toast({
+            title: `Parcela ${installmentNumber} Paga!`,
+            description: 'O pagamento foi registrado com sucesso.',
+            className: 'bg-accent text-accent-foreground',
+        });
+     } else {
+        // Find and delete the payment document
+        const q = query(paymentsRef, where("installmentNumber", "==", installmentNumber));
+        const querySnapshot = await (await import('firebase/firestore')).getDocs(q);
+        querySnapshot.forEach((doc) => {
+            deleteDocumentNonBlocking(doc.ref);
+             toast({
+                title: `Pagamento da Parcela ${installmentNumber} Revertido`,
+                variant: 'destructive',
+            });
+        });
+     }
+  };
+  
+  const getNoteData = (note: PromissoryNote | null): PromissoryNoteData | null => {
+    if (!note) return null;
+    return {
+        header: note.header,
+        clientName: note.clientName,
+        clientAddress: note.clientAddress,
+        clientCpf: note.clientCpf,
+        clientContact: note.clientContact,
+        creditorName: note.creditorName,
+        creditorCpf: note.creditorCpf,
+        creditorAddress: note.creditorAddress,
+        paymentDate: note.paymentDate.toDate(),
+        totalValue: note.value,
+        installments: note.numberOfInstallments,
+        productReference: note.productServiceReference,
+        noteNumber: note.noteNumber,
+        paymentType: note.paymentType || 'a-prazo',
+        hasDownPayment: note.hasDownPayment || false,
+        downPaymentValue: note.downPaymentValue || 0,
+        latePaymentClause: note.latePaymentClause || '',
+    };
+  }
+  
+  const selectedNoteData = getNoteData(selectedNote);
 
   if (isClientLoading || areNotesLoading) {
     return (
@@ -132,7 +178,7 @@ function ClientDetailPage() {
               notes.map((note) => (
                 <Card
                   key={note.id}
-                  className={`cursor-pointer hover:shadow-md transition-shadow ${selectedNote && selectedNote.noteNumber === note.noteNumber ? 'border-primary' : ''}`}
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${selectedNote && selectedNote.id === note.id ? 'border-primary' : ''}`}
                   onClick={() => handleSelectNote(note)}
                 >
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -175,10 +221,14 @@ function ClientDetailPage() {
             )}
           </div>
           <div className="lg:col-span-3 space-y-8">
-            {selectedNote ? (
+            {selectedNoteData ? (
               <>
-                <PromissoryNoteDisplay data={selectedNote} />
-                <CarneDisplay data={selectedNote} />
+                <PromissoryNoteDisplay data={selectedNoteData} />
+                <CarneDisplay 
+                  data={selectedNoteData} 
+                  payments={payments || []}
+                  onPaymentStatusChange={handlePaymentStatusChange}
+                />
               </>
             ) : (
               <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
@@ -198,3 +248,5 @@ function ClientDetailPage() {
 }
 
 export default ClientDetailPage;
+
+    
