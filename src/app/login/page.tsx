@@ -206,7 +206,7 @@ export default function LoginPage() {
         </CardContent>
       </Card>
       <div className="absolute bottom-0 left-0 w-full p-4 text-center">
-          <p className="text-sm text-muted-foreground">Dev. Alex Alves</p>
+          <p className="text-sm text-muted-foreground">Versão 1.0.2025 - Desenvolvedor: Alex Alves</p>
       </div>
     </main>
   );
