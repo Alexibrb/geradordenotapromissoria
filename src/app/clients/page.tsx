@@ -58,12 +58,15 @@ function ClientsPage() {
   const { data: allNotes, isLoading: isLoadingNotes } = useCollection<PromissoryNote>(allNotesQuery);
 
   const allPaymentsQuery = useMemoFirebase(() => {
-    if (!user || !allNotes || allNotes.length === 0) return null;
+    if (!user || !allNotes || allNotes.length === 0) {
+        return null;
+    }
     const noteIds = allNotes.map(n => n.id);
-    // Prevent query with empty 'in' array
-    if (noteIds.length === 0) return null;
+    if (noteIds.length === 0) {
+        return null;
+    }
     return query(collectionGroup(firestore, 'payments'), where('promissoryNoteId', 'in', noteIds));
-  }, [firestore, user, allNotes]);
+}, [firestore, user, allNotes]);
   const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(allPaymentsQuery);
 
 
@@ -524,5 +527,3 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
-
-    
