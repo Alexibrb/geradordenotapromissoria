@@ -50,14 +50,18 @@ function ClientsPage() {
   , [firestore, user]);
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
 
-  const allNotesQuery = useMemoFirebase(() =>
-    user ? query(collectionGroup(firestore, 'promissoryNotes'), where('clientId', 'in', clients ? clients.map(c => c.id) : [])) : null
-  , [firestore, user, clients]);
+  const allNotesQuery = useMemoFirebase(() => {
+    if (!user || !clients || clients.length === 0) return null;
+    const clientIds = clients.map(c => c.id);
+    return query(collectionGroup(firestore, 'promissoryNotes'), where('clientId', 'in', clientIds));
+  }, [firestore, user, clients]);
   const { data: allNotes, isLoading: isLoadingNotes } = useCollection<PromissoryNote>(allNotesQuery);
 
-  const allPaymentsQuery = useMemoFirebase(() =>
-    user ? query(collectionGroup(firestore, 'payments'), where('promissoryNoteId', 'in', allNotes ? allNotes.map(n => n.id) : [])) : null
-  , [firestore, user, allNotes]);
+  const allPaymentsQuery = useMemoFirebase(() => {
+    if (!user || !allNotes || allNotes.length === 0) return null;
+    const noteIds = allNotes.map(n => n.id);
+    return query(collectionGroup(firestore, 'payments'), where('promissoryNoteId', 'in', noteIds));
+  }, [firestore, user, allNotes]);
   const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(allPaymentsQuery);
 
 
@@ -83,12 +87,12 @@ function ClientsPage() {
   const [settingsCreditorAddress, setSettingsCreditorAddress] = useState('');
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredClients, setFilteredClients] = useState<Client[] | null>(clients);
+  const [filteredClients, setFilteredClients] = useState<Client[] | null>(null);
 
   // Dashboard state
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [filteredNotes, setFilteredNotes] = useState<PromissoryNote[] | null>(allNotes);
-  const [filteredPayments, setFilteredPayments] = useState<Payment[] | null>(allPayments);
+  const [filteredNotes, setFilteredNotes] = useState<PromissoryNote[] | null>(null);
+  const [filteredPayments, setFilteredPayments] = useState<Payment[] | null>(null);
 
   useEffect(() => {
     if (settings) {
@@ -100,8 +104,15 @@ function ClientsPage() {
   }, [settings]);
   
   useEffect(() => {
+    // Initially set filtered clients to the full list
     if (clients) {
-      const lowercasedFilter = searchTerm.toLowerCase().trim();
+        setFilteredClients(clients);
+    }
+  }, [clients]);
+
+  useEffect(() => {
+    if (!clients) return;
+    const lowercasedFilter = searchTerm.toLowerCase().trim();
       if (!lowercasedFilter) {
         setFilteredClients(clients);
         return;
@@ -111,33 +122,23 @@ function ClientsPage() {
         client.cpf.replace(/[.\-]/g, '').includes(lowercasedFilter.replace(/[.\-]/g, ''))
       );
       setFilteredClients(filteredData);
-    }
   }, [searchTerm, clients]);
 
   useEffect(() => {
-    if (!allNotes || !allPayments) return;
-
-    // Guard against cases where clients or notes are still loading for queries
-    if(isLoadingClients || isLoadingNotes || isLoadingPayments) return;
-    
-    // When clients load, but there are none, notes and payments can't be fetched, so set them to empty.
-    if(clients && clients.length === 0) {
-      setFilteredNotes([]);
-      setFilteredPayments([]);
-      return;
-    }
-
-    if(allNotes && allNotes.length === 0) {
-        setFilteredPayments([]);
-    }
-
+    const finalNotes = allNotes || [];
+    const finalPayments = allPayments || [];
 
     const from = dateRange?.from ? startOfDay(dateRange.from) : null;
     const to = dateRange?.to ? endOfDay(dateRange.to) : null;
+
+    if (!from && !to) {
+        setFilteredNotes(finalNotes);
+        setFilteredPayments(finalPayments);
+        return;
+    }
     
     // Filter notes based on their creation date (paymentDate)
-    const notesInRange = allNotes.filter(note => {
-      if (!from && !to) return true;
+    const notesInRange = finalNotes.filter(note => {
       const noteDate = note.paymentDate.toDate();
       if (from && to) return noteDate >= from && noteDate <= to;
       if (from) return noteDate >= from;
@@ -147,8 +148,7 @@ function ClientsPage() {
     setFilteredNotes(notesInRange);
 
     // Filter payments based on their payment date
-    const paymentsInRange = allPayments.filter(payment => {
-       if (!from && !to) return true;
+    const paymentsInRange = finalPayments.filter(payment => {
        const paymentDate = (payment.paymentDate as any).toDate();
        if (from && to) return paymentDate >= from && paymentDate <= to;
        if (from) return paymentDate >= from;
@@ -157,7 +157,7 @@ function ClientsPage() {
     });
     setFilteredPayments(paymentsInRange);
     
-  }, [dateRange, allNotes, allPayments, clients, isLoadingClients, isLoadingNotes, isLoadingPayments]);
+  }, [dateRange, allNotes, allPayments]);
 
 
   const resetForm = () => {
@@ -281,7 +281,7 @@ function ClientsPage() {
     router.push('/login');
   };
   
-  const isLoading = isLoadingClients || isLoadingNotes || isLoadingPayments;
+  const isLoading = isLoadingClients || (clients && clients.length > 0 && (isLoadingNotes || isLoadingPayments));
 
   return (
     <ProtectedRoute>
@@ -457,7 +457,7 @@ function ClientsPage() {
           </DialogContent>
         </Dialog>
 
-        {isLoading ? (
+        {isLoadingClients ? (
           <div className="flex justify-center">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
@@ -522,5 +522,3 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
-
-    
