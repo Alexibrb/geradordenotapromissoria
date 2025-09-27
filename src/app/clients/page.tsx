@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search } from 'lucide-react';
 import { ProtectedRoute, useUser } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
-import { collection, doc, collectionGroup, query, where } from 'firebase/firestore';
+import { collection, doc, collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import type { Client, UserSettings, PromissoryNote, Payment } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -51,13 +51,13 @@ function ClientsPage() {
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
 
   const allNotesQuery = useMemoFirebase(() =>
-    user ? query(collectionGroup(firestore, 'promissoryNotes'), where('__name__', '>=', `users/${user.uid}/`), where('__name__', '<', `users/${user.uid}/\uf8ff`)) : null
-  , [firestore, user]);
+    user ? query(collectionGroup(firestore, 'promissoryNotes'), where('clientId', 'in', clients ? clients.map(c => c.id) : [])) : null
+  , [firestore, user, clients]);
   const { data: allNotes, isLoading: isLoadingNotes } = useCollection<PromissoryNote>(allNotesQuery);
 
   const allPaymentsQuery = useMemoFirebase(() =>
-    user ? query(collectionGroup(firestore, 'payments'), where('__name__', '>=', `users/${user.uid}/`), where('__name__', '<', `users/${user.uid}/\uf8ff`)) : null
-  , [firestore, user]);
+    user ? query(collectionGroup(firestore, 'payments'), where('promissoryNoteId', 'in', allNotes ? allNotes.map(n => n.id) : [])) : null
+  , [firestore, user, allNotes]);
   const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(allPaymentsQuery);
 
 
@@ -117,6 +117,21 @@ function ClientsPage() {
   useEffect(() => {
     if (!allNotes || !allPayments) return;
 
+    // Guard against cases where clients or notes are still loading for queries
+    if(isLoadingClients || isLoadingNotes || isLoadingPayments) return;
+    
+    // When clients load, but there are none, notes and payments can't be fetched, so set them to empty.
+    if(clients && clients.length === 0) {
+      setFilteredNotes([]);
+      setFilteredPayments([]);
+      return;
+    }
+
+    if(allNotes && allNotes.length === 0) {
+        setFilteredPayments([]);
+    }
+
+
     const from = dateRange?.from ? startOfDay(dateRange.from) : null;
     const to = dateRange?.to ? endOfDay(dateRange.to) : null;
     
@@ -142,7 +157,7 @@ function ClientsPage() {
     });
     setFilteredPayments(paymentsInRange);
     
-  }, [dateRange, allNotes, allPayments]);
+  }, [dateRange, allNotes, allPayments, clients, isLoadingClients, isLoadingNotes, isLoadingPayments]);
 
 
   const resetForm = () => {
@@ -225,12 +240,22 @@ function ClientsPage() {
 
   const handleDeleteClient = async (clientId: string) => {
     if (!user) return;
-    // TODO: Implement cascading delete for subcollections if needed
+    // Before deleting the client, delete all their promissory notes and payments
+    const notesSnapshot = await getDocs(query(collection(firestore, 'users', user.uid, 'clients', clientId, 'promissoryNotes')));
+    for (const noteDoc of notesSnapshot.docs) {
+      const paymentsSnapshot = await getDocs(collection(noteDoc.ref, 'payments'));
+      paymentsSnapshot.forEach(paymentDoc => {
+        deleteDocumentNonBlocking(paymentDoc.ref);
+      });
+      deleteDocumentNonBlocking(noteDoc.ref);
+    }
+    
     const clientDocRef = doc(firestore, 'users', user.uid, 'clients', clientId);
     deleteDocumentNonBlocking(clientDocRef);
+
     toast({
       title: 'Cliente excluído',
-      description: 'O cliente e suas notas foram removidos.',
+      description: 'O cliente e todas as suas notas foram removidos.',
     });
   };
 
@@ -497,3 +522,5 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+
+    
