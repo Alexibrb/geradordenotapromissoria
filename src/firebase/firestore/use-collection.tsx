@@ -8,6 +8,8 @@ import {
   FirestoreError,
   QuerySnapshot,
   CollectionReference,
+  where,
+  query,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -33,9 +35,29 @@ export interface InternalQuery extends Query<DocumentData> {
     path: {
       canonicalString(): string;
       toString(): string;
-    }
+    },
+    filters: {
+        field: {
+            canonicalName(): string
+        },
+        op: string,
+        value: any
+    }[]
   }
 }
+
+function isQueryWithEmptyInFilter(q: Query<DocumentData>): boolean {
+    const internalQuery = q as unknown as InternalQuery;
+    if (internalQuery._query && internalQuery._query.filters) {
+        for (const filter of internalQuery._query.filters) {
+            if (filter.op === 'in' && Array.isArray(filter.value) && filter.value.length === 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 /**
  * React hook to subscribe to a Firestore collection or query in real-time.
@@ -67,6 +89,14 @@ export function useCollection<T = any>(
       setIsLoading(false);
       setError(null);
       return;
+    }
+    
+    // Safety check: Prevent 'in' queries with empty arrays, which Firestore rejects.
+    if (memoizedTargetRefOrQuery.type === 'query' && isQueryWithEmptyInFilter(memoizedTargetRefOrQuery)) {
+        setData([]); // Return empty array, as query would yield no results.
+        setIsLoading(false);
+        setError(null);
+        return;
     }
 
     setIsLoading(true);

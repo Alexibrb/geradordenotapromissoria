@@ -50,24 +50,53 @@ function ClientsPage() {
   , [firestore, user]);
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
 
-  const allNotesQuery = useMemoFirebase(() => {
-    if (!user || !clients || clients.length === 0) return null;
-    const clientIds = clients.map(c => c.id);
-    return query(collectionGroup(firestore, 'promissoryNotes'), where('clientId', 'in', clientIds));
-  }, [firestore, user, clients]);
-  const { data: allNotes, isLoading: isLoadingNotes } = useCollection<PromissoryNote>(allNotesQuery);
+  const [allNotes, setAllNotes] = useState<PromissoryNote[] | null>(null);
+  const [allPayments, setAllPayments] = useState<Payment[] | null>(null);
+  const [isLoadingAggregates, setIsLoadingAggregates] = useState(true);
 
-  const allPaymentsQuery = useMemoFirebase(() => {
-    if (!user || !allNotes || allNotes.length === 0) {
-        return null;
+  useEffect(() => {
+    if (!user || isLoadingClients) {
+      return;
     }
-    const noteIds = allNotes.map(n => n.id);
-    if (noteIds.length === 0) {
-        return null;
-    }
-    return query(collectionGroup(firestore, 'payments'), where('promissoryNoteId', 'in', noteIds));
-}, [firestore, user, allNotes]);
-  const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(allPaymentsQuery);
+
+    const fetchAggregates = async () => {
+      setIsLoadingAggregates(true);
+      if (!clients || clients.length === 0) {
+        setAllNotes([]);
+        setAllPayments([]);
+        setIsLoadingAggregates(false);
+        return;
+      }
+
+      try {
+        const notesPromises = clients.map(client =>
+          getDocs(collection(firestore, 'users', user.uid, 'clients', client.id, 'promissoryNotes'))
+        );
+        const notesSnapshots = await Promise.all(notesPromises);
+        const fetchedNotes = notesSnapshots.flatMap(snap => snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PromissoryNote)));
+        setAllNotes(fetchedNotes);
+
+        if (fetchedNotes.length > 0) {
+          const paymentsPromises = fetchedNotes.map(note =>
+            getDocs(collection(firestore, 'users', user.uid, 'clients', note.clientId, 'promissoryNotes', note.id, 'payments'))
+          );
+          const paymentsSnapshots = await Promise.all(paymentsPromises);
+          const fetchedPayments = paymentsSnapshots.flatMap(snap => snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment)));
+          setAllPayments(fetchedPayments);
+        } else {
+          setAllPayments([]);
+        }
+      } catch (error) {
+        console.error("Error fetching aggregated data:", error);
+        setAllNotes([]);
+        setAllPayments([]);
+      } finally {
+        setIsLoadingAggregates(false);
+      }
+    };
+
+    fetchAggregates();
+  }, [user, firestore, clients, isLoadingClients]);
 
 
   const settingsDocRef = useMemoFirebase(() =>
@@ -286,7 +315,7 @@ function ClientsPage() {
     router.push('/login');
   };
   
-  const isLoading = isLoadingClients || (clients && clients.length > 0 && (isLoadingNotes || isLoadingPayments));
+  const isLoading = isLoadingClients || isLoadingAggregates;
 
   return (
     <ProtectedRoute>
@@ -462,7 +491,7 @@ function ClientsPage() {
           </DialogContent>
         </Dialog>
 
-        {isLoadingClients ? (
+        {isLoading ? (
           <div className="flex justify-center">
             <Loader className="h-8 w-8 animate-spin" />
           </div>
