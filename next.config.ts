@@ -38,9 +38,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    // serverComponentsExternalPackages has been moved to the top level
-  },
   serverExternalPackages: ['jspdf', 'html2canvas'],
 };
 
