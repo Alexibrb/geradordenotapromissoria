@@ -60,7 +60,8 @@ function ClientsPage() {
   const allPaymentsQuery = useMemoFirebase(() => {
     if (!user || !allNotes || allNotes.length === 0) return null;
     const noteIds = allNotes.map(n => n.id);
-    // Ensure the collection group name is correct
+    // Prevent query with empty 'in' array
+    if (noteIds.length === 0) return null;
     return query(collectionGroup(firestore, 'payments'), where('promissoryNoteId', 'in', noteIds));
   }, [firestore, user, allNotes]);
   const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(allPaymentsQuery);
@@ -523,3 +524,5 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+
+    
