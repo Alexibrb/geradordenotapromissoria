@@ -5,15 +5,13 @@ import Link from 'next/link';
 import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search } from 'lucide-react';
 import { ProtectedRoute, useUser } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, collectionGroup, query, where } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import type { Client, UserSettings } from '@/types';
+import type { Client, UserSettings, PromissoryNote, Payment } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -35,6 +33,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useRouter } from 'next/navigation';
+import { DashboardStats } from '@/components/dashboard-stats';
+import { DateRange } from 'react-day-picker';
+import { startOfDay, endOfDay } from 'date-fns';
 
 
 function ClientsPage() {
@@ -47,7 +48,18 @@ function ClientsPage() {
   const clientsCollection = useMemoFirebase(() => 
     user ? collection(firestore, 'users', user.uid, 'clients') : null
   , [firestore, user]);
-  const { data: clients, isLoading } = useCollection<Client>(clientsCollection);
+  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsCollection);
+
+  const allNotesQuery = useMemoFirebase(() =>
+    user ? query(collectionGroup(firestore, 'promissoryNotes'), where('__name__', '>=', `users/${user.uid}/`), where('__name__', '<', `users/${user.uid}/\uf8ff`)) : null
+  , [firestore, user]);
+  const { data: allNotes, isLoading: isLoadingNotes } = useCollection<PromissoryNote>(allNotesQuery);
+
+  const allPaymentsQuery = useMemoFirebase(() =>
+    user ? query(collectionGroup(firestore, 'payments'), where('__name__', '>=', `users/${user.uid}/`), where('__name__', '<', `users/${user.uid}/\uf8ff`)) : null
+  , [firestore, user]);
+  const { data: allPayments, isLoading: isLoadingPayments } = useCollection<Payment>(allPaymentsQuery);
+
 
   const settingsDocRef = useMemoFirebase(() =>
     user ? doc(firestore, 'users', user.uid, 'settings', 'appSettings') : null
@@ -73,6 +85,10 @@ function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredClients, setFilteredClients] = useState<Client[] | null>(clients);
 
+  // Dashboard state
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [filteredNotes, setFilteredNotes] = useState<PromissoryNote[] | null>(allNotes);
+  const [filteredPayments, setFilteredPayments] = useState<Payment[] | null>(allPayments);
 
   useEffect(() => {
     if (settings) {
@@ -97,6 +113,36 @@ function ClientsPage() {
       setFilteredClients(filteredData);
     }
   }, [searchTerm, clients]);
+
+  useEffect(() => {
+    if (!allNotes || !allPayments) return;
+
+    const from = dateRange?.from ? startOfDay(dateRange.from) : null;
+    const to = dateRange?.to ? endOfDay(dateRange.to) : null;
+    
+    // Filter notes based on their creation date (paymentDate)
+    const notesInRange = allNotes.filter(note => {
+      if (!from && !to) return true;
+      const noteDate = note.paymentDate.toDate();
+      if (from && to) return noteDate >= from && noteDate <= to;
+      if (from) return noteDate >= from;
+      if (to) return noteDate <= to;
+      return true;
+    });
+    setFilteredNotes(notesInRange);
+
+    // Filter payments based on their payment date
+    const paymentsInRange = allPayments.filter(payment => {
+       if (!from && !to) return true;
+       const paymentDate = (payment.paymentDate as any).toDate();
+       if (from && to) return paymentDate >= from && paymentDate <= to;
+       if (from) return paymentDate >= from;
+       if (to) return paymentDate <= to;
+       return true;
+    });
+    setFilteredPayments(paymentsInRange);
+    
+  }, [dateRange, allNotes, allPayments]);
 
 
   const resetForm = () => {
@@ -209,6 +255,8 @@ function ClientsPage() {
     await signOut(auth);
     router.push('/login');
   };
+  
+  const isLoading = isLoadingClients || isLoadingNotes || isLoadingPayments;
 
   return (
     <ProtectedRoute>
@@ -326,6 +374,16 @@ function ClientsPage() {
             </Button>
           </div>
         </header>
+
+        <div className="mb-8">
+            <DashboardStats 
+                notes={filteredNotes || []} 
+                payments={filteredPayments || []} 
+                dateRange={dateRange}
+                onDateChange={setDateRange}
+                isLoading={isLoading}
+            />
+        </div>
         
         <div className="mb-8">
             <div className="relative">
