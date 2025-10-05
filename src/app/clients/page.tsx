@@ -329,7 +329,6 @@ function ClientsPage() {
   };
   
   const isLoading = isLoadingClients || isLoadingAggregates;
-  const isFreePlanLimitReached = userProfile?.plan === 'free' && clients && clients.length >= 3;
 
   return (
     <ProtectedRoute>
@@ -347,7 +346,7 @@ function ClientsPage() {
             )}
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button disabled={isFreePlanLimitReached}>
+                <Button>
                   <UserPlus className="mr-2" />
                   Adicionar Cliente
                 </Button>
@@ -477,20 +476,6 @@ function ClientsPage() {
                     className="pl-10 w-full"
                 />
             </div>
-             {isFreePlanLimitReached && (
-              <Card className="mt-4 border-amber-500 bg-amber-50">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <Gem className="h-6 w-6 text-amber-600" />
-                  <div>
-                    <p className="font-semibold text-amber-800">Você atingiu o limite do Plano Free</p>
-                    <p className="text-sm text-amber-700">
-                      Faça o upgrade para o plano PRO para adicionar clientes ilimitados e ter mais funcionalidades.
-                    </p>
-                  </div>
-                  <Button size="sm" className="ml-auto bg-amber-600 hover:bg-amber-700">Fazer Upgrade</Button>
-                </CardContent>
-              </Card>
-            )}
         </div>
 
         {/* Edit Client Dialog */}
@@ -578,7 +563,7 @@ function ClientsPage() {
             </p>
              <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
-                    <Button className="mt-4" disabled={isFreePlanLimitReached}>
+                    <Button className="mt-4">
                         <UserPlus className="mr-2" />
                         Adicionar Cliente
                     </Button>
@@ -592,3 +577,5 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+
+    
