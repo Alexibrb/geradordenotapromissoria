@@ -5,138 +5,176 @@
  * @description This ruleset enforces a strict user-ownership model for most data, ensuring users can only access their own data.
  *
  * @dataStructure
- * - `/users/{userId}`: Stores user profiles, with the document ID matching the user's authentication UID.
- * - `/users/{userId}/clients/{clientId}`: Stores client information for each user.
- * - `/users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}`: Stores promissory notes for each client.
- * - `/users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}`: Stores payment information for each promissory note.
- * - `/users/{userId}/settings/appSettings`: Stores user-specific settings.
- * - `/app_settings/general`: Stores global application settings.
+ * - All user-specific data (clients, promissory notes, payments, settings) is nested under `/users/{userId}`.
+ * - Global application settings are stored in the `/app_settings/general` document.
  *
  * @keySecurityDecisions
- * - User data is isolated using path-based ownership.
- * - Users can only create, read, update, and delete data under their own user ID.
- * - Listing other users is disallowed.
- * - Global app settings are publicly readable but only writable by a privileged role (not implemented in this version).
+ * - Users can only manage their own data.
+ * - Listing of users is not allowed.
+ * - Global app settings are publicly readable.
  *
- * @denormalizationForAuthorization None needed. The path structure inherently provides the necessary user context.
+ * @denormalizationForAuthorization
+ * - User ownership is enforced using path-based rules (e.g., `/users/{userId}/clients/{clientId}`).
+ *
+ * @structuralSegregation
+ * - User-specific data is segregated under the `/users/{userId}` path.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
+     * @description Allows a user to manage their own profile data. Document ID must match the user's auth UID.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user123' can create their profile document with id 'user123'.
-     * @deny (create) User with UID 'user456' cannot create a profile document with id 'user123'.
-     * @deny (update) User cannot update another user's profile.
-     * @principle Enforces document ownership and prevents unauthorized profile creation.
+     * @allow (create) User with UID 'user_abc' can create their profile at /users/user_abc.
+     * @allow (get) User with UID 'user_abc' can get their profile at /users/user_abc.
+     * @allow (update) User with UID 'user_abc' can update their profile at /users/user_abc.
+     * @allow (delete) User with UID 'user_abc' can delete their profile at /users/user_abc.
+     * @deny (create) User with UID 'user_xyz' cannot create a profile at /users/user_abc.
+     * @deny (get) User with UID 'user_xyz' cannot get the profile at /users/user_abc.
+     * @deny (update) User with UID 'user_xyz' cannot update the profile at /users/user_abc.
+     * @deny (delete) User with UID 'user_xyz' cannot delete the profile at /users/user_abc.
+     * @principle Enforces document ownership and prevents unauthorized data access.
      */
     match /users/{userId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
       }
 
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && resource != null && request.resource.data.id == resource.data.id;
-      allow delete: if isOwner(userId) && resource != null;
+      allow update: if isSignedIn() && resource != null && isOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isSignedIn() && resource != null && isOwner(userId);
     }
 
     /**
-     * @description Controls access to client documents under a user.
+     * @description Allows a user to manage their own clients.
      * @path /users/{userId}/clients/{clientId}
-     * @allow (create) User with UID 'user123' can create a client document under their user ID.
-     * @deny (create) User with UID 'user456' cannot create a client document under user 'user123'.
-     * @deny (update) User cannot update another user's client document.
-     * @principle Enforces document ownership for client data.
+     * @allow (create) User with UID 'user_abc' can create a client under /users/user_abc/clients/client_1.
+     * @allow (get) User with UID 'user_abc' can get a client under /users/user_abc/clients/client_1.
+     * @allow (update) User with UID 'user_abc' can update a client under /users/user_abc/clients/client_1.
+     * @allow (delete) User with UID 'user_abc' can delete a client under /users/user_abc/clients/client_1.
+     * @deny (create) User with UID 'user_xyz' cannot create a client under /users/user_abc/clients/client_1.
+     * @deny (get) User with UID 'user_xyz' cannot get the client under /users/user_abc/clients/client_1.
+     * @deny (update) User with UID 'user_xyz' cannot update the client under /users/user_abc/clients/client_1.
+     * @deny (delete) User with UID 'user_xyz' cannot delete the client under /users/user_abc/clients/client_1.
+     * @principle Enforces document ownership and prevents unauthorized data access.
      */
     match /users/{userId}/clients/{clientId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isSignedIn() && resource != null && isOwner(userId);
+        allow delete: if isSignedIn() && resource != null && isOwner(userId);
     }
 
     /**
-     * @description Controls access to promissory note documents under a client.
+     * @description Allows a user to manage their own promissory notes for a specific client.
      * @path /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}
-     * @allow (create) User with UID 'user123' can create a promissory note under their client.
-     * @deny (create) User with UID 'user456' cannot create a promissory note under user 'user123''s client.
-     * @deny (update) User cannot update another user's promissory note.
-     * @principle Enforces document ownership for promissory note data.
+     * @allow (create) User with UID 'user_abc' can create a promissory note under /users/user_abc/clients/client_1/promissoryNotes/note_1.
+     * @allow (get) User with UID 'user_abc' can get a promissory note under /users/user_abc/clients/client_1/promissoryNotes/note_1.
+     * @allow (update) User with UID 'user_abc' can update a promissory note under /users/user_abc/clients/client_1/promissoryNotes/note_1.
+     * @allow (delete) User with UID 'user_abc' can delete a promissory note under /users/user_abc/clients/client_1/promissoryNotes/note_1.
+     * @deny (create) User with UID 'user_xyz' cannot create a promissory note under /users/user_abc/clients/client_1/promissoryNotes/note_1.
+     * @deny (get) User with UID 'user_xyz' cannot get the promissory note under /users/user_abc/clients/client_1/promissoryNotes/note_1.
+     * @deny (update) User with UID 'user_xyz' cannot update the promissory note under /users/user_abc/clients/client_1/promissoryNotes/note_1.
+     * @deny (delete) User with UID 'user_xyz' cannot delete the promissory note under /users/user_abc/clients/client_1/promissoryNotes/note_1.
+     * @principle Enforces document ownership and prevents unauthorized data access.
      */
     match /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isSignedIn() && resource != null && isOwner(userId);
+        allow delete: if isSignedIn() && resource != null && isOwner(userId);
     }
 
     /**
-     * @description Controls access to payment documents under a promissory note.
+     * @description Allows a user to manage payments for their promissory notes.
      * @path /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}
-     * @allow (create) User with UID 'user123' can create a payment under their promissory note.
-     * @deny (create) User with UID 'user456' cannot create a payment under user 'user123''s promissory note.
-     * @deny (update) User cannot update another user's payment.
-     * @principle Enforces document ownership for payment data.
+     * @allow (create) User with UID 'user_abc' can create a payment under /users/user_abc/clients/client_1/promissoryNotes/note_1/payments/payment_1.
+     * @allow (get) User with UID 'user_abc' can get a payment under /users/user_abc/clients/client_1/promissoryNotes/note_1/payments/payment_1.
+     * @allow (update) User with UID 'user_abc' can update a payment under /users/user_abc/clients/client_1/promissoryNotes/note_1/payments/payment_1.
+     * @allow (delete) User with UID 'user_abc' can delete a payment under /users/user_abc/clients/client_1/promissoryNotes/note_1/payments/payment_1.
+     * @deny (create) User with UID 'user_xyz' cannot create a payment under /users/user_abc/clients/client_1/promissoryNotes/note_1/payments/payment_1.
+     * @deny (get) User with UID 'user_xyz' cannot get the payment under /users/user_abc/clients/client_1/promissoryNotes/note_1/payments/payment_1.
+     * @deny (update) User with UID 'user_xyz' cannot update the payment under /users/user_abc/clients/client_1/promissoryNotes/note_1/payments/payment_1.
+     * @deny (delete) User with UID 'user_xyz' cannot delete the payment under /users/user_abc/clients/client_1/promissoryNotes/note_1/payments/payment_1.
+     * @principle Enforces document ownership and prevents unauthorized data access.
      */
     match /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isSignedIn() && resource != null && isOwner(userId);
+        allow delete: if isSignedIn() && resource != null && isOwner(userId);
+    }
 
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+       /**
+        * @description Allows a user to manage their own application settings.
+        * @path /users/{userId}/settings/appSettings
+        * @allow (get) User with UID 'user_abc' can get their settings document.
+        * @allow (update) User with UID 'user_abc' can update their settings document.
+        * @deny (get) User with UID 'user_xyz' cannot get the settings document of user_abc.
+        * @deny (update) User with UID 'user_xyz' cannot update the settings document of user_abc.
+        * @principle Enforces document ownership and prevents unauthorized data access.
+        */
+    match /users/{userId}/settings/appSettings {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+        allow get: if isOwner(userId);
+        allow list: if false;
+        allow create: if false;
+        allow update: if isSignedIn() && resource != null && isOwner(userId);
+        allow delete: if false;
     }
 
     /**
-     * @description Controls access to user-specific app settings.
-     * @path /users/{userId}/settings/appSettings
-     * @allow (get) User with UID 'user123' can read their app settings.
-     * @allow (create) User with UID 'user123' can create their app settings.
-     * @deny (update) User cannot update another user's app settings.
-     * @principle Enforces document ownership for user-specific settings.
+     * @description Allows anyone to read the global application settings. Only authenticated users can update.
+     * @path /app_settings/general
+     * @allow (get) Any user can read the global app settings.
+     * @allow (list) Any user can list the global app settings.
+     * @deny (create) Only authenticated users can create app settings.
+     * @deny (update) Only authenticated users can update app settings.
+     * @deny (delete) Only authenticated users can delete app settings.
+     * @principle Allows public read access to general app settings while restricting write access.
      */
-    match /users/{userId}/settings/appSettings {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
+    match /app_settings/general {
+        function isSignedIn() {
+          return request.auth != null;
+        }
 
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && resource != null;
-      allow delete: if isOwner(userId) && resource != null;
+        allow get: if true;
+        allow list: if true;
+        allow create: if false;
+        allow update: if isSignedIn();
+        allow delete: if false;
     }
-
-     /**
-      * @description Controls access to global application settings.
-      * @path /app_settings/general
-      * @allow (get) Any user can read the general app settings.
-      * @deny (create) Only authorized roles can create the general app settings. // TODO: Implement role-based access.
-      * @principle Allows public read access but restricts write access.
-      */
-     match /app_settings/general {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow update: if false && resource != null; // TODO: Add owner validation once the schema is updated with an ownership field.
-      allow delete: if false && resource != null; // TODO: Add owner validation once the schema is updated with an ownership field.
-     }
   }
 }
