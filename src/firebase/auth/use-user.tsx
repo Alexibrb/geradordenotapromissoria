@@ -26,20 +26,20 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const router = useRouter();
 
   useEffect(() => {
-    // Apenas toma decisões de redirecionamento quando o carregamento estiver concluído.
-    if (!isLoading) {
-      if (!user) {
-        // Se não houver usuário, redirecione para o login.
-        router.replace('/login');
-      } else if (adminOnly && userProfile?.role !== 'admin') {
-        // Se for uma rota de admin e o usuário não for admin, redirecione para clientes.
-        router.replace('/clients');
-      }
+    // Do not redirect while loading. Wait for all auth/profile data to be available.
+    if (isLoading) {
+      return;
+    }
+    
+    // If loading is finished, then check for permissions.
+    if (!user) {
+      router.replace('/login');
+    } else if (adminOnly && userProfile?.role !== 'admin') {
+      router.replace('/clients');
     }
   }, [isLoading, user, userProfile, adminOnly, router]);
 
-  // Exibe um loader enquanto o estado de autenticação e perfil está sendo carregado.
-  // Isso previne qualquer renderização ou redirecionamento prematuro.
+  // While loading, show a spinner to prevent flash of content or premature redirection.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -48,28 +48,16 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
 
-  // Se passou do carregamento e não houve redirecionamento no useEffect,
-  // significa que o usuário tem permissão. Renderiza o conteúdo protegido.
-  // A verificação final garante que não haja um flash de conteúdo indesejado.
-  if (adminOnly && userProfile?.role !== 'admin') {
-    // Ainda pode estar redirecionando, então continue mostrando o loader
-    // para evitar que o conteúdo da página de destino apareça antes da transição da URL.
+  // After loading, if the user is authenticated and has the correct role, render children.
+  // If they don't have the correct role, the useEffect will have already initiated the redirect,
+  // but we still need to prevent rendering the children. Showing a loader during the redirect is a good UX.
+  if ((adminOnly && userProfile?.role !== 'admin') || !user) {
     return (
-       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  if (!user) {
-    // O mesmo caso para o login.
-     return (
-       <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Se todas as verificações passaram, o usuário está autenticado e autorizado.
   return <>{children}</>;
 }

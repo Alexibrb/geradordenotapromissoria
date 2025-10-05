@@ -1,21 +1,35 @@
 'use client';
 
-import { ArrowLeft, CheckCircle, Gem } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Gem, Loader } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
-import { useUser } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import type { AppSettings } from '@/types';
+import { doc } from 'firebase/firestore';
 
 function UpgradePage() {
   const router = useRouter();
   const { userProfile } = useUser();
+  const firestore = useFirestore();
+
+  const appSettingsRef = useMemoFirebase(() => doc(firestore, 'app_settings', 'general'), [firestore]);
+  const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
 
   const handleUpgradeClick = () => {
-    // Aqui você integraria com seu provedor de pagamento (Stripe, etc.)
-    // Por enquanto, vamos apenas simular um link externo.
-    window.open('https://wa.me/5569992686894', '_blank');
+    // Use o número configurado se disponível, caso contrário, use um fallback.
+    const whatsappNumber = appSettings?.upgradeWhatsappNumber || '5569992686894';
+    window.open(`https://wa.me/${whatsappNumber}`, '_blank');
   };
+
+  if (areAppSettingsLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader className="animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <ProtectedRoute>

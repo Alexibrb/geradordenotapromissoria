@@ -198,6 +198,17 @@
           "description": "Default address of the creditor."
         }
       }
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "type": "object",
+      "description": "Stores global application settings.",
+      "properties": {
+        "upgradeWhatsappNumber": {
+          "type": "string",
+          "description": "The WhatsApp number used for the upgrade link."
+        }
+      }
     }
   },
   "auth": {
@@ -254,11 +265,18 @@
           },
           "description": "Stores application settings for a specific user. A single document 'appSettings' holds all settings."
         }
+      },
+       {
+        "path": "/app_settings/general",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": { "$ref": "#/entities/AppSettings" },
+          "description": "Stores global application settings, like the WhatsApp number for upgrades. This is a single document for all users."
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed for a multi-user application. Each user's data (clients, promissory notes, payments) is stored in subcollections under their unique user document in the `users` collection. This enforces data isolation and simplifies security rules, as access control is based on the `userId` in the path. User-specific settings are stored in a single document for easy retrieval."
+    "reasoning": "The Firestore structure is designed for a multi-user application. Each user's data (clients, promissory notes, payments) is stored in subcollections under their unique user document in the `users` collection. This enforces data isolation and simplifies security rules, as access control is based on the `userId` in the path. User-specific settings are stored in a single document for easy retrieval. Global settings are stored in a separate top-level collection."
   }
 }
     
     
-

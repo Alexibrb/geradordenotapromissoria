@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useState, useEffect } from 'react';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, getDocs, deleteDoc } from 'firebase/firestore';
-import type { AppUser, UserPlan } from '@/types';
+import type { AppUser, UserPlan, AppSettings } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import {
   Table,
@@ -29,14 +29,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
-import { Loader, ShieldCheck, Users, ArrowLeft, Trash2 } from 'lucide-react';
+import { Loader, ShieldCheck, Users, ArrowLeft, Trash2, Save, Phone } from 'lucide-react';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 function AdminPage() {
   const firestore = useFirestore();
@@ -46,6 +48,20 @@ function AdminPage() {
 
   const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
   const { data: users, isLoading: areUsersLoading } = useCollection<AppUser>(usersQuery);
+
+  const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
+  
+  // State for WhatsApp number configuration
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const appSettingsRef = useMemoFirebase(() => doc(firestore, 'app_settings', 'general'), [firestore]);
+  const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
+
+  useEffect(() => {
+    if (appSettings?.upgradeWhatsappNumber) {
+      setWhatsappNumber(appSettings.upgradeWhatsappNumber);
+    }
+  }, [appSettings]);
+
 
   const handlePlanChange = (userId: string, newPlan: UserPlan) => {
     if (userId === adminUser?.uid) {
@@ -67,22 +83,25 @@ function AdminPage() {
     });
   };
 
-  const handleDeleteUser = async (userToDelete: AppUser) => {
+  const openDeleteDialog = (user: AppUser) => {
+    setUserToDelete(user);
+  }
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
     if (userToDelete.id === adminUser?.uid) {
         toast({
             variant: "destructive",
             title: "Ação não permitida",
             description: "O administrador não pode excluir a própria conta.",
         });
+        setUserToDelete(null);
         return;
     }
 
     try {
-        // This is a simplified deletion process. It removes Firestore data.
-        // For a full user deletion, you'd need a Firebase Function to delete the auth user.
         const userDocRef = doc(firestore, 'users', userToDelete.id);
-
-        // 1. Delete all promissory notes and their payments for all clients of the user
         const clientsSnapshot = await getDocs(collection(userDocRef, 'clients'));
         for (const clientDoc of clientsSnapshot.docs) {
             const notesSnapshot = await getDocs(collection(clientDoc.ref, 'promissoryNotes'));
@@ -91,15 +110,11 @@ function AdminPage() {
                 paymentsSnapshot.forEach(paymentDoc => deleteDocumentNonBlocking(paymentDoc.ref));
                 deleteDocumentNonBlocking(noteDoc.ref);
             }
-            // 2. Delete the client
             deleteDocumentNonBlocking(clientDoc.ref);
         }
 
-        // 3. Delete user settings
         const settingsDocRef = doc(userDocRef, 'settings', 'appSettings');
         deleteDocumentNonBlocking(settingsDocRef);
-        
-        // 4. Delete the user document itself
         deleteDocumentNonBlocking(userDocRef);
 
         toast({
@@ -114,120 +129,173 @@ function AdminPage() {
             title: "Erro ao Excluir",
             description: "Não foi possível remover os dados do usuário.",
         });
+    } finally {
+        setUserToDelete(null);
     }
   };
+  
+  const handleSaveAppSettings = () => {
+    setDocumentNonBlocking(appSettingsRef, { upgradeWhatsappNumber: whatsappNumber }, { merge: true });
+    toast({
+      title: 'Configurações Salvas',
+      description: 'O número de WhatsApp para upgrade foi atualizado.',
+      className: 'bg-accent text-accent-foreground',
+    });
+  };
+
+  const isLoading = areUsersLoading || areAppSettingsLoading;
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute adminOnly={true}>
       <main className="min-h-full bg-background">
         <div className="container mx-auto px-4 py-8 md:py-12">
            <Button variant="ghost" onClick={() => router.push('/clients')} className="mb-4">
                 <ArrowLeft className="mr-2" />
-                Voltar para Clientes
+                Ir para Meus Clientes
             </Button>
           <header className="text-center mb-10">
             <ShieldCheck className="mx-auto h-12 w-12 text-primary" />
             <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight mt-4">
-              Administração de Usuários
+              Painel de Administração
             </h1>
             <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
-              Gerencie os planos e permissões dos usuários do sistema.
+              Gerencie os usuários e as configurações globais do sistema.
             </p>
           </header>
 
-          {areUsersLoading ? (
+          {isLoading ? (
             <div className="flex justify-center">
               <Loader className="animate-spin" />
             </div>
-          ) : users ? (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email do Usuário</TableHead>
-                    <TableHead>Plano Atual</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Alterar Plano</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.plan === 'pro' ? 'default' : 'secondary'}>
-                          {user.plan}
-                        </Badge>
-                      </TableCell>
-                       <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={user.plan}
-                          onValueChange={(value) => handlePlanChange(user.id, value as UserPlan)}
-                          disabled={user.role === 'admin'}
-                        >
-                          <SelectTrigger className="w-[120px]">
-                            <SelectValue placeholder="Mudar plano" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="free">Free</SelectItem>
-                            <SelectItem value="pro">Pro</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                       <TableCell className="text-right">
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    disabled={user.role === 'admin'}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Excluir
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. Isso irá remover permanentemente todos os dados do usuário <span className="font-bold">{user.email}</span>, incluindo seus clientes, notas e pagamentos.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(user)}>
-                                    Sim, excluir dados
-                                </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
           ) : (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">Nenhum usuário encontrado</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                    Ainda não há usuários cadastrados no sistema.
-                </p>
+            <div className="space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configurações Gerais</CardTitle>
+                  <CardDescription>Ajustes que afetam todo o sistema.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                   <div className="space-y-2">
+                    <Label htmlFor="whatsapp-number" className="flex items-center"><Phone className="mr-2"/>Número do WhatsApp para Upgrade</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="whatsapp-number"
+                        value={whatsappNumber}
+                        onChange={(e) => setWhatsappNumber(e.target.value)}
+                        placeholder="5569992686894"
+                      />
+                       <Button onClick={handleSaveAppSettings}>
+                          <Save className="mr-2" />
+                          Salvar
+                       </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Este número será usado no link da página de upgrade. Use o formato internacional, ex: 55 DDD NÚMERO.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                 <CardHeader>
+                  <CardTitle>Gerenciamento de Usuários</CardTitle>
+                  <CardDescription>Gerencie os planos e permissões dos usuários.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {users && users.length > 0 ? (
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Email do Usuário</TableHead>
+                            <TableHead>Plano Atual</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Alterar Plano</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell className="font-medium">{user.email}</TableCell>
+                              <TableCell>
+                                <Badge variant={user.plan === 'pro' ? 'default' : 'secondary'}>
+                                  {user.plan}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
+                                  {user.role}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={user.plan}
+                                  onValueChange={(value) => handlePlanChange(user.id, value as UserPlan)}
+                                  disabled={user.role === 'admin'}
+                                >
+                                  <SelectTrigger className="w-[120px]">
+                                    <SelectValue placeholder="Mudar plano" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="free">Free</SelectItem>
+                                    <SelectItem value="pro">Pro</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  disabled={user.role === 'admin'}
+                                  onClick={() => openDeleteDialog(user)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Excluir
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                        <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <h3 className="mt-4 text-lg font-semibold">Nenhum usuário encontrado</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Ainda não há usuários cadastrados no sistema.
+                        </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>
+        
+        {userToDelete && (
+             <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. Isso irá remover permanentemente todos os dados do usuário <span className="font-bold">{userToDelete.email}</span>, incluindo seus clientes, notas e pagamentos.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteUser}>
+                        Sim, excluir dados
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        )}
+
       </main>
     </ProtectedRoute>
   );
 }
 
 export default AdminPage;
-
-    

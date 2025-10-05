@@ -69,6 +69,10 @@ export interface UserSettings {
   creditorAddress?: string;
 }
 
+export interface AppSettings {
+  upgradeWhatsappNumber?: string;
+}
+
 export type UserPlan = 'free' | 'pro';
 export type UserRole = 'admin' | 'user';
 
