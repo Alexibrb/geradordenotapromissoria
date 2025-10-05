@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem } from 'lucide-react';
 import { ProtectedRoute, useUser } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, doc, collectionGroup, query, where, getDocs } from 'firebase/firestore';
@@ -36,6 +36,7 @@ import { useRouter } from 'next/navigation';
 import { DashboardStats } from '@/components/dashboard-stats';
 import { DateRange } from 'react-day-picker';
 import { startOfDay, endOfDay } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 
 function ClientsPage() {
@@ -326,6 +327,14 @@ function ClientsPage() {
         <header className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4 md:gap-0">
           <h1 className="text-3xl font-bold tracking-tight">Meus Clientes</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+             {userProfile?.plan && (
+                <div className="flex items-center gap-2">
+                    <Gem className={`h-5 w-5 ${userProfile.plan === 'pro' ? 'text-blue-500' : 'text-gray-400'}`} />
+                    <Badge variant={userProfile.plan === 'pro' ? 'default' : 'secondary'} className="capitalize">
+                        Plano {userProfile.plan}
+                    </Badge>
+                </div>
+            )}
              {userProfile?.role === 'admin' && (
               <Button onClick={() => router.push('/admin')} variant="secondary">
                 <ShieldCheck className="mr-2" />
@@ -565,3 +574,5 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+
+    
