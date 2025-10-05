@@ -1,31 +1,32 @@
 /**
- * @fileOverview Firestore Security Rules for Promissory Note App.
+ * @fileOverview Firestore Security Rules for Promissory Note App
  *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model. Each user has complete control over their own data tree,
- * including clients, promissory notes, and payments. Only authenticated users can access their data. Administrative
- * privileges are granted to users with the 'admin' role, allowing them to manage user accounts.
+ * @description
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for most data,
+ * with public read access to global application settings.
  *
  * Data Structure:
- * All data is nested under /users/{userId}, ensuring data isolation.
- * - /users/{userId}: Stores user profile information (AppUser).
- * - /users/{userId}/clients/{clientId}: Stores client data.
- * - /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}: Stores promissory notes related to a specific client.
- * - /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}: Stores payments for a promissory note.
+ * - /users/{userId}: Stores user profiles. Document ID must match the user's auth UID.
+ * - /users/{userId}/clients/{clientId}: Stores client information. Only accessible by the owning user.
+ * - /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}: Stores promissory notes. Only accessible by the owning user.
+ * - /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}: Stores payment information. Only accessible by the owning user.
  * - /users/{userId}/settings/appSettings: Stores user-specific application settings.
+ * - /app_settings/general: Stores global application settings. Publicly readable.
  *
  * Key Security Decisions:
- * - User listing is disallowed.
- * - Admin users have elevated privileges for user management (deletion).
- * - Data validation is limited to authorization-critical fields for rapid prototyping.
- * - The rules explicitly deny any operation that is not explicitly allowed.
+ * - User data is isolated under the /users/{userId} path, enforcing strict ownership.
+ * - Listing of users is disallowed.
+ * - Global settings in /app_settings/general are publicly readable.
+ *
+ * Denormalization for Authorization:
+ *  - The rules rely on path-based ownership, eliminating the need for denormalization in most cases.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by an authenticated user.
+     * @description Checks if the user is signed in.
      * @returns {boolean} True if the user is signed in, false otherwise.
      */
     function isSignedIn() {
@@ -33,56 +34,48 @@ service cloud.firestore {
     }
 
     /**
-     * @description Checks if the authenticated user's UID matches the provided userId.
-     * @param {string} userId - The user ID to compare against the authenticated user's UID.
+     * @description Checks if the request is made by the owner of the resource.
+     * @param {string} userId - The user ID to compare with the request's auth UID.
      * @returns {boolean} True if the user is the owner, false otherwise.
      */
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * @description Checks if the authenticated user is an admin.
-     * @returns {boolean} True if the user has the 'admin' role, false otherwise.
-     */
-    function isAdmin() {
-        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    /**
-     * @description Checks if the authenticated user is the existing owner of the document.
-     * @param {string} userId - The user ID to compare against the authenticated user's UID.
+     /**
+     * @description Checks if the request is made by the existing owner of the resource.
+     * @param {string} userId - The user ID to compare with the resource data.
      * @returns {boolean} True if the user is the owner and the resource exists, false otherwise.
      */
     function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
     }
 
-
     /**
-     * @description Security rules for user profiles.
+     * @description Rules for user profiles.
      * @path /users/{userId}
-     * @allow (create) - User with matching UID can create their profile.
-     * @allow (get, update, delete) - Owner can read, update, and delete their profile.
-     * @deny (create) - User cannot create a profile with a mismatched UID.
-     * @deny (update, delete) - Non-owner cannot update or delete the profile.
-     * @principle Enforces document ownership and self-creation for user profiles.
+     * @allow (create) - User with UID 'user123' can create their own profile document at /users/user123.
+     * @deny (create) - User with UID 'user123' cannot create a profile document at /users/anotherUser.
+     * @allow (get, update, delete) - User with UID 'user123' can read, update, and delete their own profile.
+     * @deny (get, update, delete) - User with UID 'user123' cannot read, update, or delete another user's profile.
+     * @principle Enforces document ownership and validates relational integrity.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin();
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Security rules for clients under a specific user.
+     * @description Rules for clients under a user.
      * @path /users/{userId}/clients/{clientId}
-     * @allow (create) - Owner can create a new client.
-     * @allow (get, list, update, delete) - Owner can read, list, update, and delete their clients.
-     * @deny (create, update, delete) - Non-owner cannot create, update, or delete clients.
-     * @principle Enforces document ownership for client data.
+     * @allow (create) - User with UID 'user123' can create a client under their user document.
+     * @deny (create) - User with UID 'user123' cannot create a client under another user's document.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read, list, update, and delete their own clients.
+     * @deny (get, list, update, delete) - User with UID 'user123' cannot read, list, update, or delete another user's clients.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/clients/{clientId} {
       allow get: if isOwner(userId);
@@ -93,12 +86,13 @@ service cloud.firestore {
     }
 
     /**
-     * @description Security rules for promissory notes under a specific client.
+     * @description Rules for promissory notes under a client of a user.
      * @path /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}
-     * @allow (create) - Owner can create a new promissory note.
-     * @allow (get, list, update, delete) - Owner can read, list, update, and delete their promissory notes.
-     * @deny (create, update, delete) - Non-owner cannot create, update, or delete promissory notes.
-     * @principle Enforces document ownership for promissory note data.
+     * @allow (create) - User with UID 'user123' can create a promissory note under their client.
+     * @deny (create) - User with UID 'user123' cannot create a promissory note under another user's client.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read, list, update, and delete their own promissory notes.
+     * @deny (get, list, update, delete) - User with UID 'user123' cannot read, list, update, or delete another user's promissory notes.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId} {
       allow get: if isOwner(userId);
@@ -109,12 +103,13 @@ service cloud.firestore {
     }
 
     /**
-     * @description Security rules for payments under a specific promissory note.
+     * @description Rules for payments under a promissory note of a client of a user.
      * @path /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}
-     * @allow (create) - Owner can create a new payment.
-     * @allow (get, list, update, delete) - Owner can read, list, update, and delete their payments.
-     * @deny (create, update, delete) - Non-owner cannot create, update, or delete payments.
-     * @principle Enforces document ownership for payment data.
+     * @allow (create) - User with UID 'user123' can create a payment under their promissory note.
+     * @deny (create) - User with UID 'user123' cannot create a payment under another user's promissory note.
+     * @allow (get, list, update, delete) - User with UID 'user123' can read, list, update, and delete their own payments.
+     * @deny (get, list, update, delete) - User with UID 'user123' cannot read, list, update, or delete another user's payments.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId} {
       allow get: if isOwner(userId);
@@ -125,19 +120,28 @@ service cloud.firestore {
     }
 
     /**
-     * @description Security rules for user-specific application settings.
+     * @description Rules for user-specific application settings.
      * @path /users/{userId}/settings/appSettings
-     * @allow (get, create, update) - Owner can read, create, and update their settings.
-     * @deny (delete) - Deletion of settings is disallowed.
-     * @deny (create, update) - Non-owner cannot create or update settings.
-     * @principle Enforces document ownership for application settings.
+     * @allow (get, create, update, delete) - User with UID 'user123' can read, create, update, and delete their own settings.
+     * @deny (get, create, update, delete) - User with UID 'user123' cannot read, create, update, or delete another user's settings.
      */
     match /users/{userId}/settings/appSettings {
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
-      allow delete: if false;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for global application settings.
+     * @path /app_settings/general
+     * @allow (get, list) - Anyone can read the global application settings.
+     * @deny (create, update, delete) - No one can create, update, or delete the global application settings.
+     */
+    match /app_settings/general {
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
   }
 }
