@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem } from 'lucide-react';
-import { ProtectedRoute, useUser } from '@/firebase/auth/use-user';
+import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, doc, collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
@@ -40,14 +40,11 @@ import { Badge } from '@/components/ui/badge';
 
 
 function ClientsPage() {
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const firestore = useFirestore();
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  
-  const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
-  const { data: userProfile } = useDoc<AppUser>(userProfileRef);
 
   const clientsCollection = useMemoFirebase(() => 
     user ? collection(firestore, 'users', user.uid, 'clients') : null
@@ -208,6 +205,17 @@ function ClientsPage() {
 
   const handleAddClient = async () => {
     if (!user || !clientsCollection) return;
+
+    if (userProfile?.plan === 'free' && clients && clients.length >= 3) {
+      toast({
+        variant: 'destructive',
+        title: 'Limite Atingido',
+        description: 'Você atingiu o limite de 3 clientes para o plano Free. Faça upgrade para adicionar mais.',
+      });
+      setIsAddDialogOpen(false);
+      return;
+    }
+
     if (clientName.trim() === '' || clientAddress.trim() === '' || clientCpf.trim() === '') {
       toast({
         variant: 'destructive',
@@ -315,11 +323,13 @@ function ClientsPage() {
   };
   
   const handleLogout = async () => {
+    if (!auth) return;
     await signOut(auth);
     router.push('/login');
   };
   
   const isLoading = isLoadingClients || isLoadingAggregates;
+  const isFreePlanLimitReached = userProfile?.plan === 'free' && clients && clients.length >= 3;
 
   return (
     <ProtectedRoute>
@@ -335,15 +345,9 @@ function ClientsPage() {
                     </Badge>
                 </div>
             )}
-             {userProfile?.role === 'admin' && (
-              <Button onClick={() => router.push('/admin')} variant="secondary">
-                <ShieldCheck className="mr-2" />
-                Admin
-              </Button>
-            )}
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button>
+                <Button disabled={isFreePlanLimitReached}>
                   <UserPlus className="mr-2" />
                   Adicionar Cliente
                 </Button>
@@ -473,6 +477,20 @@ function ClientsPage() {
                     className="pl-10 w-full"
                 />
             </div>
+             {isFreePlanLimitReached && (
+              <Card className="mt-4 border-amber-500 bg-amber-50">
+                <CardContent className="p-4 flex items-center gap-4">
+                  <Gem className="h-6 w-6 text-amber-600" />
+                  <div>
+                    <p className="font-semibold text-amber-800">Você atingiu o limite do Plano Free</p>
+                    <p className="text-sm text-amber-700">
+                      Faça o upgrade para o plano PRO para adicionar clientes ilimitados e ter mais funcionalidades.
+                    </p>
+                  </div>
+                  <Button size="sm" className="ml-auto bg-amber-600 hover:bg-amber-700">Fazer Upgrade</Button>
+                </CardContent>
+              </Card>
+            )}
         </div>
 
         {/* Edit Client Dialog */}
@@ -560,7 +578,7 @@ function ClientsPage() {
             </p>
              <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
-                    <Button className="mt-4">
+                    <Button className="mt-4" disabled={isFreePlanLimitReached}>
                         <UserPlus className="mr-2" />
                         Adicionar Cliente
                     </Button>
