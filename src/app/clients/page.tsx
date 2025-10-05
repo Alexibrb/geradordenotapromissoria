@@ -220,28 +220,18 @@ function ClientsPage() {
     setCurrentClient(null);
   };
 
-  const handleAddClient = async () => {
+  const handleAddClient = () => {
     if (!user || !clientsCollection) return;
 
-    if (userProfile?.role === 'user' && userProfile?.plan === 'free') {
-        if (clients && clients.length >= 3) {
-            toast({
-                variant: 'destructive',
-                title: 'Limite de Clientes Atingido',
-                description: 'Você atingiu o limite de 3 clientes para o plano Free. Faça upgrade para adicionar mais.',
-            });
-            setIsAddDialogOpen(false);
-            return;
-        }
-        if (remainingDays !== null && remainingDays <= 0) {
-            toast({
-                variant: 'destructive',
-                title: 'Período de Teste Expirado',
-                description: 'Seu período de teste de 30 dias acabou. Faça upgrade para continuar usando.',
-            });
-            setIsAddDialogOpen(false);
-            return;
-        }
+    if (isFreePlanAndLimitReached) {
+        toast({
+            variant: 'destructive',
+            title: 'Limite do Plano Gratuito Atingido',
+            description: 'Faça upgrade para o plano Pro para adicionar mais clientes ou continuar usando após 30 dias.',
+        });
+        setIsAddDialogOpen(false);
+        router.push('/upgrade');
+        return;
     }
 
 
@@ -386,7 +376,7 @@ function ClientsPage() {
             )}
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button disabled={isFreePlanAndLimitReached}>
+                <Button>
                   <UserPlus className="mr-2" />
                   Adicionar Cliente
                 </Button>
@@ -531,8 +521,11 @@ function ClientsPage() {
             </CardContent>
             {isFreePlanAndLimitReached && (
                  <CardHeader className="p-4 pt-0">
-                     <div className="p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md text-sm">
-                        <p><span className="font-bold">Seu período de teste acabou ou você atingiu o limite de clientes.</span> Para continuar adicionando, editando ou excluindo clientes, por favor, faça o upgrade para o plano Pro.</p>
+                     <div className="p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <p className="flex-1"><span className="font-bold">Seu período de teste acabou ou você atingiu o limite de clientes.</span> Para continuar usando todas as funcionalidades, por favor, faça o upgrade para o plano Pro.</p>
+                        <Button onClick={() => router.push('/upgrade')} className="bg-yellow-700 hover:bg-yellow-800 text-white flex-shrink-0">
+                           Fazer Upgrade para o Plano Pro
+                        </Button>
                     </div>
                  </CardHeader>
             )}
@@ -651,7 +644,7 @@ function ClientsPage() {
             </p>
              <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
-                    <Button className="mt-4" disabled={isFreePlanAndLimitReached}>
+                    <Button className="mt-4">
                         <UserPlus className="mr-2" />
                         Adicionar Cliente
                     </Button>
