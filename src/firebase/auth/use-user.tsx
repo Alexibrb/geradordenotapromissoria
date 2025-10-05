@@ -9,9 +9,7 @@ import { doc } from 'firebase/firestore';
 export function useUser() {
   const { user, isUserLoading: isAuthLoading, userError } = useAuthUser();
   const firestore = useFirestore();
-  const pathname = usePathname();
-  const router = useRouter();
-
+  
   const userProfileRef = useMemoFirebase(
     () => (user ? doc(firestore, 'users', user.uid) : null),
     [firestore, user]
@@ -20,8 +18,18 @@ export function useUser() {
 
   const isLoading = isAuthLoading || isProfileLoading;
 
+  return { user, userProfile, isLoading, userError };
+}
+
+export function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
+  const { user, userProfile, isLoading } = useUser();
+  const router = useRouter();
+  const pathname = usePathname();
+
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading) {
+      return; // Do nothing while loading
+    }
 
     if (!user) {
       if (pathname !== '/login') {
@@ -30,42 +38,14 @@ export function useUser() {
       return;
     }
 
-    // Apenas redireciona usuários não-admins para fora da página de admin.
-    // Admins podem navegar livremente.
-    if (userProfile?.role === 'user') {
-      if (pathname.startsWith('/admin')) {
-        router.replace('/clients');
-      }
-    }
-
-  }, [user, userProfile, isLoading, pathname, router]);
-
-  return { user, userProfile, isLoading, userError };
-}
-
-export function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
-  const { user, userProfile, isLoading } = useUser();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (isLoading) {
-      return; // Aguarda o carregamento terminar
-    }
-
-    // Se não há usuário, redireciona para login
-    if (!user) {
-      router.replace('/login');
-      return;
-    }
-
-    // Se a rota é apenas para admin e o usuário não é admin, redireciona
+    // If it's an admin-only route and the user is NOT an admin, redirect
     if (adminOnly && userProfile?.role !== 'admin') {
       router.replace('/clients');
     }
+  }, [isLoading, user, userProfile, adminOnly, router, pathname]);
 
-  }, [isLoading, user, userProfile, adminOnly, router]);
-
-  // Enquanto carrega ou enquanto o redirecionamento está prestes a acontecer, mostra um loader
+  // While loading, or if the user is not yet available, show a loader.
+  // Also, if it's an admin-only route and we don't have the profile yet, keep loading.
   if (isLoading || !user || (adminOnly && userProfile?.role !== 'admin')) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -74,6 +54,6 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
 
-  // Se tudo estiver certo, renderiza o conteúdo
+  // If all checks pass, render the protected content.
   return <>{children}</>;
 }
