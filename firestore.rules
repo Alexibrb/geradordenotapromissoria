@@ -1,25 +1,21 @@
 /**
- * @fileOverview Firestore Security Rules for Promissory Note App
+ * @fileoverview Firestore Security Rules for the Promissory Notes application.
  *
- * @corePhilosophy This ruleset enforces a strict user-ownership model for most data,
- *   ensuring that users can only access their own resources (clients, promissory notes, payments).
- *   Global application settings are publicly readable, but write access is restricted.
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for the majority of data. Each user has complete control over their own data (clients, notes, payments), which is stored under their respective user ID in Firestore. Global application settings are publicly readable.
  *
- * @dataStructure The data is organized hierarchically under `/users/{userId}`, with
- *   subcollections for `clients`, `promissoryNotes`, and `payments`. User settings are
- *   stored under `/users/{userId}/settings/appSettings`, and global settings are in
- *   the top-level `/app_settings/general` document.
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information. The {userId} MUST match the authenticated user's UID.
+ * - /users/{userId}/clients/{clientId}: Stores client data, accessible only to the owning user.
+ * - /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}: Stores promissory note data, accessible only to the owning user.
+ * - /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}: Stores payment data, accessible only to the owning user.
+ * - /users/{userId}/settings/appSettings: Stores user-specific settings, accessible only to the owning user.
+ * - /app_settings/general: Stores global application settings.
  *
- * @keySecurityDecisions
- *   - User listing is disallowed for privacy.
- *   - The `AppSettings` document is publicly readable but not writable by regular users.
- *   - Data validation is limited to ownership checks and critical relational fields for
- *     authorization purposes, avoiding complex schema enforcement in the rules.
- *
- * @denormalizationForAuthorization
- *   - The rules leverage path-based authorization, ensuring that the `userId` in the
- *     document path matches the authenticated user's UID (`request.auth.uid`).
- *     This approach avoids the need for costly `get()` calls to verify ownership.
+ * Key Security Decisions:
+ * - User listing is explicitly disallowed.
+ * - The /app_settings/general document is publicly readable.
+ * - All write operations require a verified and authenticated user.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -27,114 +23,163 @@ service cloud.firestore {
 
     /**
      * @description Checks if the user is signed in.
-     * @returns {boolean} True if the user is signed in, false otherwise.
+     * @path N/A (Helper function)
+     * @allow N/A (Helper function)
+     * @deny N/A (Helper function)
+     * @principle Authentication: Ensures that only authenticated users can access certain resources.
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId - The user ID to compare against the authenticated user's UID.
-     * @returns {boolean} True if the user IDs match, false otherwise.
+     * @description Checks if the request is made by the owner of the resource.
+     * @path N/A (Helper function)
+     * @allow N/A (Helper function)
+     * @deny N/A (Helper function)
+     * @principle Authorization: Ensures that only the owner of a resource can modify it.
      */
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
 
-    /**
-     * @description Checks if the authenticated user is the owner and the resource exists.
-     * @param {string} userId - The user ID to compare against the authenticated user's UID.
-     * @returns {boolean} True if the user is the owner and the resource exists, false otherwise.
-     */
+     /**
+      * @description Checks if the request is made by the owner of an existing resource.
+      * @path N/A (Helper function)
+      * @allow N/A (Helper function)
+      * @deny N/A (Helper function)
+      * @principle Authorization: Ensures that only the owner of a resource can modify it, and prevents operations on non-existent documents.
+      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Rules for user documents.
+     * @description Defines security rules for user documents.
      * @path /users/{userId}
-     * @allow (create) Signed-in user can create their own document.
-     * @allow (get,update,delete) Only the signed-in user who owns the document can access.
-     * @deny (create) Creating a user document with an ID that doesn't match the auth UID.
-     * @deny (list) Listing all users is not allowed.
-     * @principle Enforces document ownership, restricts user listing, and validates relational integrity.
+     * @allow (create) If the authenticated user's UID matches the {userId}.
+     * @deny (create) If the authenticated user's UID does not match the {userId}.
+     * @allow (get) If the request is made by the owner of the user document.
+     * @deny (get) If the request is not made by the owner of the user document.
+     * @allow (update) If the request is made by the owner of the user document.
+     * @deny (update) If the request is not made by the owner of the user document.
+     * @allow (delete) If the request is made by the owner of the user document.
+     * @deny (delete) If the request is not made by the owner of the user document.
+     * @allow (list) if false. User listing is not allowed.
+     * @principle Enforces document ownership and prevents unauthorized access to user profiles.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for client documents under a user.
+     * @description Defines security rules for client documents within a user's collection.
      * @path /users/{userId}/clients/{clientId}
-     * @allow (create) Only the signed-in user who owns the parent user document can create a client document.
-     * @allow (get,list,update,delete) Only the signed-in user who owns the parent user document can access/modify.
-     * @deny (create) Creating a client document under a different user's document.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     * @allow (create) If the request is made by the owner of the user document.
+     * @deny (create) If the request is not made by the owner of the user document.
+     * @allow (get) If the request is made by the owner of the user document.
+     * @deny (get) If the request is not made by the owner of the user document.
+     * @allow (update) If the request is made by the owner of the user document.
+     * @deny (update) If the request is not made by the owner of the user document.
+     * @allow (delete) If the request is made by the owner of the user document.
+     * @deny (delete) If the request is not made by the owner of the user document.
+     * @allow (list) If the request is made by the owner of the user document.
+     * @deny (list) If the request is not made by the owner of the user document.
+     * @principle Enforces document ownership and prevents unauthorized access to client data.
      */
     match /users/{userId}/clients/{clientId} {
-      allow get, list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for promissory note documents under a client.
+     * @description Defines security rules for promissory note documents within a client's collection.
      * @path /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}
-     * @allow (create) Only the signed-in user who owns the parent client document can create a promissory note document.
-     * @allow (get,list,update,delete) Only the signed-in user who owns the parent client document can access/modify.
-     * @deny (create) Creating a promissory note document under a different user's/client's document.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     * @allow (create) If the request is made by the owner of the user document.
+     * @deny (create) If the request is not made by the owner of the user document.
+     * @allow (get) If the request is made by the owner of the user document.
+     * @deny (get) If the request is not made by the owner of the user document.
+     * @allow (update) If the request is made by the owner of the user document.
+     * @deny (update) If the request is not made by the owner of the user document.
+     * @allow (delete) If the request is made by the owner of the user document.
+     * @deny (delete) If the request is not made by the owner of the user document.
+     * @allow (list) If the request is made by the owner of the user document.
+     * @deny (list) If the request is not made by the owner of the user document.
+     * @principle Enforces document ownership and prevents unauthorized access to promissory note data.
      */
     match /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId} {
-      allow get, list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for payment documents under a promissory note.
+     * @description Defines security rules for payment documents within a promissory note's collection.
      * @path /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}
-     * @allow (create) Only the signed-in user who owns the parent promissory note document can create a payment document.
-     * @allow (get,list,update,delete) Only the signed-in user who owns the parent promissory note document can access/modify.
-     * @deny (create) Creating a payment document under a different user's/client's/note's document.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     * @allow (create) If the request is made by the owner of the user document.
+     * @deny (create) If the request is not made by the owner of the user document.
+     * @allow (get) If the request is made by the owner of the user document.
+     * @deny (get) If the request is not made by the owner of the user document.
+     * @allow (update) If the request is made by the owner of the user document.
+     * @deny (update) If the request is not made by the owner of the user document.
+     * @allow (delete) If the request is made by the owner of the user document.
+     * @deny (delete) If the request is not made by the owner of the user document.
+     * @allow (list) If the request is made by the owner of the user document.
+     * @deny (list) If the request is not made by the owner of the user document.
+     * @principle Enforces document ownership and prevents unauthorized access to payment data.
      */
     match /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId} {
-      allow get, list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
-    /**
-     * @description Rules for user-specific settings.
-     * @path /users/{userId}/settings/appSettings
-     * @allow (get,update) Only the signed-in user who owns the parent user document can read and update their settings.
-     * @deny (create,delete) Creating or deleting the settings document is not allowed (it should be created on user creation).
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
-     */
+     /**
+      * @description Defines security rules for user settings.
+      * @path /users/{userId}/settings/appSettings
+      * @allow (get) If the request is made by the owner of the user document.
+      * @deny (get) If the request is not made by the owner of the user document.
+      * @allow (create) If the request is made by the owner of the user document.
+      * @deny (create) If the request is not made by the owner of the user document.
+      * @allow (update) If the request is made by the owner of the user document.
+      * @deny (update) If the request is not made by the owner of the user document.
+      * @allow (delete) If the request is made by the owner of the user document.
+      * @deny (delete) If the request is not made by the owner of the user document.
+      * @allow (list) Denied: There is only one settings document per user.
+      * @principle Enforces document ownership and prevents unauthorized access to user settings.
+      */
     match /users/{userId}/settings/appSettings {
-      allow get, update: if isOwner(userId);
-      allow create, delete: if false;
+        allow get: if isOwner(userId);
+        allow list: if false;
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for global application settings.
+     * @description Defines security rules for the global application settings.
      * @path /app_settings/general
-     * @allow (get,list) All users can read global settings.
-     * @deny (create,update,delete) Only administrators can modify global settings (TODO: add admin role check later).
-     * @principle Public read access with owner-only writes.
+     * @allow (get, list) Allow public access to read global app settings.
+     * @deny (create, update, delete) Deny all write operations.
+     * @principle Allows public read access to global settings while restricting write access.
      */
     match /app_settings/general {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Add admin validation once roles are implemented.
+      allow get: if true;
+      allow list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }
