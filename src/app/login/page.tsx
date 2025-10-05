@@ -34,6 +34,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useUser } from '@/firebase';
 import {
@@ -58,7 +59,7 @@ const resetPasswordSchema = z.object({
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,17 +79,6 @@ export default function LoginPage() {
     },
   });
 
-  // This effect now ONLY handles redirecting away from the login page
-  // if a user is ALREADY logged in when they land here. The main
-  // post-login redirect is handled by ProtectedRoute.
-  useEffect(() => {
-    if (!isUserLoading && user) {
-      // User is already authenticated, let ProtectedRoute handle the redirect.
-      // We can push them to a generic loading-like page or a base page.
-      router.replace('/admin/settings'); 
-    }
-  }, [isUserLoading, user, router]);
-  
   const handleError = (error: FirebaseError) => {
     setIsSubmitting(false);
     let title = 'Ocorreu um erro';
@@ -143,7 +133,7 @@ export default function LoginPage() {
     );
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, toast]);
 
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
@@ -196,7 +186,7 @@ export default function LoginPage() {
 
 
   // While checking auth state for the first time, or after a successful login, show a loader.
-  if (isUserLoading || authComplete) {
+  if (isLoading || authComplete) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
