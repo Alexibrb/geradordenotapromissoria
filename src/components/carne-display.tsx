@@ -207,9 +207,9 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
             </CardDescription>
           </div>
            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-4 sm:mt-0 no-print">
-             <Button onClick={() => setFilter('pending')} variant={filter === 'pending' ? 'secondary' : 'outline'} size="sm"><CircleOff className="mr-2"/>Pendentes</Button>
-             <Button onClick={() => setFilter('paid')} variant={filter === 'paid' ? 'secondary' : 'outline'} size="sm"><CheckCircle className="mr-2"/>Pagas</Button>
-             <Button onClick={() => setFilter('all')} variant={filter === 'all' ? 'secondary' : 'outline'} size="sm"><Receipt className="mr-2"/>Todas</Button>
+             <Button onClick={() => setFilter('pending')} variant={filter === 'pending' ? 'default' : 'outline'} size="sm"><CircleOff className="mr-2"/>Pendentes</Button>
+             <Button onClick={() => setFilter('paid')} variant={filter === 'paid' ? 'default' : 'outline'} size="sm"><CheckCircle className="mr-2"/>Pagas</Button>
+             <Button onClick={() => setFilter('all')} variant={filter === 'all' ? 'default' : 'outline'} size="sm"><Receipt className="mr-2"/>Todas</Button>
             <Button onClick={handleGeneratePdfAll} size="sm">
               <FileDown className="mr-2" />
               Gerar PDF

@@ -227,11 +227,11 @@ function ClientDetailPage() {
             {selectedNoteData ? (
               <div>
                 <div className="flex gap-2 mb-4">
-                    <Button onClick={() => setActiveView('note')} variant={activeView === 'note' ? 'secondary' : 'outline'} className="w-full">
+                    <Button onClick={() => setActiveView('note')} variant={activeView === 'note' ? 'default' : 'outline'} className="w-full">
                         <StickyNote className="mr-2"/>
                         Ver Nota Promissória
                     </Button>
-                    <Button onClick={() => setActiveView('slips')} variant={activeView === 'slips' ? 'secondary' : 'outline'} className="w-full">
+                    <Button onClick={() => setActiveView('slips')} variant={activeView === 'slips' ? 'default' : 'outline'} className="w-full">
                         <Receipt className="mr-2"/>
                         Ver Comprovantes
                     </Button>
