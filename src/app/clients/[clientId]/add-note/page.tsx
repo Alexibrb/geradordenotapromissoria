@@ -103,11 +103,11 @@ function AddNotePage() {
             </p>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-            <div className="lg:col-span-2">
+          <div className="flex flex-col gap-8">
+            <div>
               <PromissoryNoteForm onGenerate={handleGenerateAndSave} client={client} settings={settings || undefined} />
             </div>
-            <div className="lg:col-span-3 space-y-8">
+            <div className="space-y-8">
               {generatedData ? (
                 <>
                   <PromissoryNoteDisplay data={generatedData} />
