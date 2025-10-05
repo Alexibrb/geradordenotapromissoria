@@ -206,7 +206,7 @@ function ClientsPage() {
   const handleAddClient = async () => {
     if (!user || !clientsCollection) return;
 
-    if (userProfile?.plan === 'free' && clients && clients.length >= 3) {
+    if (userProfile?.role === 'user' && userProfile?.plan === 'free' && clients && clients.length >= 3) {
       toast({
         variant: 'destructive',
         title: 'Limite Atingido',
@@ -330,6 +330,8 @@ function ClientsPage() {
   
   const isLoading = isLoadingClients || isLoadingAggregates;
 
+  const isFreePlanAndLimitReached = userProfile?.role === 'user' && userProfile?.plan === 'free' && clients && clients.length >= 3;
+
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8">
@@ -338,15 +340,15 @@ function ClientsPage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
              {userProfile?.plan && (
                 <div className="flex items-center gap-2">
-                    <Gem className={`h-5 w-5 ${userProfile.plan === 'pro' ? 'text-blue-500' : 'text-gray-400'}`} />
-                    <Badge variant={userProfile.plan === 'pro' ? 'default' : 'secondary'} className="capitalize">
-                        Plano {userProfile.plan}
+                    <Gem className={`h-5 w-5 ${userProfile.plan === 'pro' || userProfile.role === 'admin' ? 'text-blue-500' : 'text-gray-400'}`} />
+                    <Badge variant={userProfile.plan === 'pro' || userProfile.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                        Plano {userProfile.role === 'admin' ? 'Admin' : userProfile.plan}
                     </Badge>
                 </div>
             )}
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
               <DialogTrigger asChild>
-                <Button>
+                <Button disabled={isFreePlanAndLimitReached}>
                   <UserPlus className="mr-2" />
                   Adicionar Cliente
                 </Button>
@@ -447,6 +449,13 @@ function ClientsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            
+            {userProfile?.role === 'admin' && (
+              <Button onClick={() => router.push('/admin')} variant="outline">
+                <ShieldCheck className="mr-2"/>
+                Painel Admin
+              </Button>
+            )}
 
             <Button onClick={handleLogout} variant="outline">
               <LogOut className="mr-2" />
@@ -454,6 +463,15 @@ function ClientsPage() {
             </Button>
           </div>
         </header>
+
+        {isFreePlanAndLimitReached && (
+          <div className="mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md">
+              <p className="font-bold">Limite do Plano Free Atingido</p>
+              <p>Você atingiu o limite de 3 clientes. Para adicionar mais clientes e ter acesso a recursos ilimitados, considere fazer o upgrade para o plano Pro.</p>
+              {/* Adicionar botão de upgrade aqui mais tarde */}
+          </div>
+        )}
+
 
         <div className="mb-8">
             <DashboardStats 
@@ -577,5 +595,3 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
-
-    
