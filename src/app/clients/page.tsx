@@ -19,9 +19,11 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -500,7 +502,7 @@ function ClientsPage() {
           </div>
         </header>
 
-        <Card className="mb-6">
+         <Card className="mb-6">
             <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
                 <div className="flex-1 w-full">
                     <div className="flex justify-between text-sm mb-1">
@@ -647,7 +649,7 @@ function ClientsPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {clients && clients.length > 0 ? 'Tente uma busca diferente ou adicione um novo cliente.' : 'Comece adicionando seu primeiro cliente para criar notas promissórias.'}
             </p>
-             <Dialog>
+             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
                     <Button className="mt-4" disabled={isFreePlanAndLimitReached}>
                         <UserPlus className="mr-2" />
