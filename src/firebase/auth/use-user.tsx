@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { Loader } from 'lucide-react';
@@ -16,6 +16,7 @@ export function useUser() {
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<AppUser>(userProfileRef);
 
+  // A loading state is true if auth is loading, or if we have a user but are still fetching their profile.
   const isLoading = isAuthLoading || (!!user && isProfileLoading);
 
   return { user, userProfile, isLoading, userError };
@@ -27,12 +28,12 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const pathname = usePathname();
 
   useEffect(() => {
-    // Only run redirection logic once loading is complete.
+    // Don't do anything while loading.
     if (isLoading) {
       return;
     }
 
-    // If there's no user, redirect to login.
+    // If no user, redirect to login.
     if (!user) {
       router.replace('/login');
       return;
@@ -40,14 +41,13 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
 
     const isAdmin = userProfile?.role === 'admin';
 
-    // If the route is for admins only and the user is not an admin, redirect.
+    // If admin-only route and user is not admin, redirect.
     if (adminOnly && !isAdmin) {
       router.replace('/clients');
       return;
     }
 
-    // If the user is an admin but tries to access a non-admin page like /clients, redirect to admin.
-    // This is more specific to prevent loops from routes like /clients/[id].
+    // If user is admin and tries to access the exact /clients path, redirect to /admin.
     if (isAdmin && pathname === '/clients') {
         router.replace('/admin');
         return;
@@ -55,7 +55,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
 
   }, [isLoading, user, userProfile, adminOnly, router, pathname]);
 
-  // While loading, always show the loader.
+  // While loading, show loader.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -67,7 +67,8 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const isAdmin = userProfile?.role === 'admin';
   const shouldRender = user && (!adminOnly || isAdmin);
 
-  // Prevent admin from briefly seeing non-admin pages before redirect
+  // If the user is an admin but is on a path that starts with /clients,
+  // we show a loader to prevent flashing content before the redirect in useEffect completes.
   if (isAdmin && pathname.startsWith('/clients')) {
       return (
           <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -76,11 +77,12 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       );
   }
 
+  // If all checks pass, render the protected content.
   if (shouldRender) {
     return <>{children}</>;
   }
   
-  // In all other cases (e.g., waiting for the redirect effect to run), show the loader.
+  // As a fallback while waiting for redirect, show loader.
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
       <Loader className="h-8 w-8 animate-spin text-primary" />
