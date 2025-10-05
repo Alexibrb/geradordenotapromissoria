@@ -27,33 +27,36 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const pathname = usePathname();
 
   useEffect(() => {
-    // Não faz nada enquanto os dados do usuário estão carregando.
+    // Only run redirection logic once loading is complete.
     if (isLoading) {
       return;
     }
 
-    // Após o carregamento, verifica as condições de redirecionamento.
+    // If there's no user, redirect to login.
     if (!user) {
       router.replace('/login');
       return;
     }
-    
-    // Se a rota é apenas para admin e o usuário não é admin, redireciona.
-    if (adminOnly && userProfile?.role !== 'admin') {
+
+    const isAdmin = userProfile?.role === 'admin';
+
+    // If the route is for admins only and the user is not an admin, redirect.
+    if (adminOnly && !isAdmin) {
       router.replace('/clients');
       return;
     }
 
-    // Se o usuário é admin e tenta acessar /clients, redireciona para /admin.
-    if (userProfile?.role === 'admin' && pathname === '/clients') {
-      router.replace('/admin');
-      return;
+    // If the user is an admin but tries to access a non-admin page, redirect to admin.
+    if (isAdmin && pathname.startsWith('/clients')) {
+        router.replace('/admin');
+        return;
     }
-  // A dependência do pathname é necessária para o redirecionamento do admin.
-  // O router é estável, então não causa re-execuções desnecessárias.
+
+  // This effect should only run when the loading state or user data changes.
+  // We include router and pathname to handle navigations, but the isLoading guard prevents loops.
   }, [isLoading, user, userProfile, adminOnly, pathname, router]);
 
-  // Enquanto carrega, mostra um loader em tela cheia.
+  // While loading, always show the loader.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -62,19 +65,20 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
 
-  // Se o usuário está logado e tem as permissões corretas, renderiza o conteúdo.
-  // As verificações abaixo previnem a renderização do conteúdo por um frame antes do redirecionamento.
-  if (user) {
-    if (adminOnly && userProfile?.role === 'admin') {
-      return <>{children}</>;
-    }
-    if (!adminOnly && userProfile?.role !== 'admin') {
-      return <>{children}</>;
-    }
+  // After loading, if the user exists and has correct permissions, render the children.
+  // This prevents rendering the protected content for a split second before redirection.
+  const isAdmin = userProfile?.role === 'admin';
+  const shouldRender = user && (!adminOnly || (adminOnly && isAdmin));
+  
+  // Also ensures admin doesn't see client pages briefly before redirect.
+  const isCorrectPathForRole = !(isAdmin && pathname.startsWith('/clients'));
+
+
+  if (shouldRender && isCorrectPathForRole) {
+    return <>{children}</>;
   }
 
-  // Se nenhuma das condições de renderização for atendida, mostra o loader
-  // enquanto o useEffect cuida do redirecionamento.
+  // In all other cases (e.g., waiting for the redirect effect to run), show the loader.
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
       <Loader className="h-8 w-8 animate-spin text-primary" />
