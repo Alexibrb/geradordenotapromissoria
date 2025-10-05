@@ -264,6 +264,15 @@ function ClientsPage() {
   };
 
   const handleEditClient = (client: Client) => {
+    if (isFreePlanAndLimitReached) {
+        toast({
+            variant: 'destructive',
+            title: 'Funcionalidade Pro',
+            description: 'Faça upgrade para o plano Pro para editar clientes.',
+        });
+        router.push('/upgrade');
+        return;
+    }
     setCurrentClient(client);
     setClientName(client.name);
     setClientAddress(client.address);
@@ -305,6 +314,15 @@ function ClientsPage() {
 
   const handleDeleteClient = async (clientId: string) => {
     if (!user) return;
+    if (isFreePlanAndLimitReached) {
+        toast({
+            variant: 'destructive',
+            title: 'Funcionalidade Pro',
+            description: 'Faça upgrade para o plano Pro para excluir clientes.',
+        });
+        router.push('/upgrade');
+        return;
+    }
     // Before deleting the client, delete all their promissory notes and payments
     const notesSnapshot = await getDocs(query(collection(firestore, 'users', user.uid, 'clients', clientId, 'promissoryNotes')));
     for (const noteDoc of notesSnapshot.docs) {
@@ -616,14 +634,13 @@ function ClientsPage() {
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditClient(client)} disabled={isFreePlanAndLimitReached}>
+                            <DropdownMenuItem onClick={() => handleEditClient(client)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => handleDeleteClient(client.id)}
                                 className="text-destructive focus:text-destructive"
-                                disabled={isFreePlanAndLimitReached}
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Excluir
