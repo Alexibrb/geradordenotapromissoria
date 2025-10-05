@@ -43,10 +43,13 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, userProfile, isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // This state will be true once Firebase auth state is confirmed and we have a user.
+  // It helps prevent redirects before the app knows who is logged in.
   const [authComplete, setAuthComplete] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -57,15 +60,16 @@ export default function LoginPage() {
     },
   });
 
+  // This effect now ONLY handles redirecting away from the login page
+  // if a user is ALREADY logged in when they land here. The main
+  // post-login redirect is handled by ProtectedRoute.
   useEffect(() => {
-    if (authComplete) {
-       if (userProfile?.role === 'admin') {
-          router.replace('/admin/settings');
-        } else {
-          router.replace('/clients');
-        }
+    if (!isUserLoading && user) {
+      // User is already authenticated, let ProtectedRoute handle the redirect.
+      // We can push them to a generic loading-like page or a base page.
+      router.replace('/clients'); 
     }
-  }, [authComplete, userProfile, router]);
+  }, [isUserLoading, user, router]);
   
   const handleError = (error: FirebaseError) => {
     setIsSubmitting(false);
@@ -105,13 +109,14 @@ export default function LoginPage() {
     
     const unsubscribe = onAuthStateChanged(auth, 
       (user) => {
+        setIsSubmitting(false);
         if (user) {
-           setIsSubmitting(false);
-           // Apenas marca a autenticação como completa, o outro useEffect fará o redirect
+           // We have a user! Mark auth as complete.
+           // The ProtectedRoute component will now handle the redirect.
            setAuthComplete(true);
         } else {
-            setIsSubmitting(false);
-            setAuthComplete(false);
+           // No user, stay on login page.
+           setAuthComplete(false);
         }
       }, 
       (error) => {
@@ -133,6 +138,7 @@ export default function LoginPage() {
     initiateEmailSignUp(auth, values.email, values.password, handleError);
   };
 
+  // While checking auth state for the first time, or after a successful login, show a loader.
   if (isUserLoading || authComplete) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">

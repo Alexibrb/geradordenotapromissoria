@@ -48,8 +48,9 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
     
-    // If an admin tries to access a non-admin page like /clients, redirect to the admin dashboard.
-    if (isAdmin && pathname.startsWith('/clients')) {
+    // If an admin logs in, redirect them to the admin dashboard.
+    // This also handles admins trying to access non-admin pages like /clients.
+    if (isAdmin && !pathname.startsWith('/admin')) {
         router.replace('/admin/settings');
         return;
     }
@@ -58,7 +59,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
 
 
   // While loading, show a global spinner.
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -68,35 +69,25 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   
   const isAdmin = userProfile?.role === 'admin';
 
-  // If we're done loading and we have a user:
-  if (user) {
-    // For admin-only pages, render children only if the user is an admin.
-    // If not an admin, show a spinner during the brief moment before the useEffect redirects them.
-    if (adminOnly) {
-      return isAdmin ? <>{children}</> : (
+  // For admin-only pages, render children only if the user is an admin.
+  // Otherwise, show loader while redirecting.
+  if (adminOnly) {
+    return isAdmin ? <>{children}</> : (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // For regular protected pages, show a loader for admins before they are redirected away.
+  if (isAdmin && !pathname.startsWith('/admin')) {
+      return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
           <Loader className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
-    } 
-    // For regular protected pages, show a spinner for admins before they are redirected away from client pages.
-    else if (isAdmin && pathname.startsWith('/clients')) {
-       return (
-          <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Loader className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        );
-    }
-    // Otherwise, it's a regular user on a regular page, so render the children.
-    else {
-       return <>{children}</>;
-    }
   }
-
-  // If no user and not loading (should be redirected by useEffect, but as a fallback), show a spinner.
-  return (
-    <div className="flex h-screen w-full items-center justify-center bg-background">
-      <Loader className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  );
+  
+  // For all other cases (e.g., regular user on regular page), render children.
+  return <>{children}</>;
 }
