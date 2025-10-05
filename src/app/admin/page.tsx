@@ -44,12 +44,16 @@ import { useAuth } from '@/firebase';
 
 function AdminPage() {
   const firestore = useFirestore();
-  const { user: adminUser } = useUser();
+  const { user: adminUser, userProfile } = useUser();
   const auth = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
-  const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
+  // A consulta só será criada se o usuário for um administrador
+  const usersQuery = useMemoFirebase(() => 
+    userProfile?.role === 'admin' ? collection(firestore, 'users') : null, 
+    [firestore, userProfile]
+  );
   const { data: users, isLoading: areUsersLoading } = useCollection<AppUser>(usersQuery);
 
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
@@ -72,7 +76,6 @@ function AdminPage() {
             title: "Ação não permitida",
             description: "O administrador não pode alterar o próprio plano.",
         });
-        router.refresh(); 
         return;
     }
     const userDocRef = doc(firestore, 'users', userId);
