@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
-import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { collection, doc, collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import type { Client, UserSettings, PromissoryNote, Payment, AppUser } from '@/types';
@@ -592,5 +592,3 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
-
-    
