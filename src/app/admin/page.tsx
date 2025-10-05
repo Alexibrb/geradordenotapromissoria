@@ -13,7 +13,7 @@ export default function AdminRedirectPage() {
 
   useEffect(() => {
     if (!isLoading && userProfile?.role === 'admin') {
-      router.replace('/admin/users');
+      router.replace('/admin/settings');
     }
   }, [isLoading, userProfile, router]);
 

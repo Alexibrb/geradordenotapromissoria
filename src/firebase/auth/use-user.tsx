@@ -50,7 +50,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     
     // If an admin tries to access a non-admin page like /clients, redirect to the admin dashboard.
     if (isAdmin && pathname.startsWith('/clients')) {
-        router.replace('/admin/users');
+        router.replace('/admin/settings');
         return;
     }
 

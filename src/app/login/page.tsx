@@ -60,7 +60,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (authComplete) {
        if (userProfile?.role === 'admin') {
-          router.replace('/admin/users');
+          router.replace('/admin/settings');
         } else {
           router.replace('/clients');
         }

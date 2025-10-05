@@ -25,8 +25,8 @@ export default function AdminLayout({
   };
 
   const navItems = [
-    { href: '/admin/users', label: 'Gerenciar Usuários', icon: Users },
     { href: '/admin/settings', label: 'Configurações', icon: Settings },
+    { href: '/admin/users', label: 'Gerenciar Usuários', icon: Users },
   ];
 
   return (
