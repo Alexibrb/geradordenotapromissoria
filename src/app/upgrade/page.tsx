@@ -11,10 +11,10 @@ import { doc } from 'firebase/firestore';
 
 function UpgradePage() {
   const router = useRouter();
-  const { userProfile } = useUser();
+  const { user, userProfile } = useUser();
   const firestore = useFirestore();
 
-  const appSettingsRef = useMemoFirebase(() => doc(firestore, 'app_settings', 'general'), [firestore]);
+  const appSettingsRef = useMemoFirebase(() => user ? doc(firestore, 'app_settings', 'general') : null, [firestore, user]);
   const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
 
   const handleUpgradeClick = () => {
@@ -23,7 +23,9 @@ function UpgradePage() {
     window.open(`https://wa.me/${whatsappNumber}`, '_blank');
   };
 
-  if (areAppSettingsLoading) {
+  const isLoading = areAppSettingsLoading && !!user;
+
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader className="animate-spin" />
@@ -35,9 +37,9 @@ function UpgradePage() {
     <ProtectedRoute>
       <main className="min-h-full bg-background">
         <div className="container mx-auto px-4 py-8 md:py-12">
-          <Button variant="ghost" onClick={() => router.push('/clients')} className="mb-6">
+          <Button variant="ghost" onClick={() => router.back()} className="mb-6">
             <ArrowLeft className="mr-2" />
-            Voltar para Clientes
+            Voltar
           </Button>
 
           <header className="text-center mb-10">
