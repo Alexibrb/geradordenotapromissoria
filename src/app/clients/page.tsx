@@ -331,7 +331,6 @@ function ClientsPage() {
   const isLoading = isLoadingClients || isLoadingAggregates;
 
   const isFreePlanAndLimitReached = userProfile?.role === 'user' && userProfile?.plan === 'free' && clients && clients.length >= 3;
-  const isFreeUser = userProfile?.plan === 'free' && userProfile?.role === 'user';
 
   return (
     <ProtectedRoute>
@@ -558,14 +557,14 @@ function ClientsPage() {
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditClient(client)} disabled={isFreeUser}>
+                            <DropdownMenuItem onClick={() => handleEditClient(client)} disabled={isFreePlanAndLimitReached}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => handleDeleteClient(client.id)}
                                 className="text-destructive focus:text-destructive"
-                                disabled={isFreeUser}
+                                disabled={isFreePlanAndLimitReached}
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Excluir
@@ -600,3 +599,5 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+
+    
