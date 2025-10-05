@@ -199,11 +199,12 @@ function ClientDetailPage() {
           </Link>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-          <div className="lg:col-span-2 space-y-4">
+        <div className="flex flex-col gap-8">
+          <div className="space-y-4">
             <h2 className="text-xl font-semibold">Notas Promissórias</h2>
             {notes && notes.length > 0 ? (
-              notes.map((note) => {
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {notes.map((note) => {
                 const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
                 return (
                   <PromissoryNoteCard
@@ -216,12 +217,13 @@ function ClientDetailPage() {
                     onDelete={(e) => handleDeleteNote(e, note.id)}
                   />
                 );
-              })
+              })}
+              </div>
             ) : (
               <p className="text-muted-foreground text-sm">Nenhuma nota encontrada para este cliente.</p>
             )}
           </div>
-          <div className="lg:col-span-3 space-y-8">
+          <div className="space-y-8">
             {selectedNoteData ? (
               <div>
                 <div className="flex gap-2 mb-4">
