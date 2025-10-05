@@ -3,10 +3,18 @@
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Gem, Star } from 'lucide-react';
+import { Check, Gem, Star, Video, Loader } from 'lucide-react';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import type { AppSettings } from '@/types';
+import { doc } from 'firebase/firestore';
+import Link from 'next/link';
 
 export default function LandingPage() {
   const router = useRouter();
+  const firestore = useFirestore();
+
+  const appSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'general') : null, [firestore]);
+  const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
 
   const handleStart = (path: string) => {
     router.push(path);
@@ -16,9 +24,23 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
         <h1 className="text-xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
-        <Button variant="ghost" onClick={() => handleStart('/login')}>
-          Entrar
-        </Button>
+        <div className="flex items-center gap-2">
+          {areAppSettingsLoading ? (
+            <Loader className="animate-spin h-5 w-5" />
+          ) : (
+            appSettings?.tutorialVideoUrl && (
+               <a href={appSettings.tutorialVideoUrl} target="_blank" rel="noopener noreferrer">
+                 <Button variant="outline">
+                   <Video className="mr-2" />
+                   Ver Tutorial em Vídeo
+                 </Button>
+               </a>
+            )
+          )}
+          <Button variant="ghost" onClick={() => handleStart('/login')}>
+            Entrar
+          </Button>
+        </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center">

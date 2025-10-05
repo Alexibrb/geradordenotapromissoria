@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { AppSettings } from '@/types';
-import { Loader, Save, Phone } from 'lucide-react';
+import { Loader, Save, Phone, Video } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ function AdminSettingsPage() {
   const { toast } = useToast();
 
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [tutorialVideoUrl, setTutorialVideoUrl] = useState('');
   
   const appSettingsRef = useMemoFirebase(() => 
     userProfile?.role === 'admin' ? doc(firestore, 'app_settings', 'general') : null,
@@ -26,17 +27,21 @@ function AdminSettingsPage() {
   const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
 
   useEffect(() => {
-    if (appSettings?.upgradeWhatsappNumber) {
-      setWhatsappNumber(appSettings.upgradeWhatsappNumber);
+    if (appSettings) {
+      setWhatsappNumber(appSettings.upgradeWhatsappNumber || '');
+      setTutorialVideoUrl(appSettings.tutorialVideoUrl || '');
     }
   }, [appSettings]);
 
   const handleSaveAppSettings = () => {
     if (!appSettingsRef) return;
-    setDocumentNonBlocking(appSettingsRef, { upgradeWhatsappNumber: whatsappNumber }, { merge: true });
+    setDocumentNonBlocking(appSettingsRef, { 
+        upgradeWhatsappNumber: whatsappNumber,
+        tutorialVideoUrl: tutorialVideoUrl
+    }, { merge: true });
     toast({
       title: 'Configurações Salvas',
-      description: 'O número de WhatsApp para upgrade foi atualizado.',
+      description: 'As configurações gerais foram atualizadas.',
       className: 'bg-accent text-accent-foreground',
     });
   };
@@ -57,34 +62,44 @@ function AdminSettingsPage() {
           <Loader className="animate-spin" />
         </div>
       ) : (
-        <div className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contato para Upgrade</CardTitle>
-              <CardDescription>Configure o número de WhatsApp que será usado na página de upgrade.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               <div className="space-y-2">
-                <Label htmlFor="whatsapp-number" className="flex items-center"><Phone className="mr-2"/>Número do WhatsApp</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="whatsapp-number"
-                    value={whatsappNumber}
-                    onChange={(e) => setWhatsappNumber(e.target.value)}
-                    placeholder="5569992686894"
-                  />
-                   <Button onClick={handleSaveAppSettings}>
-                      <Save className="mr-2" />
-                      Salvar
-                   </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Use o formato internacional, ex: 55 DDD NÚMERO.
+        <Card>
+          <CardHeader>
+            <CardTitle>Links e Contatos</CardTitle>
+            <CardDescription>Configure os links e contatos que aparecerão em diferentes partes do site.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+             <div className="space-y-2">
+              <Label htmlFor="whatsapp-number" className="flex items-center"><Phone className="mr-2"/>Número do WhatsApp para Upgrade</Label>
+              <Input
+                id="whatsapp-number"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                placeholder="5569992686894"
+              />
+              <p className="text-sm text-muted-foreground">
+                Use o formato internacional, ex: 55 DDD NÚMERO.
+              </p>
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="video-url" className="flex items-center"><Video className="mr-2"/>URL do Vídeo Tutorial</Label>
+              <Input
+                id="video-url"
+                value={tutorialVideoUrl}
+                onChange={(e) => setTutorialVideoUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+              />
+               <p className="text-sm text-muted-foreground">
+                  Cole o link completo do vídeo que aparecerá na página inicial.
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+            <div className="flex justify-end">
+                <Button onClick={handleSaveAppSettings}>
+                    <Save className="mr-2" />
+                    Salvar Configurações
+                </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

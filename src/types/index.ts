@@ -71,6 +71,7 @@ export interface UserSettings {
 
 export interface AppSettings {
   upgradeWhatsappNumber?: string;
+  tutorialVideoUrl?: string;
 }
 
 export type UserPlan = 'free' | 'pro';

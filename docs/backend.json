@@ -207,6 +207,10 @@
         "upgradeWhatsappNumber": {
           "type": "string",
           "description": "The WhatsApp number used for the upgrade link."
+        },
+        "tutorialVideoUrl": {
+          "type": "string",
+          "description": "The URL for the tutorial video link."
         }
       }
     }
