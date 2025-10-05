@@ -84,4 +84,7 @@ export interface AppUser {
   role: UserRole;
   displayName?: string;
   createdAt: Timestamp;
+  planExpirationDate?: Timestamp;
 }
+
+    

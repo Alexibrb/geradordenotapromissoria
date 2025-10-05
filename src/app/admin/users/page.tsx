@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, Timestamp } from 'firebase/firestore';
 import type { AppUser } from '@/types';
 import {
   Table,
@@ -30,11 +30,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
-import { Loader, Users, Trash2 } from 'lucide-react';
+import { Loader, Users, Trash2, Calendar as CalendarIcon, Gem } from 'lucide-react';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 function AdminUsersPage() {
   const firestore = useFirestore();
@@ -48,6 +53,7 @@ function AdminUsersPage() {
   const { data: users, isLoading: areUsersLoading } = useCollection<AppUser>(usersQuery);
 
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
+  const [planExpirationDate, setPlanExpirationDate] = useState<Date | undefined>();
 
   const handlePlanChange = (userId: string, newPlan: AppUser['plan']) => {
     if (userId === adminUser?.uid) {
@@ -59,12 +65,26 @@ function AdminUsersPage() {
         return;
     }
     const userDocRef = doc(firestore, 'users', userId);
-    setDocumentNonBlocking(userDocRef, { plan: newPlan }, { merge: true });
+    const dataToUpdate: { plan: AppUser['plan'], planExpirationDate?: Timestamp | null } = { plan: newPlan };
+
+    if (newPlan === 'pro') {
+      const expiration = planExpirationDate || addDays(new Date(), 30);
+      dataToUpdate.planExpirationDate = Timestamp.fromDate(expiration);
+    } else {
+      // If downgraded to free, remove the expiration date
+      dataToUpdate.planExpirationDate = null;
+    }
+
+    setDocumentNonBlocking(userDocRef, dataToUpdate, { merge: true });
+    
     toast({
       title: 'Plano Atualizado',
       description: `O plano do usuário foi alterado para ${newPlan}.`,
       className: 'bg-accent text-accent-foreground',
     });
+
+    // Reset date picker for next use
+    setPlanExpirationDate(undefined);
   };
 
   const openDeleteDialog = (user: AppUser) => {
@@ -85,14 +105,12 @@ function AdminUsersPage() {
     }
 
     try {
-        // Deletar o documento do usuário. As subcoleções se tornarão órfãs,
-        // mas inacessíveis pelas regras de segurança atuais.
         const userDocRef = doc(firestore, 'users', userToDelete.id);
         deleteDocumentNonBlocking(userDocRef);
 
         toast({
             title: "Usuário Excluído",
-            description: `O registro do usuário ${userToDelete.email} foi removido. Seus dados associados (clientes, notas) não são mais acessíveis.`,
+            description: `O registro do usuário ${userToDelete.email} foi removido.`,
         });
 
     } catch (error) {
@@ -135,9 +153,10 @@ function AdminUsersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Email do Usuário</TableHead>
-                      <TableHead>Plano Atual</TableHead>
+                      <TableHead>Plano</TableHead>
+                      <TableHead>Expiração do Plano</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead>Alterar Plano</TableHead>
+                      <TableHead className='text-center'>Alterar Plano</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -146,9 +165,18 @@ function AdminUsersPage() {
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.email}</TableCell>
                         <TableCell>
-                          <Badge variant={user.plan === 'pro' ? 'default' : 'secondary'}>
-                            {user.plan}
+                          <Badge variant={user.plan === 'pro' ? 'default' : 'secondary'} className="flex items-center gap-1 w-fit">
+                            <Gem className="h-3 w-3"/>{user.plan}
                           </Badge>
+                        </TableCell>
+                         <TableCell>
+                          {user.plan === 'pro' && user.planExpirationDate ? (
+                            <Badge variant="outline">
+                              {format(user.planExpirationDate.toDate(), 'dd/MM/yyyy')}
+                            </Badge>
+                          ) : (
+                            'N/A'
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
@@ -156,19 +184,47 @@ function AdminUsersPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Select
-                            value={user.plan}
-                            onValueChange={(value) => handlePlanChange(user.id, value as AppUser['plan'])}
-                            disabled={user.role === 'admin'}
-                          >
-                            <SelectTrigger className="w-[120px]">
-                              <SelectValue placeholder="Mudar plano" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="free">Free</SelectItem>
-                              <SelectItem value="pro">Pro</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className='flex items-center gap-2'>
+                            <Select
+                              value={user.plan}
+                              onValueChange={(value) => handlePlanChange(user.id, value as AppUser['plan'])}
+                              disabled={user.role === 'admin'}
+                            >
+                              <SelectTrigger className="w-[120px]">
+                                <SelectValue placeholder="Mudar plano" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="free">Free</SelectItem>
+                                <SelectItem value="pro">Pro</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {user.plan === 'free' && (
+                               <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-[200px] justify-start text-left font-normal",
+                                            !planExpirationDate && "text-muted-foreground"
+                                        )}
+                                        disabled={user.role === 'admin'}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {planExpirationDate ? format(planExpirationDate, "PPP", { locale: ptBR }) : <span>Data de Expiração</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={planExpirationDate}
+                                        onSelect={setPlanExpirationDate}
+                                        initialFocus
+                                        locale={ptBR}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -205,7 +261,7 @@ function AdminUsersPage() {
                   <AlertDialogHeader>
                   <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                   <AlertDialogDescription>
-                      Esta ação não pode ser desfeita. Isso irá remover o registro do usuário <span className="font-bold">{userToDelete.email}</span>. Os dados associados (clientes, notas) se tornarão inacessíveis.
+                      Esta ação não pode ser desfeita. Isso irá remover o registro do usuário <span className="font-bold">{userToDelete.email}</span>.
                   </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -222,3 +278,5 @@ function AdminUsersPage() {
 }
 
 export default AdminUsersPage;
+
+    

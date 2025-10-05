@@ -7,13 +7,11 @@ import { Loader } from 'lucide-react';
 import type { AppUser } from '@/types';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { User } from 'firebase/auth';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
 
 const ADMIN_EMAIL = 'alexandro.ibrb@gmail.com';
 
-/**
- * Creates or updates the user document in Firestore upon login or account creation.
- * This ensures the user's role and plan are correctly set.
- */
 const createUserDocument = async (user: User, firestore: any) => {
     if (!user || !firestore) return;
 
@@ -21,11 +19,11 @@ const createUserDocument = async (user: User, firestore: any) => {
     try {
         const userDocSnap = await getDoc(userDocRef);
 
-        const isUserAdmin = user.email === ADMIN_EMAIL;
-        const role = isUserAdmin ? 'admin' : 'user';
-        const plan = isUserAdmin ? 'pro' : 'free';
-
         if (!userDocSnap.exists()) {
+            const isUserAdmin = user.email === ADMIN_EMAIL;
+            const role = isUserAdmin ? 'admin' : 'user';
+            const plan = isUserAdmin ? 'pro' : 'free';
+
             await setDoc(userDocRef, {
                 id: user.uid,
                 email: user.email,
@@ -34,30 +32,9 @@ const createUserDocument = async (user: User, firestore: any) => {
                 displayName: user.displayName || user.email,
                 createdAt: Timestamp.now(),
             });
-        } else {
-            const currentData = userDocSnap.data();
-            const dataToUpdate: any = {};
-            let needsUpdate = false;
-
-            if (isUserAdmin && currentData.role !== 'admin') {
-                dataToUpdate.role = 'admin';
-                needsUpdate = true;
-            }
-            if (isUserAdmin && currentData.plan !== 'pro') {
-                dataToUpdate.plan = 'pro';
-                needsUpdate = true;
-            }
-            if (!currentData.createdAt) {
-                dataToUpdate.createdAt = Timestamp.now();
-                needsUpdate = true;
-            }
-
-            if (needsUpdate) {
-                await setDoc(userDocRef, dataToUpdate, { merge: true });
-            }
         }
     } catch (error) {
-        console.error("Error creating/updating user document:", error);
+        console.error("Error creating user document:", error);
     }
 };
 
@@ -70,6 +47,17 @@ export function useUser() {
     [firestore, user]
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<AppUser>(userProfileRef);
+
+  useEffect(() => {
+    if (userProfile && userProfile.plan === 'pro' && userProfile.planExpirationDate) {
+        const now = Timestamp.now();
+        if (now > userProfile.planExpirationDate) {
+            // Plan expired, downgrade to free
+            const userDocRef = doc(firestore, 'users', userProfile.id);
+            setDocumentNonBlocking(userDocRef, { plan: 'free' }, { merge: true });
+        }
+    }
+  }, [userProfile, firestore]);
 
   const isLoading = isAuthLoading || (!!user && isProfileLoading);
 
@@ -92,16 +80,13 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
     
-    // Once user is loaded, ensure their document exists.
     createUserDocument(user, firestore);
 
-    // After ensuring document exists, proceed with role-based redirection.
-    // The userProfile might still be loading on the first pass, so we check it.
     if (userProfile) {
         const isAdmin = userProfile.role === 'admin';
 
         if (adminOnly && !isAdmin) {
-          router.replace('/clients');
+          router.replace('/');
           return;
         }
         
@@ -118,7 +103,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
 
   }, [isLoading, user, userProfile, firestore, adminOnly, router, pathname]);
 
-  if (isLoading || !userProfile) {
+  if (isLoading || !user || !userProfile) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -131,7 +116,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   if (adminOnly && !isAdmin) {
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Loader className="h-8 w-8 animate-spin text-primary" />
+             <p>Redirecionando...</p>
         </div>
     );
   }
@@ -139,10 +124,12 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   if (isAdmin && !pathname.startsWith('/admin')) {
       return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
-          <Loader className="h-8 w-8 animate-spin text-primary" />
+          <p>Redirecionando para o painel de administração...</p>
         </div>
       );
   }
   
   return <>{children}</>;
 }
+
+    

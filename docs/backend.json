@@ -172,6 +172,11 @@
           "type": "string",
           "format": "date-time",
           "description": "The timestamp when the user account was created."
+        },
+        "planExpirationDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user's pro plan expires."
         }
       },
       "required": ["id", "email", "plan", "role", "createdAt"]
@@ -282,5 +287,6 @@
     "reasoning": "The Firestore structure is designed for a multi-user application. Each user's data (clients, promissory notes, payments) is stored in subcollections under their unique user document in the `users` collection. This enforces data isolation and simplifies security rules, as access control is based on the `userId` in the path. User-specific settings are stored in a single document for easy retrieval. Global settings are stored in a separate top-level collection."
   }
 }
+    
     
     
