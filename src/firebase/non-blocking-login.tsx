@@ -13,7 +13,7 @@ type ErrorCallback = (error: FirebaseError) => void;
 
 // --- ATENÇÃO ---
 // Altere o e-mail abaixo para o e-mail que você deseja que seja o administrador.
-const ADMIN_EMAIL = 'admin@example.com';
+const ADMIN_EMAIL = 'alexandro.ibrb@gmail.com';
 
 /**
  * Cria ou atualiza o documento do usuário no Firestore, definindo a role.
