@@ -42,7 +42,6 @@ import {
   initiateEmailSignUp,
   initiatePasswordReset
 } from '@/firebase/non-blocking-login';
-import { onAuthStateChanged } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 
 const loginSchema = z.object({
@@ -66,10 +65,6 @@ export default function LoginPage() {
   const [isResetting, setIsResetting] = useState(false);
   const [isResetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  
-  // This state will be true once Firebase auth state is confirmed and we have a user.
-  // It helps prevent redirects before the app knows who is logged in.
-  const [authComplete, setAuthComplete] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -78,6 +73,18 @@ export default function LoginPage() {
       password: '',
     },
   });
+
+  useEffect(() => {
+    // If the user is already loaded and exists, redirect them away from the login page.
+    if (!isLoading && user) {
+        if ((user as any).role === 'admin') {
+             router.replace('/admin/settings');
+        } else {
+             router.replace('/clients');
+        }
+    }
+  }, [user, isLoading, router]);
+
 
   const handleError = (error: FirebaseError) => {
     setIsSubmitting(false);
@@ -111,39 +118,20 @@ export default function LoginPage() {
         description,
     });
   }
-
-  useEffect(() => {
-    if (!auth) return;
-    
-    const unsubscribe = onAuthStateChanged(auth, 
-      (user) => {
-        setIsSubmitting(false);
-        if (user) {
-           // We have a user! Mark auth as complete.
-           // The ProtectedRoute component will now handle the redirect.
-           setAuthComplete(true);
-        } else {
-           // No user, stay on login page.
-           setAuthComplete(false);
-        }
-      }, 
-      (error) => {
-        handleError(error as FirebaseError);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [auth, toast]);
-
+  
+  const handleSuccess = () => {
+    setIsSubmitting(false);
+    // On success, the `useEffect` above will handle the redirect when the user state changes.
+  };
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    initiateEmailSignIn(auth, values.email, values.password, handleError);
+    initiateEmailSignIn(auth, values.email, values.password, handleSuccess, handleError);
   };
   
   const handleSignUp = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    initiateEmailSignUp(auth, values.email, values.password, handleError);
+    initiateEmailSignUp(auth, values.email, values.password, handleSuccess, handleError);
   };
   
   const handlePasswordReset = () => {
@@ -184,9 +172,9 @@ export default function LoginPage() {
     );
   };
 
-
-  // While checking auth state for the first time, or after a successful login, show a loader.
-  if (isLoading || authComplete) {
+  // While checking auth state for the first time, show a loader.
+  // Also show a loader if the user is logged in, as we are about to redirect.
+  if (isLoading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -247,7 +235,7 @@ export default function LoginPage() {
               
               <Dialog open={isResetDialogOpen} onOpenChange={setResetDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="link" size="sm" className="p-0 h-auto font-normal text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="link" size="sm" className="p-0 h-auto font-normal text-muted-foreground" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setResetDialogOpen(true); }}>
                         Esqueceu a senha?
                     </Button>
                 </DialogTrigger>

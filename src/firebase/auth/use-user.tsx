@@ -1,11 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { Loader } from 'lucide-react';
 import type { AppUser } from '@/types';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { User } from 'firebase/auth';
+
+const ADMIN_EMAIL = 'alexandro.ibrb@gmail.com';
+
+/**
+ * Creates or updates the user document in Firestore upon login or account creation.
+ * This ensures the user's role and plan are correctly set.
+ */
+const createUserDocument = async (user: User, firestore: any) => {
+    if (!user || !firestore) return;
+
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+        const userDocSnap = await getDoc(userDocRef);
+
+        const isUserAdmin = user.email === ADMIN_EMAIL;
+        const role = isUserAdmin ? 'admin' : 'user';
+        const plan = isUserAdmin ? 'pro' : 'free';
+
+        if (!userDocSnap.exists()) {
+            await setDoc(userDocRef, {
+                id: user.uid,
+                email: user.email,
+                plan: plan,
+                role: role,
+                displayName: user.displayName || user.email,
+                createdAt: Timestamp.now(),
+            });
+        } else {
+            const currentData = userDocSnap.data();
+            const dataToUpdate: any = {};
+            let needsUpdate = false;
+
+            if (isUserAdmin && currentData.role !== 'admin') {
+                dataToUpdate.role = 'admin';
+                needsUpdate = true;
+            }
+            if (isUserAdmin && currentData.plan !== 'pro') {
+                dataToUpdate.plan = 'pro';
+                needsUpdate = true;
+            }
+            if (!currentData.createdAt) {
+                dataToUpdate.createdAt = Timestamp.now();
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                await setDoc(userDocRef, dataToUpdate, { merge: true });
+            }
+        }
+    } catch (error) {
+        console.error("Error creating/updating user document:", error);
+    }
+};
 
 export function useUser() {
   const { user, isUserLoading: isAuthLoading, userError } = useAuthUser();
@@ -17,8 +71,7 @@ export function useUser() {
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<AppUser>(userProfileRef);
 
-  // The overall loading state is true if auth is loading, or if we have a user but are still fetching their profile.
-  const isLoading = isAuthLoading || (!!user && !userProfile && isProfileLoading);
+  const isLoading = isAuthLoading || (!!user && isProfileLoading);
 
   return { user, userProfile, isLoading, userError };
 }
@@ -27,39 +80,45 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const { user, userProfile, isLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const firestore = useFirestore();
   
   useEffect(() => {
-    // Wait until the loading state is definitively false.
     if (isLoading) {
       return; 
     }
 
-    // If still no user after loading, redirect to login.
     if (!user) {
       router.replace('/login');
       return;
     }
-
-    const isAdmin = userProfile?.role === 'admin';
-
-    // If this is an admin-only route and the user is not an admin, redirect away.
-    if (adminOnly && !isAdmin) {
-      router.replace('/clients');
-      return;
-    }
     
-    // If an admin logs in, redirect them to the admin dashboard.
-    // This also handles admins trying to access non-admin pages like /clients.
-    if (isAdmin && !pathname.startsWith('/admin')) {
-        router.replace('/admin/settings');
-        return;
+    // Once user is loaded, ensure their document exists.
+    createUserDocument(user, firestore);
+
+    // After ensuring document exists, proceed with role-based redirection.
+    // The userProfile might still be loading on the first pass, so we check it.
+    if (userProfile) {
+        const isAdmin = userProfile.role === 'admin';
+
+        if (adminOnly && !isAdmin) {
+          router.replace('/clients');
+          return;
+        }
+        
+        if (isAdmin && !pathname.startsWith('/admin')) {
+            router.replace('/admin/settings');
+            return;
+        }
+
+        if (!isAdmin && pathname.startsWith('/admin')) {
+            router.replace('/clients');
+            return;
+        }
     }
 
-  }, [isLoading, user, userProfile, adminOnly, router, pathname]);
+  }, [isLoading, user, userProfile, firestore, adminOnly, router, pathname]);
 
-
-  // While loading, show a global spinner.
-  if (isLoading || !user) {
+  if (isLoading || !userProfile) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -67,19 +126,16 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
   
-  const isAdmin = userProfile?.role === 'admin';
-
-  // For admin-only pages, render children only if the user is an admin.
-  // Otherwise, show loader while redirecting.
-  if (adminOnly) {
-    return isAdmin ? <>{children}</> : (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader className="h-8 w-8 animate-spin text-primary" />
-      </div>
+  const isAdmin = userProfile.role === 'admin';
+  
+  if (adminOnly && !isAdmin) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader className="h-8 w-8 animate-spin text-primary" />
+        </div>
     );
   }
 
-  // For regular protected pages, show a loader for admins before they are redirected away.
   if (isAdmin && !pathname.startsWith('/admin')) {
       return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -88,6 +144,5 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       );
   }
   
-  // For all other cases (e.g., regular user on regular page), render children.
   return <>{children}</>;
 }
