@@ -26,12 +26,13 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const router = useRouter();
 
   useEffect(() => {
-    // Do not redirect while loading. Wait for all auth/profile data to be available.
+    // Não faça nada enquanto os dados estão sendo carregados.
+    // A decisão de redirecionar ou não só será tomada quando isLoading for false.
     if (isLoading) {
       return;
     }
-    
-    // If loading is finished, then check for permissions.
+
+    // Após o carregamento, verifique as condições de autenticação e permissão.
     if (!user) {
       router.replace('/login');
     } else if (adminOnly && userProfile?.role !== 'admin') {
@@ -39,7 +40,8 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     }
   }, [isLoading, user, userProfile, adminOnly, router]);
 
-  // While loading, show a spinner to prevent flash of content or premature redirection.
+  // Se ainda estiver carregando, exiba um loader.
+  // Isso impede a renderização do conteúdo da página ou redirecionamentos prematuros.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -48,16 +50,17 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
 
-  // After loading, if the user is authenticated and has the correct role, render children.
-  // If they don't have the correct role, the useEffect will have already initiated the redirect,
-  // but we still need to prevent rendering the children. Showing a loader during the redirect is a good UX.
-  if ((adminOnly && userProfile?.role !== 'admin') || !user) {
+  // Se, após o carregamento, o usuário não estiver autenticado ou não tiver a permissão necessária,
+  // o useEffect acima já terá iniciado o redirecionamento.
+  // Renderize o loader novamente para evitar um piscar de conteúdo indesejado enquanto o redirecionamento acontece.
+  if (!user || (adminOnly && userProfile?.role !== 'admin')) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  // Se o usuário estiver autenticado e tiver as permissões corretas, renderize o conteúdo da página.
   return <>{children}</>;
 }
