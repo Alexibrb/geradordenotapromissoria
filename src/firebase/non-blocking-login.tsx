@@ -6,27 +6,26 @@ import {
   signInWithEmailAndPassword,
   User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocs, collection, query, limit } from 'firebase/firestore';
-import { getSdks } from '@/firebase'; // Assumindo que getSdks está disponível para obter firestore
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getSdks } from '@/firebase';
 
 type ErrorCallback = (error: FirebaseError) => void;
 
+// --- ATENÇÃO ---
+// Altere o e-mail abaixo para o e-mail que você deseja que seja o administrador.
+const ADMIN_EMAIL = 'admin@example.com';
+
 /**
- * Cria o documento do usuário no Firestore, definindo a role.
- * O primeiro usuário registrado será 'admin', os demais 'user'.
+ * Cria ou atualiza o documento do usuário no Firestore, definindo a role.
  */
 const createUserDocument = async (user: User) => {
     const { firestore } = getSdks(user.auth.app);
     const userDocRef = doc(firestore, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
+    // Se o documento do usuário não existir, cria um novo.
     if (!userDocSnap.exists()) {
-        // Verifica se é o primeiro usuário do sistema
-        const usersCollectionRef = collection(firestore, 'users');
-        const q = query(usersCollectionRef, limit(1));
-        const existingUsersSnap = await getDocs(q);
-        
-        const role = existingUsersSnap.empty ? 'admin' : 'user';
+        const role = user.email === ADMIN_EMAIL ? 'admin' : 'user';
 
         await setDoc(userDocRef, {
             id: user.uid,
@@ -35,6 +34,13 @@ const createUserDocument = async (user: User) => {
             role: role,
             displayName: user.displayName || user.email,
         });
+    } else {
+        // Se o documento já existe, apenas verifica se o e-mail corresponde ao admin
+        // e atualiza a role se necessário. Isso garante que o admin sempre terá a role correta.
+        const currentData = userDocSnap.data();
+        if (user.email === ADMIN_EMAIL && currentData.role !== 'admin') {
+           await setDoc(userDocRef, { role: 'admin' }, { merge: true });
+        }
     }
 };
 
@@ -54,6 +60,10 @@ export function initiateEmailSignUp(authInstance: Auth, email: string, password:
 /** Initiate email/password sign-in (non-blocking). */
 export function initiateEmailSignIn(authInstance: Auth, email: string, password: string, onError: ErrorCallback): void {
   signInWithEmailAndPassword(authInstance, email, password)
+    .then(userCredential => {
+      // Garante que o documento do usuário exista e a role esteja correta ao fazer login.
+      createUserDocument(userCredential.user);
+    })
     .catch((error: FirebaseError) => {
         onError(error);
     });
