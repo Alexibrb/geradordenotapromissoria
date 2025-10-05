@@ -35,8 +35,9 @@ import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocki
 import { useRouter } from 'next/navigation';
 import { DashboardStats } from '@/components/dashboard-stats';
 import { DateRange } from 'react-day-picker';
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, addDays, differenceInDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 
 function ClientsPage() {
@@ -54,6 +55,19 @@ function ClientsPage() {
   const [allNotes, setAllNotes] = useState<PromissoryNote[] | null>(null);
   const [allPayments, setAllPayments] = useState<Payment[] | null>(null);
   const [isLoadingAggregates, setIsLoadingAggregates] = useState(true);
+  
+  const [remainingDays, setRemainingDays] = useState<number | null>(null);
+
+
+  useEffect(() => {
+    if (userProfile && userProfile.plan === 'free' && userProfile.createdAt) {
+      const creationDate = userProfile.createdAt.toDate();
+      const expirationDate = addDays(creationDate, 30);
+      const daysLeft = differenceInDays(expirationDate, new Date());
+      setRemainingDays(daysLeft < 0 ? 0 : daysLeft);
+    }
+  }, [userProfile]);
+
 
   useEffect(() => {
     if (!user || isLoadingClients) {
@@ -206,15 +220,27 @@ function ClientsPage() {
   const handleAddClient = async () => {
     if (!user || !clientsCollection) return;
 
-    if (userProfile?.role === 'user' && userProfile?.plan === 'free' && clients && clients.length >= 3) {
-      toast({
-        variant: 'destructive',
-        title: 'Limite Atingido',
-        description: 'Você atingiu o limite de 3 clientes para o plano Free. Faça upgrade para adicionar mais.',
-      });
-      setIsAddDialogOpen(false);
-      return;
+    if (userProfile?.role === 'user' && userProfile?.plan === 'free') {
+        if (clients && clients.length >= 3) {
+            toast({
+                variant: 'destructive',
+                title: 'Limite de Clientes Atingido',
+                description: 'Você atingiu o limite de 3 clientes para o plano Free. Faça upgrade para adicionar mais.',
+            });
+            setIsAddDialogOpen(false);
+            return;
+        }
+        if (remainingDays !== null && remainingDays <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Período de Teste Expirado',
+                description: 'Seu período de teste de 30 dias acabou. Faça upgrade para continuar usando.',
+            });
+            setIsAddDialogOpen(false);
+            return;
+        }
     }
+
 
     if (clientName.trim() === '' || clientAddress.trim() === '' || clientCpf.trim() === '') {
       toast({
@@ -330,7 +356,16 @@ function ClientsPage() {
   
   const isLoading = isLoadingClients || isLoadingAggregates;
 
-  const isFreePlanAndLimitReached = userProfile?.role === 'user' && userProfile?.plan === 'free' && clients && clients.length >= 3;
+  const clientLimit = 3;
+  const daysLimit = 30;
+  
+  const isFreePlanAndLimitReached = userProfile?.role === 'user' && userProfile?.plan === 'free' && ((clients && clients.length >= clientLimit) || (remainingDays !== null && remainingDays <= 0));
+
+  const clientCount = clients?.length || 0;
+  const clientProgress = (clientCount / clientLimit) * 100;
+  const daysUsed = remainingDays !== null ? daysLimit - remainingDays : 0;
+  const daysProgress = (daysUsed / daysLimit) * 100;
+
 
   return (
     <ProtectedRoute>
@@ -464,12 +499,32 @@ function ClientsPage() {
           </div>
         </header>
 
-        {isFreePlanAndLimitReached && (
-          <div className="mb-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md">
-              <p className="font-bold">Limite do Plano Free Atingido</p>
-              <p>Você atingiu o limite de 3 clientes. Para adicionar mais clientes e ter acesso a recursos ilimitados, considere fazer o upgrade para o plano Pro.</p>
-              {/* Adicionar botão de upgrade aqui mais tarde */}
-          </div>
+         {userProfile?.plan === 'free' && remainingDays !== null && (
+            <Card className="mb-6">
+                <CardContent className="p-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="font-medium">Limite de Clientes</span>
+                                <span className="text-muted-foreground">{clientCount} / {clientLimit}</span>
+                            </div>
+                            <Progress value={clientProgress} />
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="font-medium">Período de Teste</span>
+                                <span className="text-muted-foreground">{remainingDays} dias restantes</span>
+                            </div>
+                            <Progress value={daysProgress} />
+                        </div>
+                    </div>
+                    {isFreePlanAndLimitReached && (
+                        <div className="mt-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md text-sm">
+                            <p><span className="font-bold">Seu período de teste acabou ou você atingiu o limite de clientes.</span> Para continuar adicionando, editando ou excluindo clientes, por favor, faça o upgrade para o plano Pro.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         )}
 
 
@@ -585,7 +640,7 @@ function ClientsPage() {
             </p>
              <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
-                    <Button className="mt-4">
+                    <Button className="mt-4" disabled={isFreePlanAndLimitReached}>
                         <UserPlus className="mr-2" />
                         Adicionar Cliente
                     </Button>
@@ -599,5 +654,3 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
-
-    
