@@ -3,6 +3,7 @@ import { FirebaseError } from 'firebase/app';
 import {
   Auth,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   User,
 } from 'firebase/auth';
@@ -10,6 +11,8 @@ import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { getSdks } from '@/firebase';
 
 type ErrorCallback = (error: FirebaseError) => void;
+type SuccessCallback = () => void;
+
 
 // --- ATENÇÃO ---
 // Altere o e-mail abaixo para o e-mail que você deseja que seja o administrador.
@@ -102,4 +105,15 @@ export function initiateEmailSignIn(authInstance: Auth, email: string, password:
     .catch((error: FirebaseError) => {
         onError(error);
     });
+}
+
+/** Initiate password reset email (non-blocking). */
+export function initiatePasswordReset(authInstance: Auth, email: string, onSuccess: SuccessCallback, onError: ErrorCallback): void {
+    sendPasswordResetEmail(authInstance, email)
+        .then(() => {
+            onSuccess();
+        })
+        .catch((error: FirebaseError) => {
+            onError(error);
+        });
 }

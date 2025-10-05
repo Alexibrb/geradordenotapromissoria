@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AtSign, Fingerprint, Loader2 } from 'lucide-react';
+import { AtSign, Fingerprint, Loader2, MailQuestion } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -24,12 +24,22 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useUser } from '@/firebase';
 import {
   initiateEmailSignIn,
   initiateEmailSignUp,
+  initiatePasswordReset
 } from '@/firebase/non-blocking-login';
 import { onAuthStateChanged } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
@@ -41,12 +51,20 @@ const loginSchema = z.object({
     .min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
 });
 
+const resetPasswordSchema = z.object({
+  email: z.string().email({ message: 'Por favor, insira um email válido para redefinir a senha.' }),
+});
+
+
 export default function LoginPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [isResetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   
   // This state will be true once Firebase auth state is confirmed and we have a user.
   // It helps prevent redirects before the app knows who is logged in.
@@ -67,7 +85,7 @@ export default function LoginPage() {
     if (!isUserLoading && user) {
       // User is already authenticated, let ProtectedRoute handle the redirect.
       // We can push them to a generic loading-like page or a base page.
-      router.replace('/clients'); 
+      router.replace('/admin/settings'); 
     }
   }, [isUserLoading, user, router]);
   
@@ -137,6 +155,45 @@ export default function LoginPage() {
     setIsSubmitting(true);
     initiateEmailSignUp(auth, values.email, values.password, handleError);
   };
+  
+  const handlePasswordReset = () => {
+    try {
+        resetPasswordSchema.parse({ email: resetEmail });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            toast({
+                variant: 'destructive',
+                title: 'Email inválido',
+                description: error.errors[0].message,
+            });
+        }
+        return;
+    }
+
+    setIsResetting(true);
+    initiatePasswordReset(
+        auth,
+        resetEmail,
+        () => {
+            setIsResetting(false);
+            setResetDialogOpen(false);
+            toast({
+                title: 'E-mail Enviado!',
+                description: 'Verifique sua caixa de entrada para as instruções de redefinição de senha.',
+                className: 'bg-accent text-accent-foreground',
+            });
+        },
+        (error) => {
+            setIsResetting(false);
+            toast({
+                variant: 'destructive',
+                title: 'Erro ao Enviar E-mail',
+                description: 'Não foi possível encontrar uma conta com este e-mail.',
+            });
+        }
+    );
+  };
+
 
   // While checking auth state for the first time, or after a successful login, show a loader.
   if (isUserLoading || authComplete) {
@@ -197,6 +254,43 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
+              
+              <Dialog open={isResetDialogOpen} onOpenChange={setResetDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="link" size="sm" className="p-0 h-auto font-normal text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                        Esqueceu a senha?
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><MailQuestion/>Redefinir Senha</DialogTitle>
+                        <DialogDescription>
+                            Digite seu e-mail para receber um link de redefinição de senha.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="reset-email">E-mail</Label>
+                            <Input
+                                id="reset-email"
+                                type="email"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                placeholder="seu@email.com"
+                                disabled={isResetting}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={isResetting}>Cancelar</Button>
+                        <Button onClick={handlePasswordReset} disabled={isResetting}>
+                             {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Enviar E-mail
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              
               <div className="flex flex-col gap-2 pt-4">
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
