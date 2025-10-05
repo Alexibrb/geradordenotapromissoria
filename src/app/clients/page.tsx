@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { collection, doc, collectionGroup, query, where, getDocs } from 'firebase/firestore';
@@ -12,15 +12,16 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -359,7 +360,7 @@ function ClientsPage() {
   const clientLimit = 3;
   const daysLimit = 30;
   
-  const isFreePlanAndLimitReached = userProfile?.role === 'user' && userProfile?.plan === 'free' && ((clients && clients.length >= clientLimit) || (remainingDays !== null && remainingDays <= 0));
+  const isFreePlanAndLimitReached = userProfile?.plan === 'free' && ((clients && clients.length >= clientLimit) || (remainingDays !== null && remainingDays <= 0));
 
   const clientCount = clients?.length || 0;
   const clientProgress = (clientCount / clientLimit) * 100;
@@ -499,33 +500,41 @@ function ClientsPage() {
           </div>
         </header>
 
-         {userProfile?.plan === 'free' && remainingDays !== null && (
-            <Card className="mb-6">
-                <CardContent className="p-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <div className="flex justify-between text-sm mb-1">
-                                <span className="font-medium">Limite de Clientes</span>
-                                <span className="text-muted-foreground">{clientCount} / {clientLimit}</span>
-                            </div>
-                            <Progress value={clientProgress} />
-                        </div>
-                        <div>
+        <Card className="mb-6">
+            <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex-1 w-full">
+                    <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium flex items-center gap-2"><Users className="h-4 w-4"/> Clientes Cadastrados</span>
+                        {userProfile?.plan === 'free' ? (
+                             <span className="text-muted-foreground">{clientCount} / {clientLimit}</span>
+                        ) : (
+                             <span className="font-bold">{clientCount}</span>
+                        )}
+                    </div>
+                    {userProfile?.plan === 'free' && <Progress value={clientProgress} />}
+                </div>
+
+                {userProfile?.plan === 'free' && remainingDays !== null && (
+                    <>
+                        <div className="w-full md:w-px md:h-8 bg-border"></div>
+                        <div className="flex-1 w-full">
                             <div className="flex justify-between text-sm mb-1">
                                 <span className="font-medium">Período de Teste</span>
                                 <span className="text-muted-foreground">{remainingDays} dias restantes</span>
                             </div>
                             <Progress value={daysProgress} />
                         </div>
+                    </>
+                )}
+            </CardContent>
+            {isFreePlanAndLimitReached && (
+                 <CardHeader className="p-4 pt-0">
+                     <div className="p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md text-sm">
+                        <p><span className="font-bold">Seu período de teste acabou ou você atingiu o limite de clientes.</span> Para continuar adicionando, editando ou excluindo clientes, por favor, faça o upgrade para o plano Pro.</p>
                     </div>
-                    {isFreePlanAndLimitReached && (
-                        <div className="mt-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md text-sm">
-                            <p><span className="font-bold">Seu período de teste acabou ou você atingiu o limite de clientes.</span> Para continuar adicionando, editando ou excluindo clientes, por favor, faça o upgrade para o plano Pro.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        )}
+                 </CardHeader>
+            )}
+        </Card>
 
 
         <div className="mb-8">
@@ -638,13 +647,43 @@ function ClientsPage() {
             <p className="mt-2 text-sm text-muted-foreground">
               {clients && clients.length > 0 ? 'Tente uma busca diferente ou adicione um novo cliente.' : 'Comece adicionando seu primeiro cliente para criar notas promissórias.'}
             </p>
-             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
+             <Dialog>
                 <DialogTrigger asChild>
                     <Button className="mt-4" disabled={isFreePlanAndLimitReached}>
                         <UserPlus className="mr-2" />
                         Adicionar Cliente
                     </Button>
                 </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Adicionar Novo Cliente</DialogTitle>
+                        <DialogDescription>
+                            Insira as informações do novo cliente.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="client-name-modal">Nome do Cliente</Label>
+                        <Input id="client-name-modal" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="João da Silva" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="client-cpf-modal">CPF</Label>
+                        <Input id="client-cpf-modal" value={clientCpf} onChange={(e) => setClientCpf(e.target.value)} placeholder="123.456.789-00" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="client-address-modal">Endereço</Label>
+                        <Input id="client-address-modal" value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} placeholder="Rua Exemplo, 123" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="client-contact-modal">Contato (Email/Telefone)</Label>
+                        <Input id="client-contact-modal" value={clientContact} onChange={(e) => setClientContact(e.target.value)} placeholder="contato@email.com" />
+                    </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => { setIsAddDialogOpen(false); resetForm(); }}>Cancelar</Button>
+                        <Button onClick={handleAddClient}>Salvar Cliente</Button>
+                    </DialogFooter>
+                </DialogContent>
              </Dialog>
           </div>
         )}
