@@ -47,7 +47,7 @@ const formSchema = z.object({
   productReference: z.string().min(2, { message: "Por favor, insira uma referência do produto." }),
   totalValue: z.coerce.number().positive({ message: "O valor deve ser um número positivo." }),
   paymentDate: z.date({ required_error: "A data de início do pagamento é obrigatória." }),
-  installments: z.coerce.number().int().min(1, { message: "É necessária pelo menos uma parcela." }).max(120, { message: "Não pode exceder 120 parcelas." }),
+  installments: z.coerce.number().int().min(1, { message: "É necessária pelo menos uma parcela." }),
   paymentType: z.enum(['a-vista', 'a-prazo'], { required_error: "Selecione o tipo de pagamento."}),
   hasDownPayment: z.boolean().optional(),
   downPaymentValue: z.coerce.number().optional(),
@@ -408,5 +408,3 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
     </Card>
   );
 }
-
-    
