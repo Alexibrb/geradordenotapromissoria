@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, getDocs, deleteDoc } from 'firebase/firestore';
-import type { AppUser, UserPlan, AppSettings } from '@/types';
+import type { AppUser, AppSettings } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import {
   Table,
@@ -49,7 +49,7 @@ function AdminPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  // A consulta só será criada se o usuário for um administrador
+  // The query will only be created if the user is an admin
   const usersQuery = useMemoFirebase(() => 
     userProfile?.role === 'admin' ? collection(firestore, 'users') : null, 
     [firestore, userProfile]
@@ -59,7 +59,12 @@ function AdminPage() {
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
   
   const [whatsappNumber, setWhatsappNumber] = useState('');
-  const appSettingsRef = useMemoFirebase(() => doc(firestore, 'app_settings', 'general'), [firestore]);
+  
+  // The settings ref will only be created if the user is an admin
+  const appSettingsRef = useMemoFirebase(() => 
+    userProfile?.role === 'admin' ? doc(firestore, 'app_settings', 'general') : null,
+    [firestore, userProfile]
+  );
   const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
 
   useEffect(() => {
@@ -69,7 +74,7 @@ function AdminPage() {
   }, [appSettings]);
 
 
-  const handlePlanChange = (userId: string, newPlan: UserPlan) => {
+  const handlePlanChange = (userId: string, newPlan: AppUser['plan']) => {
     if (userId === adminUser?.uid) {
         toast({
             variant: "destructive",
@@ -139,6 +144,7 @@ function AdminPage() {
   };
   
   const handleSaveAppSettings = () => {
+    if (!appSettingsRef) return;
     setDocumentNonBlocking(appSettingsRef, { upgradeWhatsappNumber: whatsappNumber }, { merge: true });
     toast({
       title: 'Configurações Salvas',
@@ -245,7 +251,7 @@ function AdminPage() {
                               <TableCell>
                                 <Select
                                   value={user.plan}
-                                  onValueChange={(value) => handlePlanChange(user.id, value as UserPlan)}
+                                  onValueChange={(value) => handlePlanChange(user.id, value as AppUser['plan'])}
                                   disabled={user.role === 'admin'}
                                 >
                                   <SelectTrigger className="w-[120px]">
@@ -313,3 +319,5 @@ function AdminPage() {
 }
 
 export default AdminPage;
+
+    
