@@ -78,4 +78,5 @@ export interface AppUser {
   plan: UserPlan;
   role: UserRole;
   displayName?: string;
+  createdAt: Timestamp;
 }

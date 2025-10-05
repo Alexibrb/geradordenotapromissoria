@@ -6,7 +6,7 @@ import {
   signInWithEmailAndPassword,
   User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { getSdks } from '@/firebase';
 
 type ErrorCallback = (error: FirebaseError) => void;
@@ -33,14 +33,15 @@ const createUserDocument = async (user: User) => {
         await setDoc(userDocRef, {
             id: user.uid,
             email: user.email,
-            plan: plan, // Plano definido com base na role
+            plan: plan,
             role: role,
             displayName: user.displayName || user.email,
+            createdAt: Timestamp.now(), // Salva a data de criação
         });
     } else {
-        // Se o documento já existe, garante que a role e o plano estejam corretos.
+        // Se o documento já existe, garante que a role, o plano e o createdAt estejam corretos.
         const currentData = userDocSnap.data();
-        const dataToUpdate: { role: string, plan: string, email?: string } = { 
+        const dataToUpdate: { role: string, plan: string, email?: string, createdAt?: Timestamp } = { 
             role: currentData.role || 'user',
             plan: currentData.plan || 'free',
         };
@@ -62,6 +63,12 @@ const createUserDocument = async (user: User) => {
         // Garante que o campo email exista, caso tenha sido um usuário antigo
         if (!currentData.email && user.email) {
             dataToUpdate.email = user.email;
+            needsUpdate = true;
+        }
+        
+        // Garante que o campo createdAt exista, caso seja um usuário antigo
+        if (!currentData.createdAt) {
+            dataToUpdate.createdAt = Timestamp.now();
             needsUpdate = true;
         }
 

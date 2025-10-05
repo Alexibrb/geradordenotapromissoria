@@ -167,9 +167,14 @@
           "type": "string",
           "enum": ["admin", "user"],
           "description": "The user's role."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user account was created."
         }
       },
-      "required": ["id", "email", "plan", "role"]
+      "required": ["id", "email", "plan", "role", "createdAt"]
     },
     "UserSettings": {
       "title": "UserSettings",
@@ -255,5 +260,5 @@
   }
 }
     
-
     
+
