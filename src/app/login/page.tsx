@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AtSign, Fingerprint, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -142,14 +143,14 @@ export default function LoginPage() {
   
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="absolute top-0 left-0 w-full p-4 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Gerador de Notas Promissórias</h1>
-      </div>
+      <Link href="/" className="absolute top-0 left-0 p-4">
+        <h1 className="text-xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
+      </Link>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Login</CardTitle>
+          <CardTitle className="text-2xl font-bold">Acesse sua Conta</CardTitle>
           <CardDescription>
-            Acesse sua conta para gerenciar suas notas.
+            Entre ou crie uma conta para começar a gerenciar suas notas.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -211,7 +212,7 @@ export default function LoginPage() {
         </CardContent>
       </Card>
       <div className="absolute bottom-0 left-0 w-full p-4 text-center">
-          <p className="text-sm text-muted-foreground">Versão 1.0.2025 - Desenvolvedor: Alex Alves</p>
+          <p className="text-sm text-muted-foreground">Versão 1.0.2025 - Desenvolvido por Alex Alves</p>
       </div>
     </main>
   );
