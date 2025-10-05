@@ -24,29 +24,23 @@ export function useUser() {
 export function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, userProfile, isLoading } = useUser();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
-    if (isLoading) {
-      return; // Do nothing while loading
-    }
-
-    if (!user) {
-      if (pathname !== '/login') {
+    // Apenas toma decisões de redirecionamento quando o carregamento estiver concluído.
+    if (!isLoading) {
+      if (!user) {
+        // Se não houver usuário, redirecione para o login.
         router.replace('/login');
+      } else if (adminOnly && userProfile?.role !== 'admin') {
+        // Se for uma rota de admin e o usuário não for admin, redirecione para clientes.
+        router.replace('/clients');
       }
-      return;
     }
+  }, [isLoading, user, userProfile, adminOnly, router]);
 
-    // If it's an admin-only route and the user is NOT an admin, redirect
-    if (adminOnly && userProfile?.role !== 'admin') {
-      router.replace('/clients');
-    }
-  }, [isLoading, user, userProfile, adminOnly, router, pathname]);
-
-  // While loading, or if the user is not yet available, show a loader.
-  // Also, if it's an admin-only route and we don't have the profile yet, keep loading.
-  if (isLoading || !user || (adminOnly && userProfile?.role !== 'admin')) {
+  // Exibe um loader enquanto o estado de autenticação e perfil está sendo carregado.
+  // Isso previne qualquer renderização ou redirecionamento prematuro.
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -54,6 +48,28 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
 
-  // If all checks pass, render the protected content.
+  // Se passou do carregamento e não houve redirecionamento no useEffect,
+  // significa que o usuário tem permissão. Renderiza o conteúdo protegido.
+  // A verificação final garante que não haja um flash de conteúdo indesejado.
+  if (adminOnly && userProfile?.role !== 'admin') {
+    // Ainda pode estar redirecionando, então continue mostrando o loader
+    // para evitar que o conteúdo da página de destino apareça antes da transição da URL.
+    return (
+       <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (!user) {
+    // O mesmo caso para o login.
+     return (
+       <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Se todas as verificações passaram, o usuário está autenticado e autorizado.
   return <>{children}</>;
 }
