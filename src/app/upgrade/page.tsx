@@ -60,7 +60,7 @@ function UpgradePage() {
               </CardHeader>
               <CardContent className="p-8 space-y-6">
                 <div className="text-center">
-                  <span className="text-4xl font-extrabold">R$29,90</span>
+                  <span className="text-4xl font-extrabold">R$10,00</span>
                   <span className="text-muted-foreground">/mês</span>
                 </div>
                 <ul className="space-y-4 text-sm">
