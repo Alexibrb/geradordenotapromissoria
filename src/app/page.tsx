@@ -106,13 +106,25 @@ export default function LandingPage() {
                     <Check className="h-4 w-4 text-green-500" />
                     <span>Emissão de notas ilimitadas</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Sem limite de tempo de uso</span>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
+                    <span>Geração de notas promissórias em PDF</span>
+                  </li>
+                   <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
+                    <span>Geração de carnê de pagamento em PDF</span>
                   </li>
                    <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span>Suporte prioritário</span>
+                    <span>Controle de pagamentos</span>
+                  </li>
+                   <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
+                    <span>Dashboard com resumo das transações</span>
+                  </li>
+                   <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    <span>Suporte prioritário e muito mais!</span>
                   </li>
                 </ul>
               </CardContent>
