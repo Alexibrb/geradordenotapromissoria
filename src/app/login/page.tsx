@@ -42,10 +42,11 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, userProfile, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authComplete, setAuthComplete] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -56,10 +57,14 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    if (!isUserLoading && user) {
-      router.replace('/clients');
+    if (authComplete) {
+       if (userProfile?.role === 'admin') {
+          router.replace('/admin');
+        } else {
+          router.replace('/clients');
+        }
     }
-  }, [user, isUserLoading, router]);
+  }, [authComplete, userProfile, router]);
   
   const handleError = (error: FirebaseError) => {
     setIsSubmitting(false);
@@ -100,21 +105,21 @@ export default function LoginPage() {
     const unsubscribe = onAuthStateChanged(auth, 
       (user) => {
         if (user) {
-          setIsSubmitting(false);
-          router.replace('/clients');
+           setIsSubmitting(false);
+           // Apenas marca a autenticação como completa, o outro useEffect fará o redirect
+           setAuthComplete(true);
         } else {
-            // This handles the case where a user signs out or their token expires
             setIsSubmitting(false);
+            setAuthComplete(false);
         }
       }, 
       (error) => {
-        // This top-level listener catches more fundamental auth state issues
         handleError(error as FirebaseError);
       }
     );
 
     return () => unsubscribe();
-  }, [auth, router, toast]);
+  }, [auth]);
 
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
@@ -127,7 +132,7 @@ export default function LoginPage() {
     initiateEmailSignUp(auth, values.email, values.password, handleError);
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading || authComplete) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
-import { Loader, ShieldCheck, Users, ArrowLeft, Trash2, Save, Phone } from 'lucide-react';
+import { Loader, ShieldCheck, Users, Trash2, Save, Phone, LogOut } from 'lucide-react';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -39,10 +39,13 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { signOut } from 'firebase/auth';
+import { useAuth } from '@/firebase';
 
 function AdminPage() {
   const firestore = useFirestore();
   const { user: adminUser } = useUser();
+  const auth = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -51,7 +54,6 @@ function AdminPage() {
 
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
   
-  // State for WhatsApp number configuration
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const appSettingsRef = useMemoFirebase(() => doc(firestore, 'app_settings', 'general'), [firestore]);
   const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
@@ -70,7 +72,6 @@ function AdminPage() {
             title: "Ação não permitida",
             description: "O administrador não pode alterar o próprio plano.",
         });
-        // We need to refresh the component to reset the select value, a bit of a hack
         router.refresh(); 
         return;
     }
@@ -143,24 +144,34 @@ function AdminPage() {
     });
   };
 
+  const handleLogout = async () => {
+    if (!auth) return;
+    await signOut(auth);
+    router.push('/login');
+  };
+
   const isLoading = areUsersLoading || areAppSettingsLoading;
 
   return (
     <ProtectedRoute adminOnly={true}>
       <main className="min-h-full bg-background">
         <div className="container mx-auto px-4 py-8 md:py-12">
-           <Button variant="ghost" onClick={() => router.push('/clients')} className="mb-4">
-                <ArrowLeft className="mr-2" />
-                Ir para Meus Clientes
+          <header className="flex flex-col md:flex-row justify-between items-center text-center mb-10">
+            <div className='flex items-center gap-4'>
+                <ShieldCheck className="h-12 w-12 text-primary" />
+                <div>
+                    <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight text-left">
+                    Painel de Administração
+                    </h1>
+                    <p className="text-muted-foreground mt-1 max-w-2xl text-left">
+                    Gerencie os usuários e as configurações globais do sistema.
+                    </p>
+                </div>
+            </div>
+            <Button onClick={handleLogout} variant="outline" className="mt-4 md:mt-0">
+              <LogOut className="mr-2" />
+              Sair
             </Button>
-          <header className="text-center mb-10">
-            <ShieldCheck className="mx-auto h-12 w-12 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight mt-4">
-              Painel de Administração
-            </h1>
-            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
-              Gerencie os usuários e as configurações globais do sistema.
-            </p>
           </header>
 
           {isLoading ? (

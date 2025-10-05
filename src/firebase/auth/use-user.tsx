@@ -24,24 +24,33 @@ export function useUser() {
 export function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) {
   const { user, userProfile, isLoading } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    // Não faça nada enquanto os dados estão sendo carregados.
-    // A decisão de redirecionar ou não só será tomada quando isLoading for false.
     if (isLoading) {
+      return; 
+    }
+
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    
+    // Se o usuário é admin e está tentando acessar a página de clientes, redireciona para o admin
+    if (userProfile?.role === 'admin' && pathname === '/clients') {
+        router.replace('/admin');
+        return;
+    }
+
+    // Se a rota é apenas para admin e o usuário não é admin, redireciona para clientes
+    if (adminOnly && userProfile?.role !== 'admin') {
+      router.replace('/clients');
       return;
     }
 
-    // Após o carregamento, verifique as condições de autenticação e permissão.
-    if (!user) {
-      router.replace('/login');
-    } else if (adminOnly && userProfile?.role !== 'admin') {
-      router.replace('/clients');
-    }
-  }, [isLoading, user, userProfile, adminOnly, router]);
-
-  // Se ainda estiver carregando, exiba um loader.
-  // Isso impede a renderização do conteúdo da página ou redirecionamentos prematuros.
+  }, [isLoading, user, userProfile, adminOnly, router, pathname]);
+  
+  // Exibe o loader enquanto os dados estão sendo carregados
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -50,17 +59,22 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
 
-  // Se, após o carregamento, o usuário não estiver autenticado ou não tiver a permissão necessária,
-  // o useEffect acima já terá iniciado o redirecionamento.
-  // Renderize o loader novamente para evitar um piscar de conteúdo indesejado enquanto o redirecionamento acontece.
-  if (!user || (adminOnly && userProfile?.role !== 'admin')) {
-    return (
-       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+  // Verifica se as condições de renderização são atendidas após o carregamento
+  if (!user) {
+      return null; // ou um loader, enquanto o redirecionamento acontece
   }
 
-  // Se o usuário estiver autenticado e tiver as permissões corretas, renderize o conteúdo da página.
+  // Se for admin, não deve renderizar a página de clientes
+  if (userProfile?.role === 'admin' && pathname === '/clients') {
+      return null; // ou um loader
+  }
+
+  // Se for uma rota de admin e o usuário não for admin
+  if (adminOnly && userProfile?.role !== 'admin') {
+      return null; // ou um loader
+  }
+
+
+  // Se todas as condições foram atendidas, renderiza o conteúdo da página.
   return <>{children}</>;
 }
