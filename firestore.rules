@@ -1,93 +1,165 @@
+/**
+ * @fileoverview Firestore Security Rules for the application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. Each user has a dedicated data tree under `/users/{userId}`.
+ * Only the authenticated user matching the `userId` can read or write data within their own tree.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information.
+ * - /users/{userId}/clients/{clientId}: Stores client information for a user.
+ * - /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}: Stores promissory notes for a client.
+ * - /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}: Stores payment information for a promissory note.
+ * - /users/{userId}/settings/appSettings: Stores application settings for a specific user.
+ *
+ * Key Security Decisions:
+ * - User data is strictly isolated based on the `userId` in the path.
+ * - No public listing of user documents or subcollections is allowed.
+ * - Data validation is limited to ownership checks and relational integrity to facilitate rapid prototyping.
+ *
+ * Denormalization for Authorization:
+ * -  The `AppUser` document's ID must match the Firebase Auth UID. This is enforced on creation.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     /**
-     * @description Checks if the request is made by an authenticated user.
+     * @description Enforces user-ownership for the /users/{userId} document. Only the authenticated user can read or write their own profile.
+     * @path /databases/{database}/documents/users/{userId}
+     * @allow (create) - An authenticated user can create their own user document if the document ID matches their UID.
+     * @allow (get, list) - An authenticated user can read their own user document.
+     * @allow (update, delete) - An authenticated user can update their own user document.
+     * @deny (create) - A user cannot create a document with a userId that doesn't match their own auth.uid.
+     * @deny (update, delete) - A user cannot update/delete a document with a userId that doesn't match their own auth.uid.
+     * @principle Enforces document ownership for writes.
      */
-    function isSignedIn() {
-      return request.auth != null;
+    match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // User listing is not permitted.
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the existing document.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for the /users/{userId}/clients collection.
-     * @path /users/{userId}/clients
-     * @allow (list) - Authenticated user with ID 'M9q0hYODH9QpaIt8dqC80rWhR5y2' can list client documents under their user id.
-     * @deny (list) -  Authenticated user with ID 'user456' cannot list client documents under /users/user123/clients.
-     * @principle Enforces user-ownership for all operations on client documents.
-     */
-    match /users/{userId}/clients {
-      allow list: if isOwner(userId);
-    }
-
-    /**
-     * @description Rules for the /users/{userId}/clients/{clientId} collection.
-     * @path /users/{userId}/clients/{clientId}
-     * @allow (create) - Authenticated user with ID 'user123' can create a new client document with clientId equal to 'user123'.
-     * @allow (get, list) - Authenticated user with ID 'user123' can read their client document.
-     * @deny (create) - Authenticated user with ID 'user456' cannot create a client document under /users/user123/clients/.
-     * @deny (update, delete) - Authenticated user cannot modify a client document that doesn't exist.
-     * @principle Enforces user-ownership for all operations on client documents.
+     * @description Enforces user-ownership for client documents. Only the authenticated user can read or write clients under their user document.
+     * @path /databases/{database}/documents/users/{userId}/clients/{clientId}
+     * @allow (create, get, list, update, delete) - An authenticated user can manage their own clients.
+     * @deny (create, get, list, update, delete) - A user cannot manage clients for a different user.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/clients/{clientId} {
-      // Read rules
-      allow get: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-      // Write rules
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+        
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for the /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId} collection.
-     * @path /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}
-     * @allow (create) - Authenticated user with ID 'user123' can create a new promissoryNote document with clientId equal to 'client456' and client456 is owned by user123.
-     * @allow (get, list) - Authenticated user with ID 'user123' can read their promissoryNote documents.
-     * @deny (create) - Authenticated user with ID 'user456' cannot create a promissoryNote document under /users/user123/clients/client456/promissoryNotes/.
-     * @deny (update, delete) - Authenticated user cannot modify a promissoryNote document that doesn't exist.
-     * @principle Enforces user-ownership for all operations on promissoryNote documents.
+     * @description Enforces user-ownership for promissory note documents. Only the authenticated user can read or write promissory notes under their client document.
+     * @path /databases/{database}/documents/users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}
+     * @allow (create, get, list, update, delete) - An authenticated user can manage their own promissory notes.
+     * @deny (create, get, list, update, delete) - A user cannot manage promissory notes for a different user or client.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId} {
-      // Read rules
-      allow get: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-      // Write rules
-      allow create: if isOwner(userId) ;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for the /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId} collection.
-     * @path /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}
-     * @allow (create) - Authenticated user with ID 'user123' can create a new payment document with clientId equal to 'client456', promissoryNoteId 'note789' and client456 is owned by user123.
-     * @allow (get, list) - Authenticated user with ID 'user123' can read their payment documents.
-     * @deny (create) - Authenticated user with ID 'user456' cannot create a payment document under /users/user123/clients/client456/promissoryNotes/note789/payments/.
-     * @deny (update, delete) - Authenticated user cannot modify a payment document that doesn't exist.
-     * @principle Enforces user-ownership for all operations on payment documents.
+     * @description Enforces user-ownership for payment documents. Only the authenticated user can read or write payments under their promissory note document.
+     * @path /databases/{database}/documents/users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId}
+     * @allow (create, get, list, update, delete) - An authenticated user can manage their own payments.
+     * @deny (create, get, list, update, delete) - A user cannot manage payments for a different user, client or promissory note.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/clients/{clientId}/promissoryNotes/{promissoryNoteId}/payments/{paymentId} {
-      // Read rules
-      allow get: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-      // Write rules
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+      /**
+       * @description Enforces user-ownership for the app settings document. Only the authenticated user can read or write their own settings.
+       * @path /databases/{database}/documents/users/{userId}/settings/appSettings
+       * @allow (create, get, list, update, delete) - An authenticated user can manage their own settings.
+       * @deny (create, get, list, update, delete) - A user cannot manage settings for a different user.
+       * @principle Enforces document ownership for all operations.
+       */
+    match /users/{userId}/settings/appSettings {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource.data != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // Only a single document exists
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
