@@ -30,7 +30,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverExternalPackages: ['jspdf', 'html2canvas'],
 };
 
 export default nextConfig;
