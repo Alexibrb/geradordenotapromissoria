@@ -21,13 +21,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader, ShieldCheck, Users } from 'lucide-react';
+import { Loader, ShieldCheck, Users, ArrowLeft } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 function AdminPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
   const { data: users, isLoading: areUsersLoading } = useCollection<AppUser>(usersQuery);
@@ -46,6 +49,10 @@ function AdminPage() {
     <ProtectedRoute>
       <main className="min-h-full bg-background">
         <div className="container mx-auto px-4 py-8 md:py-12">
+           <Button variant="ghost" onClick={() => router.push('/clients')} className="mb-4">
+                <ArrowLeft className="mr-2" />
+                Voltar para Clientes
+            </Button>
           <header className="text-center mb-10">
             <ShieldCheck className="mx-auto h-12 w-12 text-primary" />
             <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight mt-4">
