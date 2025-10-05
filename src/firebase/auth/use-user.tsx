@@ -46,15 +46,14 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
 
-    // If the user is an admin but tries to access a non-admin page, redirect to admin.
-    if (isAdmin && pathname.startsWith('/clients')) {
+    // If the user is an admin but tries to access a non-admin page like /clients, redirect to admin.
+    // This is more specific to prevent loops from routes like /clients/[id].
+    if (isAdmin && pathname === '/clients') {
         router.replace('/admin');
         return;
     }
 
-  // This effect should only run when the loading state or user data changes.
-  // We include router and pathname to handle navigations, but the isLoading guard prevents loops.
-  }, [isLoading, user, userProfile, adminOnly, pathname, router]);
+  }, [isLoading, user, userProfile, adminOnly, router, pathname]);
 
   // While loading, always show the loader.
   if (isLoading) {
@@ -64,20 +63,23 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       </div>
     );
   }
-
-  // After loading, if the user exists and has correct permissions, render the children.
-  // This prevents rendering the protected content for a split second before redirection.
-  const isAdmin = userProfile?.role === 'admin';
-  const shouldRender = user && (!adminOnly || (adminOnly && isAdmin));
   
-  // Also ensures admin doesn't see client pages briefly before redirect.
-  const isCorrectPathForRole = !(isAdmin && pathname.startsWith('/clients'));
+  const isAdmin = userProfile?.role === 'admin';
+  const shouldRender = user && (!adminOnly || isAdmin);
 
-
-  if (shouldRender && isCorrectPathForRole) {
-    return <>{children}</>;
+  // Prevent admin from briefly seeing non-admin pages before redirect
+  if (isAdmin && pathname.startsWith('/clients')) {
+      return (
+          <div className="flex h-screen w-full items-center justify-center bg-background">
+              <Loader className="h-8 w-8 animate-spin text-primary" />
+          </div>
+      );
   }
 
+  if (shouldRender) {
+    return <>{children}</>;
+  }
+  
   // In all other cases (e.g., waiting for the redirect effect to run), show the loader.
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
