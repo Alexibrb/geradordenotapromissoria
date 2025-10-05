@@ -558,7 +558,7 @@ function ClientsPage() {
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditClient(client)}>
+                            <DropdownMenuItem onClick={() => handleEditClient(client)} disabled={isFreeUser}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar
                             </DropdownMenuItem>
