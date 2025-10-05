@@ -23,10 +23,10 @@ const createUserDocument = async (user: User) => {
     const userDocRef = doc(firestore, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
-    // Se o documento do usuário não existir, cria um novo.
-    if (!userDocSnap.exists()) {
-        const role = user.email === ADMIN_EMAIL ? 'admin' : 'user';
+    const role = user.email === ADMIN_EMAIL ? 'admin' : 'user';
 
+    // Se o documento do usuário não existir, cria um novo com todos os campos.
+    if (!userDocSnap.exists()) {
         await setDoc(userDocRef, {
             id: user.uid,
             email: user.email,
@@ -35,11 +35,23 @@ const createUserDocument = async (user: User) => {
             displayName: user.displayName || user.email,
         });
     } else {
-        // Se o documento já existe, apenas verifica se o e-mail corresponde ao admin
-        // e atualiza a role se necessário. Isso garante que o admin sempre terá a role correta.
+        // Se o documento já existe, garante que a role e o email estejam corretos.
         const currentData = userDocSnap.data();
+        const dataToUpdate: { role: string, email?: string } = { role: currentData.role || 'user' };
+
+        // Garante que a role de admin esteja correta
         if (user.email === ADMIN_EMAIL && currentData.role !== 'admin') {
-           await setDoc(userDocRef, { role: 'admin' }, { merge: true });
+           dataToUpdate.role = 'admin';
+        }
+        
+        // Garante que o campo email exista, caso tenha sido um usuário antigo
+        if (!currentData.email && user.email) {
+            dataToUpdate.email = user.email;
+        }
+
+        // Atualiza o documento apenas se houver algo para mudar.
+        if (dataToUpdate.role !== currentData.role || dataToUpdate.email) {
+             await setDoc(userDocRef, dataToUpdate, { merge: true });
         }
     }
 };
