@@ -17,7 +17,8 @@ export function useUser() {
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<AppUser>(userProfileRef);
 
-  const isLoading = isAuthLoading || (!!user && isProfileLoading);
+  // The overall loading state is true if auth is loading, or if we have a user but are still fetching their profile.
+  const isLoading = isAuthLoading || (!!user && !userProfile && isProfileLoading);
 
   return { user, userProfile, isLoading, userError };
 }
@@ -28,10 +29,12 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const pathname = usePathname();
   
   useEffect(() => {
+    // Wait until the loading state is definitively false.
     if (isLoading) {
       return; 
     }
 
+    // If still no user after loading, redirect to login.
     if (!user) {
       router.replace('/login');
       return;
@@ -39,13 +42,14 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
 
     const isAdmin = userProfile?.role === 'admin';
 
+    // If this is an admin-only route and the user is not an admin, redirect away.
     if (adminOnly && !isAdmin) {
       router.replace('/clients');
       return;
     }
     
-    // If an admin tries to access /clients directly, redirect them to the default admin page.
-    if (isAdmin && pathname === '/clients') {
+    // If an admin tries to access a non-admin page like /clients, redirect to the admin dashboard.
+    if (isAdmin && pathname.startsWith('/clients')) {
         router.replace('/admin/users');
         return;
     }
@@ -53,6 +57,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   }, [isLoading, user, userProfile, adminOnly, router, pathname]);
 
 
+  // While loading, show a global spinner.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -63,33 +68,32 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   
   const isAdmin = userProfile?.role === 'admin';
 
+  // If we're done loading and we have a user:
   if (user) {
+    // For admin-only pages, render children only if the user is an admin.
+    // If not an admin, show a spinner during the brief moment before the useEffect redirects them.
     if (adminOnly) {
-      if (isAdmin) {
-        return <>{children}</>;
-      } else {
-        // This loader is shown while the redirect for non-admins on an admin page happens.
-        return (
+      return isAdmin ? <>{children}</> : (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+          <Loader className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    } 
+    // For regular protected pages, show a spinner for admins before they are redirected away from client pages.
+    else if (isAdmin && pathname.startsWith('/clients')) {
+       return (
           <div className="flex h-screen w-full items-center justify-center bg-background">
             <Loader className="h-8 w-8 animate-spin text-primary" />
           </div>
         );
-      }
-    } else {
-      // This handles the case where an admin lands on a non-admin page like /clients
-      // and needs to be redirected. We show a loader during the redirect.
-      if (isAdmin && pathname.startsWith('/clients')) {
-         return (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-              <Loader className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          );
-      }
+    }
+    // Otherwise, it's a regular user on a regular page, so render the children.
+    else {
        return <>{children}</>;
     }
   }
 
-  // This loader is shown for non-authenticated users while they are being redirected to login.
+  // If no user and not loading (should be redirected by useEffect, but as a fallback), show a spinner.
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
       <Loader className="h-8 w-8 animate-spin text-primary" />

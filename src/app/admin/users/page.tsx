@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, doc, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import type { AppUser } from '@/types';
 import {
   Table,
@@ -72,9 +72,9 @@ function AdminUsersPage() {
   }
 
   const handleDeleteUser = async () => {
-    if (!userToDelete) return;
+    if (!userToDelete || !adminUser) return;
 
-    if (userToDelete.id === adminUser?.uid) {
+    if (userToDelete.id === adminUser.uid) {
         toast({
             variant: "destructive",
             title: "Ação não permitida",
@@ -85,33 +85,22 @@ function AdminUsersPage() {
     }
 
     try {
+        // Deletar o documento do usuário. As subcoleções se tornarão órfãs,
+        // mas inacessíveis pelas regras de segurança atuais.
         const userDocRef = doc(firestore, 'users', userToDelete.id);
-        const clientsSnapshot = await getDocs(collection(userDocRef, 'clients'));
-        for (const clientDoc of clientsSnapshot.docs) {
-            const notesSnapshot = await getDocs(collection(clientDoc.ref, 'promissoryNotes'));
-            for (const noteDoc of notesSnapshot.docs) {
-                const paymentsSnapshot = await getDocs(collection(noteDoc.ref, 'payments'));
-                paymentsSnapshot.forEach(paymentDoc => deleteDocumentNonBlocking(paymentDoc.ref));
-                deleteDocumentNonBlocking(noteDoc.ref);
-            }
-            deleteDocumentNonBlocking(clientDoc.ref);
-        }
-
-        const settingsDocRef = doc(userDocRef, 'settings', 'appSettings');
-        deleteDocumentNonBlocking(settingsDocRef);
         deleteDocumentNonBlocking(userDocRef);
 
         toast({
-            title: "Dados do Usuário Excluídos",
-            description: `Todos os dados de ${userToDelete.email} foram removidos do banco de dados.`,
+            title: "Usuário Excluído",
+            description: `O registro do usuário ${userToDelete.email} foi removido. Seus dados associados (clientes, notas) não são mais acessíveis.`,
         });
 
     } catch (error) {
-        console.error("Error deleting user data: ", error);
+        console.error("Error deleting user: ", error);
         toast({
             variant: "destructive",
             title: "Erro ao Excluir",
-            description: "Não foi possível remover os dados do usuário.",
+            description: "Não foi possível remover o registro do usuário.",
         });
     } finally {
         setUserToDelete(null);
@@ -216,13 +205,13 @@ function AdminUsersPage() {
                   <AlertDialogHeader>
                   <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                   <AlertDialogDescription>
-                      Esta ação não pode ser desfeita. Isso irá remover permanentemente todos os dados do usuário <span className="font-bold">{userToDelete.email}</span>, incluindo seus clientes, notas e pagamentos.
+                      Esta ação não pode ser desfeita. Isso irá remover o registro do usuário <span className="font-bold">{userToDelete.email}</span>. Os dados associados (clientes, notas) se tornarão inacessíveis.
                   </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                   <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancelar</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDeleteUser}>
-                      Sim, excluir dados
+                      Sim, excluir usuário
                   </AlertDialogAction>
                   </AlertDialogFooter>
               </AlertDialogContent>
