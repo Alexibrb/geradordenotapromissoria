@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck } from 'lucide-react';
 import { ProtectedRoute, useUser } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, doc, collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import type { Client, UserSettings, PromissoryNote, Payment } from '@/types';
+import type { Client, UserSettings, PromissoryNote, Payment, AppUser } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -44,6 +44,9 @@ function ClientsPage() {
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  
+  const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
+  const { data: userProfile } = useDoc<AppUser>(userProfileRef);
 
   const clientsCollection = useMemoFirebase(() => 
     user ? collection(firestore, 'users', user.uid, 'clients') : null
@@ -323,6 +326,12 @@ function ClientsPage() {
         <header className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4 md:gap-0">
           <h1 className="text-3xl font-bold tracking-tight">Meus Clientes</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+             {userProfile?.role === 'admin' && (
+              <Button onClick={() => router.push('/admin')} variant="secondary">
+                <ShieldCheck className="mr-2" />
+                Admin
+              </Button>
+            )}
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
               <DialogTrigger asChild>
                 <Button>

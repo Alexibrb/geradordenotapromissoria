@@ -69,8 +69,13 @@ export interface UserSettings {
   creditorAddress?: string;
 }
 
-    
+export type UserPlan = 'free' | 'pro';
+export type UserRole = 'admin' | 'user';
 
-    
-
-    
+export interface AppUser {
+  id: string;
+  email: string;
+  plan: UserPlan;
+  role: UserRole;
+  displayName?: string;
+}

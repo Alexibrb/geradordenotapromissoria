@@ -140,8 +140,8 @@
         "installmentNumber"
       ]
     },
-     "User": {
-      "title": "User",
+     "AppUser": {
+      "title": "AppUser",
       "type": "object",
       "description": "Represents a user of the application.",
       "properties": {
@@ -153,9 +153,23 @@
           "type": "string",
           "format": "email",
           "description": "User's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "plan": {
+          "type": "string",
+          "enum": ["free", "pro"],
+          "description": "The user's subscription plan."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "user"],
+          "description": "The user's role."
         }
       },
-      "required": ["id", "email"]
+      "required": ["id", "email", "plan", "role"]
     },
     "UserSettings": {
       "title": "UserSettings",
@@ -191,9 +205,9 @@
        {
         "path": "/users/{userId}",
         "definition": {
-          "entityName": "User",
-          "schema": { "$ref": "#/entities/User" },
-          "description": "Stores user profile information. Document ID must match the user's auth UID."
+          "entityName": "AppUser",
+          "schema": { "$ref": "#/entities/AppUser" },
+          "description": "Stores user profile information, including plan and role. Document ID must match the user's auth UID."
         }
       },
       {
