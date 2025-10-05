@@ -73,7 +73,7 @@ function UpgradePage() {
                   <span className="text-4xl font-extrabold">R$10,00</span>
                   <span className="text-muted-foreground">/mês</span>
                 </div>
-                <ul className="space-y-4 text-sm">
+                 <ul className="space-y-4 text-sm">
                   <li className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                     <span>Clientes ilimitados</span>
@@ -82,13 +82,25 @@ function UpgradePage() {
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                     <span>Emissão de notas ilimitadas</span>
                   </li>
+                   <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-1" />
+                    <span>Geração de notas promissórias em PDF</span>
+                  </li>
+                   <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-1" />
+                    <span>Geração de carnê de pagamento em PDF</span>
+                  </li>
                   <li className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                    <span>Sem limite de tempo de uso</span>
+                    <span>Controle de pagamentos</span>
                   </li>
-                   <li className="flex items-center gap-3">
+                   <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-1" />
+                    <span>Dashboard com resumo das transações</span>
+                  </li>
+                  <li className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                    <span>Suporte prioritário</span>
+                    <span>Suporte prioritário e muito mais!</span>
                   </li>
                 </ul>
               </CardContent>
