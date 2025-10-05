@@ -18,9 +18,19 @@ function UpgradePage() {
   const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
 
   const handleUpgradeClick = () => {
+    if (!user) return; // Garante que o usuário está logado
+    
     // Use o número configurado se disponível, caso contrário, use um fallback.
     const whatsappNumber = appSettings?.upgradeWhatsappNumber || '5569992686894';
-    window.open(`https://wa.me/${whatsappNumber}`, '_blank');
+    
+    // Cria a mensagem personalizada com o email do usuário
+    const message = `Olá, gostaria de assinar o plano PRO do aplicativo Gerador de nota promissória, meu e-mail é ${user.email}`;
+    
+    // Codifica a mensagem para ser usada na URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Abre a janela do WhatsApp
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
 
   const isLoading = areAppSettingsLoading && !!user;
