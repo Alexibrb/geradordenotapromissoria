@@ -30,11 +30,9 @@ export function useUser() {
       return;
     }
 
-    if (userProfile?.role === 'admin') {
-      if (!pathname.startsWith('/admin')) {
-        router.replace('/admin');
-      }
-    } else if (userProfile?.role === 'user') {
+    // Apenas redireciona usuários não-admins para fora da página de admin.
+    // Admins podem navegar livremente.
+    if (userProfile?.role === 'user') {
       if (pathname.startsWith('/admin')) {
         router.replace('/clients');
       }
