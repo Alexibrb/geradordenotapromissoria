@@ -45,6 +45,7 @@ import {
 import { FirebaseError } from 'firebase/app';
 import type { AppSettings } from '@/types';
 import { doc } from 'firebase/firestore';
+import { ProtectedRoute } from '@/firebase/auth/use-user';
 
 
 const loginSchema = z.object({
@@ -63,8 +64,6 @@ const resetPasswordSchema = z.object({
 export default function LoginPage() {
   const auth = useAuth();
   const firestore = useFirestore();
-  const { user, isLoading, userProfile } = useUser();
-  const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -83,17 +82,6 @@ export default function LoginPage() {
       cpf: '',
     },
   });
-
-  useEffect(() => {
-    if (!isLoading && userProfile) {
-        if (userProfile.role === 'admin') {
-             router.replace('/admin');
-        } else {
-             router.replace('/clients');
-        }
-    }
-  }, [userProfile, isLoading, router]);
-
 
   const handleError = (error: FirebaseError) => {
     setIsSubmitting(false);
@@ -191,158 +179,152 @@ export default function LoginPage() {
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
-
-  if (isLoading || user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
   
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <Link href="/" className="absolute top-0 left-0 p-4">
-        <h1 className="text-xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
-      </Link>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">{isSigningUp ? 'Crie Sua Conta' : 'Acesse sua Conta'}</CardTitle>
-          <CardDescription>
-            {isSigningUp ? 'Preencha os campos para começar a gerenciar suas notas.' : 'Entre com seus dados para acessar o sistema.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(isSigningUp ? handleSignUp : handleLogin)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><AtSign className='mr-2 h-4 w-4' />Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="seu@email.com"
-                        {...field}
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center"><Fingerprint className='mr-2 h-4 w-4' />Senha</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        {...field}
-                        disabled={isSubmitting}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               {isSigningUp && (
-                  <FormField
-                    control={form.control}
-                    name="cpf"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center"><Fingerprint className='mr-2 h-4 w-4' />CPF</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Seu CPF (somente números)"
-                            {...field}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+    <ProtectedRoute>
+        <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+            <Link href="/" className="mb-6">
+                <h1 className="text-2xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
+            </Link>
+            <Card className="w-full max-w-sm">
+                <CardHeader>
+                <CardTitle className="text-2xl font-bold">{isSigningUp ? 'Crie Sua Conta' : 'Acesse sua Conta'}</CardTitle>
+                <CardDescription>
+                    {isSigningUp ? 'Preencha os campos para começar a gerenciar suas notas.' : 'Entre com seus dados para acessar o sistema.'}
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(isSigningUp ? handleSignUp : handleLogin)} className="space-y-4">
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center"><AtSign className='mr-2 h-4 w-4' />Email</FormLabel>
+                            <FormControl>
+                            <Input
+                                placeholder="seu@email.com"
+                                {...field}
+                                disabled={isSubmitting}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="flex items-center"><Fingerprint className='mr-2 h-4 w-4' />Senha</FormLabel>
+                            <FormControl>
+                            <Input
+                                type="password"
+                                placeholder="••••••••"
+                                {...field}
+                                disabled={isSubmitting}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    {isSigningUp && (
+                        <FormField
+                            control={form.control}
+                            name="cpf"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="flex items-center"><Fingerprint className='mr-2 h-4 w-4' />CPF</FormLabel>
+                                <FormControl>
+                                <Input
+                                    placeholder="Seu CPF (somente números)"
+                                    {...field}
+                                    disabled={isSubmitting}
+                                />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        )}
+                    
+                    {!isSigningUp && (
+                        <Dialog open={isResetDialogOpen} onOpenChange={setResetDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="link" size="sm" className="p-0 h-auto font-normal text-muted-foreground" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setResetDialogOpen(true); }}>
+                                Esqueceu a senha?
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2"><MailQuestion/>Redefinir Senha</DialogTitle>
+                                <DialogDescription>
+                                    Digite seu e-mail para receber um link de redefinição de senha.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="reset-email">E-mail</Label>
+                                    <Input
+                                        id="reset-email"
+                                        type="email"
+                                        value={resetEmail}
+                                        onChange={(e) => setResetEmail(e.target.value)}
+                                        placeholder="seu@email.com"
+                                        disabled={isResetting}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={isResetting}>Cancelar</Button>
+                                <Button onClick={handlePasswordReset} disabled={isResetting}>
+                                    {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Enviar E-mail
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                        </Dialog>
                     )}
-                  />
-                )}
-              
-              {!isSigningUp && (
-                <Dialog open={isResetDialogOpen} onOpenChange={setResetDialogOpen}>
-                  <DialogTrigger asChild>
-                      <Button variant="link" size="sm" className="p-0 h-auto font-normal text-muted-foreground" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setResetDialogOpen(true); }}>
-                          Esqueceu a senha?
-                      </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                      <DialogHeader>
-                          <DialogTitle className="flex items-center gap-2"><MailQuestion/>Redefinir Senha</DialogTitle>
-                          <DialogDescription>
-                              Digite seu e-mail para receber um link de redefinição de senha.
-                          </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                              <Label htmlFor="reset-email">E-mail</Label>
-                              <Input
-                                  id="reset-email"
-                                  type="email"
-                                  value={resetEmail}
-                                  onChange={(e) => setResetEmail(e.target.value)}
-                                  placeholder="seu@email.com"
-                                  disabled={isResetting}
-                              />
-                          </div>
-                      </div>
-                      <DialogFooter>
-                          <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={isResetting}>Cancelar</Button>
-                          <Button onClick={handlePasswordReset} disabled={isResetting}>
-                               {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              Enviar E-mail
-                          </Button>
-                      </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              )}
-              
-              <div className="flex flex-col gap-2 pt-4">
-                {isSigningUp ? (
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Criar Conta
-                    </Button>
-                ) : (
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Entrar
-                    </Button>
-                )}
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsSigningUp(!isSigningUp)}
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                   {isSigningUp ? 'Já tenho uma conta' : 'Criar uma Conta'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-      <div className="mt-4 text-center text-sm text-muted-foreground">
-        <button onClick={handleEmailRecovery} className="inline-flex items-center gap-2 hover:underline">
-            <MessageCircle className="h-4 w-4"/> Esqueceu seu e-mail? Fale conosco.
-        </button>
-      </div>
-      <div className="absolute bottom-0 left-0 w-full p-4 text-center">
-          <p className="text-sm text-muted-foreground">Versão 1.0.2025 - Desenvolvido por Alex Alves</p>
-      </div>
-    </main>
+                    
+                    <div className="flex flex-col gap-2 pt-4">
+                        {isSigningUp ? (
+                            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Criar Conta
+                            </Button>
+                        ) : (
+                            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Entrar
+                            </Button>
+                        )}
+                        
+                        <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsSigningUp(!isSigningUp)}
+                        className="w-full"
+                        disabled={isSubmitting}
+                        >
+                        {isSigningUp ? 'Já tenho uma conta' : 'Criar uma Conta'}
+                        </Button>
+                    </div>
+                    </form>
+                </Form>
+                </CardContent>
+            </Card>
+            <div className="mt-4 text-center text-sm text-muted-foreground">
+                <button onClick={handleEmailRecovery} className="inline-flex items-center gap-2 hover:underline">
+                    <MessageCircle className="h-4 w-4"/> Esqueceu seu e-mail? Fale conosco.
+                </button>
+            </div>
+            <div className="absolute bottom-0 left-0 w-full p-4 text-center">
+                <p className="text-sm text-muted-foreground">Versão 1.0.2025 - Desenvolvido por Alex Alves</p>
+            </div>
+        </main>
+    </ProtectedRoute>
   );
 }
