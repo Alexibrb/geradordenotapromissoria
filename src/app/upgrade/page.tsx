@@ -73,6 +73,9 @@ function UpgradePage() {
                   <span className="text-4xl font-extrabold">R$10,00</span>
                   <span className="text-muted-foreground">/mês</span>
                 </div>
+                <div className="text-center bg-green-100 text-green-800 p-3 rounded-lg">
+                    <p className="font-semibold text-lg">Pagamento via PIX</p>
+                </div>
                  <ul className="space-y-4 text-sm">
                   <li className="flex items-center gap-3">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
