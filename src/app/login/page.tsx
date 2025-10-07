@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AtSign, Fingerprint, Loader2, MailQuestion, MessageCircle } from 'lucide-react';
+import { AtSign, Fingerprint, Loader2, MailQuestion, MessageCircle, StickyNote } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -180,7 +180,8 @@ export default function LoginPage() {
   
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-        <Link href="/" className="mb-6">
+        <Link href="/" className="mb-6 flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+            <StickyNote className="h-7 w-7"/>
             <h1 className="text-2xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
         </Link>
         <Card className="w-full max-w-sm">
