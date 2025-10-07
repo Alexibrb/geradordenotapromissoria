@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, doc, Timestamp } from 'firebase/firestore';
 import type { AppUser } from '@/types';
@@ -54,6 +54,17 @@ function AdminUsersPage() {
 
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
   const [planExpirationDate, setPlanExpirationDate] = useState<Date | undefined>();
+
+  const planCounts = useMemo(() => {
+    if (!users) {
+      return { proCount: 0, freeCount: 0 };
+    }
+    const nonAdminUsers = users.filter(user => user.role !== 'admin');
+    return {
+      proCount: nonAdminUsers.filter(user => user.plan === 'pro').length,
+      freeCount: nonAdminUsers.filter(user => user.plan === 'free').length,
+    };
+  }, [users]);
 
   const handlePlanChange = (userId: string, newPlan: AppUser['plan']) => {
     if (userId === adminUser?.uid) {
@@ -135,6 +146,40 @@ function AdminUsersPage() {
           Gerencie os planos e permissões dos usuários do sistema.
         </p>
       </header>
+        
+      {areUsersLoading ? (
+        <div className="flex justify-center mb-8">
+          <Loader className="animate-spin" />
+        </div>
+      ) : (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Resumo de Planos</CardTitle>
+            <CardDescription>Contagem de usuários por plano (excluindo administradores).</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-secondary/50 p-4 rounded-lg flex items-center gap-4">
+                  <div className="bg-blue-100 p-3 rounded-full">
+                    <Gem className="h-6 w-6 text-blue-500"/>
+                  </div>
+                  <div>
+                      <p className="text-sm text-muted-foreground font-semibold">Usuários Pro</p>
+                      <p className="text-2xl font-bold">{planCounts.proCount}</p>
+                  </div>
+              </div>
+              <div className="bg-secondary/50 p-4 rounded-lg flex items-center gap-4">
+                  <div className="bg-gray-100 p-3 rounded-full">
+                    <Users className="h-6 w-6 text-gray-500"/>
+                  </div>
+                  <div>
+                      <p className="text-sm text-muted-foreground font-semibold">Usuários Free</p>
+                      <p className="text-2xl font-bold">{planCounts.freeCount}</p>
+                  </div>
+              </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       {areUsersLoading ? (
         <div className="flex justify-center">
