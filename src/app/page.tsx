@@ -63,10 +63,10 @@ export default function LandingPage() {
 
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-7xl md:text-8xl font-extrabold tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
             Gerador de Nota Promissória
           </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-xl text-muted-foreground font-semibold">
+          <p className="mt-4 max-w-2xl mx-auto text-3xl md:text-4xl text-muted-foreground font-semibold">
             Simples, Rápido e Profissional.
           </p>
           <p className="mt-2 max-w-2xl mx-auto text-lg text-muted-foreground">
