@@ -87,7 +87,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (!isLoading && userProfile) {
         if (userProfile.role === 'admin') {
-             router.replace('/admin/settings');
+             router.replace('/admin');
         } else {
              router.replace('/clients');
         }
@@ -130,11 +130,11 @@ export default function LoginPage() {
   
   const handleSuccess = () => {
     setIsSubmitting(false);
+    // Redirection is now handled by the useUser hook and ProtectedRoute
   };
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    setIsSigningUp(false);
     initiateEmailSignIn(auth, values.email, values.password, handleSuccess, handleError);
   };
   
@@ -144,7 +144,6 @@ export default function LoginPage() {
         return;
     }
     setIsSubmitting(true);
-    setIsSigningUp(true);
     initiateEmailSignUp(auth, values.email, values.password, values.cpf, handleSuccess, handleError);
   };
   
@@ -193,7 +192,7 @@ export default function LoginPage() {
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
 
-  if (isLoading || (user && !userProfile)) {
+  if (isLoading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

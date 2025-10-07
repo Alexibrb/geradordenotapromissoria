@@ -12,7 +12,7 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const ADMIN_EMAIL = 'alexandro.ibrb@gmail.com';
 
-const createUserDocument = async (user: User, firestore: any) => {
+const createUserDocument = async (user: User, firestore: any, cpf?: string | null) => {
     if (!user || !firestore) return;
 
     const userDocRef = doc(firestore, 'users', user.uid);
@@ -23,16 +23,11 @@ const createUserDocument = async (user: User, firestore: any) => {
             const isUserAdmin = user.email === ADMIN_EMAIL;
             const role = isUserAdmin ? 'admin' : 'user';
             const plan = isUserAdmin ? 'pro' : 'free';
-            
-            // Retrieve CPF from session storage and then clear it
-            const cpf = sessionStorage.getItem('tempCpfForSignUp');
-            sessionStorage.removeItem('tempCpfForSignUp');
-
 
             await setDoc(userDocRef, {
                 id: user.uid,
                 email: user.email,
-                cpf: cpf || null, // Save CPF, or null if not present
+                cpf: cpf || null,
                 plan: plan,
                 role: role,
                 displayName: user.displayName || user.email,
@@ -55,6 +50,18 @@ export function useUser() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<AppUser>(userProfileRef);
 
   useEffect(() => {
+    if (user && firestore && !isProfileLoading && !userProfile) {
+        // If user is authenticated but has no profile, it might be their first login.
+        // We call createUserDocument to be sure. The function itself checks existence.
+        const storedCpf = sessionStorage.getItem('tempCpfForSignUp');
+        createUserDocument(user, firestore, storedCpf);
+        if (storedCpf) {
+            sessionStorage.removeItem('tempCpfForSignUp');
+        }
+    }
+  }, [user, firestore, isProfileLoading, userProfile]);
+
+  useEffect(() => {
     if (userProfile && userProfile.plan === 'pro' && userProfile.planExpirationDate) {
         const now = Timestamp.now();
         if (now > userProfile.planExpirationDate) {
@@ -74,7 +81,6 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const { user, userProfile, isLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const firestore = useFirestore();
   
   useEffect(() => {
     if (isLoading) {
@@ -86,18 +92,26 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
     
-    createUserDocument(user, firestore);
-
     if (userProfile) {
         const isAdmin = userProfile.role === 'admin';
 
         if (adminOnly && !isAdmin) {
-          router.replace('/');
+          router.replace('/clients'); // Redirect non-admins from admin area
           return;
         }
         
+        // This handles redirecting a logged-in user away from login/landing
+        if (pathname === '/login' || pathname === '/') {
+            if (isAdmin) {
+                router.replace('/admin');
+            } else {
+                router.replace('/clients');
+            }
+            return;
+        }
+
         if (isAdmin && !pathname.startsWith('/admin')) {
-            router.replace('/admin/settings');
+            router.replace('/admin');
             return;
         }
 
@@ -107,12 +121,22 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
         }
     }
 
-  }, [isLoading, user, userProfile, firestore, adminOnly, router, pathname]);
+  }, [isLoading, user, userProfile, adminOnly, router, pathname]);
 
-  if (isLoading || !user || !userProfile) {
+  if (isLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  // If profile is still loading, show loader but user is authenticated
+  if (!userProfile) {
+     return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+         <p className="ml-2">Carregando perfil...</p>
       </div>
     );
   }

@@ -14,13 +14,16 @@ type SuccessCallback = (user: User) => void;
 
 /** Initiate email/password sign-up (non-blocking). */
 export function initiateEmailSignUp(authInstance: Auth, email: string, password: string, cpf: string, onSuccess: SuccessCallback, onError: ErrorCallback): void {
+  // Store the CPF in a way that can be retrieved after redirect, e.g., temporary session storage
+  sessionStorage.setItem('tempCpfForSignUp', cpf);
+  
   createUserWithEmailAndPassword(authInstance, email, password)
     .then(async (userCredential) => {
-        // Store the CPF in a way that can be retrieved after redirect, e.g., temporary session storage
-        sessionStorage.setItem('tempCpfForSignUp', cpf);
         onSuccess(userCredential.user);
     })
     .catch((error: FirebaseError) => {
+        // Clear the stored CPF if sign-up fails
+        sessionStorage.removeItem('tempCpfForSignUp');
         onError(error);
     });
 }

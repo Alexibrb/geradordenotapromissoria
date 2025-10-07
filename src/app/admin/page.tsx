@@ -17,6 +17,8 @@ export default function AdminRedirectPage() {
     }
   }, [isLoading, userProfile, router]);
 
+  // The ProtectedRoute will handle non-admin users. 
+  // We just need a loading state for admins while they are being redirected.
   return (
      <ProtectedRoute adminOnly={true}>
         <div className="flex h-screen w-full items-center justify-center bg-background">
