@@ -152,8 +152,7 @@ function AdminUsersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Email do Usuário</TableHead>
-                      <TableHead>CPF</TableHead>
+                      <TableHead>Usuário</TableHead>
                       <TableHead>Plano</TableHead>
                       <TableHead>Expiração do Plano</TableHead>
                       <TableHead>Role</TableHead>
@@ -164,11 +163,11 @@ function AdminUsersPage() {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="flex items-center gap-1">
+                        <TableCell className="font-medium">
+                          <div className='font-semibold'>{user.email}</div>
+                          <div className='text-xs text-muted-foreground flex items-center gap-1'>
                             <Fingerprint className="h-3 w-3"/>{user.cpf || 'N/A'}
-                          </Badge>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={user.plan === 'pro' ? 'default' : 'secondary'} className="flex items-center gap-1 w-fit">
