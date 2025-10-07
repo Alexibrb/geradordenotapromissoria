@@ -41,8 +41,7 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
+      <header className="container mx-auto px-4 py-6 flex justify-end items-center">
         <div className="flex items-center gap-2">
           {areAppSettingsLoading ? (
             <Loader className="animate-spin h-5 w-5" />
@@ -64,10 +63,13 @@ export default function LandingPage() {
 
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h2 className="text-7xl md:text-8xl font-extrabold tracking-tight">
-            Simples, Rápido e Profissional
-          </h2>
-          <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
+          <h1 className="text-7xl md:text-8xl font-extrabold tracking-tight">
+            Gerador de Nota Promissória
+          </h1>
+          <p className="mt-4 max-w-2xl mx-auto text-xl text-muted-foreground font-semibold">
+            Simples, Rápido e Profissional.
+          </p>
+          <p className="mt-2 max-w-2xl mx-auto text-lg text-muted-foreground">
             Crie, gerencie e imprima notas promissórias e carnês de pagamento com facilidade. Escolha o plano que melhor se adapta a você.
           </p>
 
