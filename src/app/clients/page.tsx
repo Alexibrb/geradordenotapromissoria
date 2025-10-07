@@ -62,6 +62,8 @@ function ClientsPage() {
   
   const [remainingDays, setRemainingDays] = useState<number | null>(null);
 
+  const clientLimit = 3;
+  const daysLimit = 30;
 
   useEffect(() => {
     if (userProfile && userProfile.plan === 'free' && userProfile.createdAt) {
@@ -223,8 +225,6 @@ function ClientsPage() {
     setCurrentClient(null);
   };
 
-  const clientLimit = 3;
-  const daysLimit = 30;
   const isFreePlanAndLimitReached = userProfile?.plan === 'free' && ((clients && clients.length >= clientLimit) || (remainingDays !== null && remainingDays <= 0));
 
   const handleAddClient = () => {
@@ -271,7 +271,7 @@ function ClientsPage() {
   };
 
   const handleEditClient = (client: Client) => {
-    if (isFreePlanAndLimitReached && userProfile?.plan !== 'pro') {
+    if (userProfile?.plan === 'free') {
         toast({
             variant: 'destructive',
             title: 'Funcionalidade Pro',
@@ -321,7 +321,7 @@ function ClientsPage() {
 
   const handleDeleteClient = async (clientId: string) => {
     if (!user) return;
-    if (isFreePlanAndLimitReached && userProfile?.plan !== 'pro') {
+    if (userProfile?.plan === 'free') {
         toast({
             variant: 'destructive',
             title: 'Funcionalidade Pro',

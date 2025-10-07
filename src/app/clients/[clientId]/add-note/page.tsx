@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, doc, addDoc, Timestamp } from 'firebase/firestore';
@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 
 function AddNotePage() {
   const { clientId } = useParams();
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -31,13 +31,25 @@ function AddNotePage() {
   
   const [generatedData, setGeneratedData] = useState<PromissoryNoteData | null>(null);
 
+  useEffect(() => {
+    if (userProfile?.plan === 'free') {
+      toast({
+        variant: 'destructive',
+        title: 'Funcionalidade Pro',
+        description: 'Faça upgrade para o plano Pro para adicionar novas notas.',
+      });
+      router.push('/upgrade');
+    }
+  }, [userProfile, router, toast]);
+
   const handleGenerateAndSave = async (formData: PromissoryNoteData) => {
-    if (!user || !client) {
+    if (!user || !client || userProfile?.plan === 'free') {
       toast({
         variant: 'destructive',
         title: 'Erro',
-        description: 'Usuário ou cliente não encontrado.',
+        description: 'Ação não permitida ou usuário/cliente não encontrado.',
       });
+      if (userProfile?.plan === 'free') router.push('/upgrade');
       return;
     }
     
@@ -78,8 +90,12 @@ function AddNotePage() {
     }, 2000);
   };
 
-  if (isClientLoading || areSettingsLoading) {
+  if (isClientLoading || areSettingsLoading || !userProfile) {
     return <div className="flex h-screen items-center justify-center"><Loader className="animate-spin" /></div>;
+  }
+
+  if (userProfile?.plan === 'free') {
+     return <div className="flex h-screen items-center justify-center">Redirecionando...</div>;
   }
 
   if (!client) {

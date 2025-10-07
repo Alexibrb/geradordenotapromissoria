@@ -18,7 +18,7 @@ import { PromissoryNoteCard } from '@/components/promissory-note-card';
 
 function ClientDetailPage() {
   const { clientId } = useParams();
-  const { user } = useUser();
+  const { user, userProfile } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -69,6 +69,16 @@ function ClientDetailPage() {
     e.stopPropagation();
     if (!user || !noteId) return;
 
+    if (userProfile?.plan === 'free') {
+        toast({
+            variant: 'destructive',
+            title: 'Funcionalidade Pro',
+            description: 'Faça upgrade para o plano Pro para excluir notas.',
+        });
+        router.push('/upgrade');
+        return;
+    }
+
     const noteDocRef = doc(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', noteId);
     
     // Delete associated payments first
@@ -92,6 +102,15 @@ function ClientDetailPage() {
 
   const handleEditNote = (e: React.MouseEvent, noteId: string) => {
     e.stopPropagation();
+    if (userProfile?.plan === 'free') {
+        toast({
+            variant: 'destructive',
+            title: 'Funcionalidade Pro',
+            description: 'Faça upgrade para o plano Pro para editar notas.',
+        });
+        router.push('/upgrade');
+        return;
+    }
     router.push(`/clients/${clientId}/edit-note/${noteId}`);
   };
 
@@ -154,6 +173,19 @@ function ClientDetailPage() {
     };
   }
   
+  const handleAddNoteClick = () => {
+    if (userProfile?.plan === 'free') {
+      toast({
+        variant: 'destructive',
+        title: 'Funcionalidade Pro',
+        description: 'Faça upgrade para o plano Pro para adicionar novas notas.',
+      });
+      router.push('/upgrade');
+    } else {
+      router.push(`/clients/${clientId}/add-note`);
+    }
+  };
+  
   const selectedNoteData = getNoteData(selectedNote);
   const selectedNotePayments = selectedNote ? allPayments.filter(p => p.promissoryNoteId === selectedNote.id) : [];
 
@@ -191,12 +223,10 @@ function ClientDetailPage() {
             <h1 className="text-3xl font-bold tracking-tight">{client.name}</h1>
             <p className="text-muted-foreground">{client.address}</p>
           </div>
-          <Link href={`/clients/${clientId}/add-note`} passHref>
-            <Button className="mt-4 md:mt-0">
-              <Plus className="mr-2" />
-              Adicionar Nota
-            </Button>
-          </Link>
+          <Button className="mt-4 md:mt-0" onClick={handleAddNoteClick}>
+            <Plus className="mr-2" />
+            Adicionar Nota
+          </Button>
         </header>
 
         <div className="flex flex-col gap-8">
