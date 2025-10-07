@@ -58,7 +58,7 @@ const resetPasswordSchema = z.object({
 
 export default function LoginPage() {
   const auth = useAuth();
-  const { user, isLoading } = useUser();
+  const { user, isLoading, userProfile } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,15 +75,15 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    // If the user is already loaded and exists, redirect them away from the login page.
-    if (!isLoading && user) {
-        if ((user as any).role === 'admin') {
+    // If the user profile is loaded and exists, redirect them.
+    if (!isLoading && userProfile) {
+        if (userProfile.role === 'admin') {
              router.replace('/admin/settings');
         } else {
              router.replace('/clients');
         }
     }
-  }, [user, isLoading, router]);
+  }, [userProfile, isLoading, router]);
 
 
   const handleError = (error: FirebaseError) => {
@@ -173,8 +173,8 @@ export default function LoginPage() {
   };
 
   // While checking auth state for the first time, show a loader.
-  // Also show a loader if the user is logged in, as we are about to redirect.
-  if (isLoading || user) {
+  // Also show a loader if the user is logged in but the profile is still loading, as we are about to redirect.
+  if (isLoading || (user && !userProfile)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -289,6 +289,9 @@ export default function LoginPage() {
           </Form>
         </CardContent>
       </Card>
+      <div className="mt-4 text-center text-sm text-muted-foreground">
+        <p>Esqueceu seu e-mail? <br/> Entre em contato com o suporte em <span className="font-semibold text-foreground">alexandro.ibrb@gmail.com</span></p>
+      </div>
       <div className="absolute bottom-0 left-0 w-full p-4 text-center">
           <p className="text-sm text-muted-foreground">Versão 1.0.2025 - Desenvolvido por Alex Alves</p>
       </div>
