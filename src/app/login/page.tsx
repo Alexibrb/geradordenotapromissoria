@@ -139,8 +139,8 @@ export default function LoginPage() {
   };
   
   const handleSignUp = (values: z.infer<typeof loginSchema>) => {
-    if (!values.cpf || values.cpf.trim() === '') {
-        form.setError('cpf', { type: 'manual', message: 'O CPF é obrigatório para criar a conta.' });
+    if (!values.cpf || values.cpf.trim() === '' || values.cpf.length < 11) {
+        form.setError('cpf', { type: 'manual', message: 'O CPF é obrigatório e deve ser válido.' });
         return;
     }
     setIsSubmitting(true);
