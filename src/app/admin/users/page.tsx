@@ -40,11 +40,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
 
 function AdminUsersPage() {
   const firestore = useFirestore();
   const { user: adminUser, userProfile } = useUser();
   const { toast } = useToast();
+  
+  const [cpfFilter, setCpfFilter] = useState('');
+  const [planFilter, setPlanFilter] = useState('all');
 
   const usersQuery = useMemoFirebase(() => 
     userProfile?.role === 'admin' ? collection(firestore, 'users') : null, 
@@ -54,6 +58,16 @@ function AdminUsersPage() {
 
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
   const [planExpirationDate, setPlanExpirationDate] = useState<Date | undefined>();
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    return users.filter(user => {
+      const cpfMatch = cpfFilter ? user.cpf?.replace(/[.\-]/g, '').includes(cpfFilter.replace(/[.\-]/g, '')) : true;
+      const planMatch = planFilter !== 'all' ? user.plan === planFilter : true;
+      return cpfMatch && planMatch;
+    });
+  }, [users, cpfFilter, planFilter]);
+
 
   const planCounts = useMemo(() => {
     if (!users) {
@@ -192,7 +206,25 @@ function AdminUsersPage() {
             <CardDescription>Visualize e gerencie todos os usuários cadastrados.</CardDescription>
           </CardHeader>
           <CardContent>
-            {users && users.length > 0 ? (
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
+                <Input
+                    placeholder="Filtrar por CPF..."
+                    value={cpfFilter}
+                    onChange={(e) => setCpfFilter(e.target.value)}
+                    className="max-w-xs"
+                />
+                <Select value={planFilter} onValueChange={setPlanFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Filtrar por plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Planos</SelectItem>
+                        <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="free">Free</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            {filteredUsers && filteredUsers.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -204,7 +236,7 @@ function AdminUsersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
+                    {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                             <div className='flex flex-col gap-1.5'>
@@ -294,7 +326,7 @@ function AdminUsersPage() {
                   <Users className="mx-auto h-12 w-12 text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-semibold">Nenhum usuário encontrado</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
-                      Ainda não há usuários cadastrados no sistema.
+                      Ainda não há usuários cadastrados no sistema ou que correspondam ao seu filtro.
                   </p>
               </div>
             )}
