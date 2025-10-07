@@ -20,6 +20,16 @@ export default function LandingPage() {
     router.push(path);
   };
 
+  const proFeatures = [
+    "Clientes ilimitados",
+    "Emissão de notas ilimitadas",
+    "Geração de notas promissórias em PDF",
+    "Geração de carnê de pagamento em PDF",
+    "Controle de pagamentos",
+    "Dashboard com resumo das transações",
+    "Suporte prioritário e muito mais!",
+  ];
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
@@ -52,15 +62,15 @@ export default function LandingPage() {
             Crie, gerencie e imprima notas promissórias e carnês de pagamento com facilidade. Escolha o plano que melhor se adapta a você.
           </p>
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
             {/* Free Plan Card */}
             <Card className="flex flex-col">
               <CardHeader className="text-left">
                  <div className="flex items-center gap-2">
                     <Star className="h-6 w-6" />
-                    <CardTitle className="text-2xl">Plano Gratuito</CardTitle>
+                    <CardTitle className="text-2xl">Gratuito</CardTitle>
                  </div>
-                <CardDescription>Perfeito para experimentar o sistema.</CardDescription>
+                <CardDescription>Perfeito para experimentar.</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 space-y-4 text-left">
                  <p className="text-3xl font-bold">R$0<span className="text-sm font-normal text-muted-foreground">/para sempre</span></p>
@@ -86,54 +96,88 @@ export default function LandingPage() {
               </CardFooter>
             </Card>
 
-            {/* Pro Plan Card */}
-            <Card className="border-primary flex flex-col shadow-lg">
+            {/* Monthly Plan Card */}
+            <Card className="flex flex-col">
               <CardHeader className="text-left">
                 <div className="flex items-center gap-2">
                     <Gem className="h-6 w-6 text-primary" />
-                    <CardTitle className="text-2xl">Plano Pro</CardTitle>
+                    <CardTitle className="text-2xl">Mensal</CardTitle>
                 </div>
-                <CardDescription>Acesso ilimitado a todas as funcionalidades.</CardDescription>
+                <CardDescription>Flexibilidade total.</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 space-y-4 text-left">
-                 <p className="text-3xl font-bold">R$10,00<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
+                 <p className="text-3xl font-bold">R$10<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
                 <ul className="space-y-2 text-sm">
-                   <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Clientes ilimitados</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Emissão de notas ilimitadas</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
-                    <span>Geração de notas promissórias em PDF</span>
-                  </li>
-                   <li className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
-                    <span>Geração de carnê de pagamento em PDF</span>
-                  </li>
-                   <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Controle de pagamentos</span>
-                  </li>
-                   <li className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
-                    <span>Dashboard com resumo das transações</span>
-                  </li>
-                   <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>Suporte prioritário e muito mais!</span>
-                  </li>
+                   {proFeatures.map(feature => (
+                     <li key={feature} className="flex items-start gap-2">
+                       <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
+                       <span>{feature}</span>
+                     </li>
+                   ))}
                 </ul>
               </CardContent>
               <CardFooter>
                 <Button className="w-full" onClick={() => handleStart('/login')}>
-                  Assinar Plano Pro
+                  Assinar Plano Mensal
                 </Button>
               </CardFooter>
             </Card>
+
+            {/* Semiannual Plan Card */}
+            <Card className="border-primary flex flex-col shadow-lg relative">
+               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-xs font-bold rounded-full">MAIS POPULAR</div>
+              <CardHeader className="text-left">
+                <div className="flex items-center gap-2">
+                    <Gem className="h-6 w-6 text-primary" />
+                    <CardTitle className="text-2xl">Semestral</CardTitle>
+                </div>
+                <CardDescription>Ótimo custo-benefício.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 space-y-4 text-left">
+                 <p className="text-3xl font-bold">R$50<span className="text-sm font-normal text-muted-foreground">/semestre</span></p>
+                <ul className="space-y-2 text-sm">
+                   {proFeatures.map(feature => (
+                     <li key={feature} className="flex items-start gap-2">
+                       <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
+                       <span>{feature}</span>
+                     </li>
+                   ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full" onClick={() => handleStart('/login')}>
+                  Assinar Plano Semestral
+                </Button>
+              </CardFooter>
+            </Card>
+
+             {/* Annual Plan Card */}
+            <Card className="flex flex-col">
+              <CardHeader className="text-left">
+                <div className="flex items-center gap-2">
+                    <Gem className="h-6 w-6 text-primary" />
+                    <CardTitle className="text-2xl">Anual</CardTitle>
+                </div>
+                <CardDescription>Máxima economia.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 space-y-4 text-left">
+                 <p className="text-3xl font-bold">R$80<span className="text-sm font-normal text-muted-foreground">/ano</span></p>
+                <ul className="space-y-2 text-sm">
+                   {proFeatures.map(feature => (
+                     <li key={feature} className="flex items-start gap-2">
+                       <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
+                       <span>{feature}</span>
+                     </li>
+                   ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full" onClick={() => handleStart('/login')}>
+                  Assinar Plano Anual
+                </Button>
+              </CardFooter>
+            </Card>
+
           </div>
         </div>
       </main>
