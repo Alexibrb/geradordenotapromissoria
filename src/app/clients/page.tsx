@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { collection, doc, collectionGroup, query, where, getDocs } from 'firebase/firestore';
@@ -38,10 +38,11 @@ import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocki
 import { useRouter } from 'next/navigation';
 import { DashboardStats } from '@/components/dashboard-stats';
 import { DateRange } from 'react-day-picker';
-import { startOfDay, endOfDay, addDays, differenceInDays } from 'date-fns';
+import { startOfDay, endOfDay, addDays, differenceInDays, format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 function ClientsPage() {
@@ -385,7 +386,12 @@ function ClientsPage() {
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8">
         <header className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4 md:gap-0">
-          <h1 className="text-3xl font-bold tracking-tight">Meus Clientes</h1>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Meus Clientes</h1>
+            {settings?.creditorName && (
+              <p className="text-muted-foreground">Bem-vindo(a) de volta, {settings.creditorName}!</p>
+            )}
+          </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
              {userProfile?.plan && (
                 <div className="flex items-center gap-2">
@@ -554,6 +560,17 @@ function ClientsPage() {
                     </div>
                  </CardHeader>
             )}
+             {userProfile?.plan === 'pro' && userProfile.planExpirationDate && (
+                <CardHeader className="p-4 pt-0">
+                    <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Aviso de Expiração</AlertTitle>
+                        <AlertDescription>
+                            Seu plano Pro expira em <strong>{format(userProfile.planExpirationDate.toDate(), 'dd/MM/yyyy')}</strong>. Para evitar a interrupção do serviço, considere renovar seu plano.
+                        </AlertDescription>
+                    </Alert>
+                </CardHeader>
+             )}
         </Card>
 
 
@@ -712,3 +729,5 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+
+    
