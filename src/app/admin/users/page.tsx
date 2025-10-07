@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
-import { Loader, Users, Trash2, Calendar as CalendarIcon, Gem, Fingerprint } from 'lucide-react';
+import { Loader, Users, Trash2, Calendar as CalendarIcon, Gem, Fingerprint, ShieldCheck } from 'lucide-react';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -154,7 +154,6 @@ function AdminUsersPage() {
                     <TableRow>
                       <TableHead>Usuário</TableHead>
                       <TableHead>Plano</TableHead>
-                      <TableHead>Role</TableHead>
                       <TableHead className='text-center'>Alterar Plano</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -163,10 +162,16 @@ function AdminUsersPage() {
                     {users.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
-                          <div className='font-semibold'>{user.email}</div>
-                          <div className='text-xs text-muted-foreground flex items-center gap-1'>
-                            <Fingerprint className="h-3 w-3"/>{user.cpf || 'N/A'}
-                          </div>
+                            <div className='flex flex-col gap-1.5'>
+                                <div className='font-semibold'>{user.email}</div>
+                                <div className='text-xs text-muted-foreground flex items-center gap-1'>
+                                    <Fingerprint className="h-3 w-3"/>{user.cpf || 'N/A'}
+                                </div>
+                                 <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'} className='gap-1 w-fit'>
+                                    <ShieldCheck className='h-3 w-3'/>
+                                    {user.role}
+                                </Badge>
+                            </div>
                         </TableCell>
                         <TableCell>
                           <div className='flex flex-col gap-1'>
@@ -179,11 +184,6 @@ function AdminUsersPage() {
                               </Badge>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
-                            {user.role}
-                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className='flex items-center gap-2'>
