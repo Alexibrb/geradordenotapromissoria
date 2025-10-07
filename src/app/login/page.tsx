@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AtSign, Fingerprint, Loader2, MailQuestion } from 'lucide-react';
+import { AtSign, Fingerprint, Loader2, MailQuestion, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -36,13 +36,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import {
   initiateEmailSignIn,
   initiateEmailSignUp,
   initiatePasswordReset
 } from '@/firebase/non-blocking-login';
 import { FirebaseError } from 'firebase/app';
+import type { AppSettings } from '@/types';
+import { doc } from 'firebase/firestore';
+
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Por favor, insira um email válido.' }),
@@ -58,6 +61,7 @@ const resetPasswordSchema = z.object({
 
 export default function LoginPage() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isLoading, userProfile } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -65,6 +69,9 @@ export default function LoginPage() {
   const [isResetting, setIsResetting] = useState(false);
   const [isResetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+
+  const appSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'general') : null, [firestore]);
+  const { data: appSettings } = useDoc<AppSettings>(appSettingsRef);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -75,7 +82,6 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    // If the user profile is loaded and exists, redirect them.
     if (!isLoading && userProfile) {
         if (userProfile.role === 'admin') {
              router.replace('/admin/settings');
@@ -121,7 +127,6 @@ export default function LoginPage() {
   
   const handleSuccess = () => {
     setIsSubmitting(false);
-    // On success, the `useEffect` above will handle the redirect when the user state changes.
   };
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
@@ -172,8 +177,13 @@ export default function LoginPage() {
     );
   };
 
-  // While checking auth state for the first time, show a loader.
-  // Also show a loader if the user is logged in but the profile is still loading, as we are about to redirect.
+  const handleEmailRecovery = () => {
+    const whatsappNumber = appSettings?.upgradeWhatsappNumber || '5569992686894';
+    const message = 'Olá, esqueci o e-mail da minha conta e gostaria de ajuda para recuperá-lo.';
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
+  };
+
   if (isLoading || (user && !userProfile)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -290,7 +300,9 @@ export default function LoginPage() {
         </CardContent>
       </Card>
       <div className="mt-4 text-center text-sm text-muted-foreground">
-        <p>Esqueceu seu e-mail? <br/> Entre em contato com o suporte em <span className="font-semibold text-foreground">alexandro.ibrb@gmail.com</span></p>
+        <button onClick={handleEmailRecovery} className="inline-flex items-center gap-2 hover:underline">
+            <MessageCircle className="h-4 w-4"/> Esqueceu seu e-mail? Fale conosco.
+        </button>
       </div>
       <div className="absolute bottom-0 left-0 w-full p-4 text-center">
           <p className="text-sm text-muted-foreground">Versão 1.0.2025 - Desenvolvido por Alex Alves</p>
