@@ -64,7 +64,7 @@ export default function LandingPage() {
 
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+          <h2 className="text-5xl md:text-6xl font-extrabold tracking-tight">
             Simples, Rápido e Profissional
           </h2>
           <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
