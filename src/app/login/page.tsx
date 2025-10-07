@@ -180,9 +180,9 @@ export default function LoginPage() {
   
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-        <Link href="/" className="mb-6 flex items-center gap-2 text-foreground hover:text-primary transition-colors">
-            <StickyNote className="h-7 w-7"/>
-            <h1 className="text-2xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
+        <Link href="/" className="mb-6 flex flex-col items-center gap-2 text-foreground hover:text-primary transition-colors">
+            <StickyNote className="h-10 w-10"/>
+            <h1 className="text-4xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
         </Link>
         <Card className="w-full max-w-sm">
             <CardHeader>
