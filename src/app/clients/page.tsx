@@ -223,9 +223,9 @@ function ClientsPage() {
     setCurrentClient(null);
   };
 
-  const isFreePlanAndLimitReached = userProfile?.plan === 'free' && ((clients && clients.length >= clientLimit) || (remainingDays !== null && remainingDays <= 0));
   const clientLimit = 3;
   const daysLimit = 30;
+  const isFreePlanAndLimitReached = userProfile?.plan === 'free' && ((clients && clients.length >= clientLimit) || (remainingDays !== null && remainingDays <= 0));
 
   const handleAddClient = () => {
     if (!user || !clientsCollection) return;
@@ -712,5 +712,3 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
-
-    
