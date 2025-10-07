@@ -154,7 +154,6 @@ function AdminUsersPage() {
                     <TableRow>
                       <TableHead>Usuário</TableHead>
                       <TableHead>Plano</TableHead>
-                      <TableHead>Expiração do Plano</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead className='text-center'>Alterar Plano</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
@@ -170,18 +169,16 @@ function AdminUsersPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={user.plan === 'pro' ? 'default' : 'secondary'} className="flex items-center gap-1 w-fit">
-                            <Gem className="h-3 w-3"/>{user.plan}
-                          </Badge>
-                        </TableCell>
-                         <TableCell>
-                          {user.plan === 'pro' && user.planExpirationDate ? (
-                            <Badge variant="outline">
-                              {format(user.planExpirationDate.toDate(), 'dd/MM/yyyy')}
+                          <div className='flex flex-col gap-1'>
+                            <Badge variant={user.plan === 'pro' ? 'default' : 'secondary'} className="flex items-center gap-1 w-fit">
+                              <Gem className="h-3 w-3"/>{user.plan}
                             </Badge>
-                          ) : (
-                            'N/A'
-                          )}
+                             {user.plan === 'pro' && user.planExpirationDate && (
+                              <Badge variant="outline" className="w-fit">
+                                {`Expira: ${format(user.planExpirationDate.toDate(), 'dd/MM/yyyy')}`}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
