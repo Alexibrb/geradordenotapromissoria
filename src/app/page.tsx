@@ -18,15 +18,14 @@ export default function LandingPage() {
   const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
 
   const handleSubscriptionClick = (planName: string) => {
-    if (!user) {
-        router.push('/login');
-        return;
+    const whatsappNumber = appSettings?.upgradeWhatsappNumber || '5569992686894';
+    let message = `Olá, gostaria de assinar o plano ${planName.toUpperCase()} do aplicativo Gerador de nota promissória`;
+
+    if (user && user.email) {
+      message += `, meu e-mail é ${user.email}`;
     }
 
-    const whatsappNumber = appSettings?.upgradeWhatsappNumber || '5569992686894';
-    const message = `Olá, gostaria de assinar o plano ${planName.toUpperCase()} do aplicativo Gerador de nota promissória, meu e-mail é ${user.email}`;
     const encodedMessage = encodeURIComponent(message);
-    
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
 
