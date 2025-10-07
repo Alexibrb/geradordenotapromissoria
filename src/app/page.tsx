@@ -4,20 +4,30 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, Gem, Star, Video, Loader } from 'lucide-react';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import type { AppSettings } from '@/types';
 import { doc } from 'firebase/firestore';
 import Link from 'next/link';
 
 export default function LandingPage() {
   const router = useRouter();
+  const { user } = useUser();
   const firestore = useFirestore();
 
   const appSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'general') : null, [firestore]);
   const { data: appSettings, isLoading: areAppSettingsLoading } = useDoc<AppSettings>(appSettingsRef);
 
-  const handleStart = (path: string) => {
-    router.push(path);
+  const handleSubscriptionClick = (planName: string) => {
+    if (!user) {
+        router.push('/login');
+        return;
+    }
+
+    const whatsappNumber = appSettings?.upgradeWhatsappNumber || '5569992686894';
+    const message = `Olá, gostaria de assinar o plano ${planName.toUpperCase()} do aplicativo Gerador de nota promissória, meu e-mail é ${user.email}`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
   };
 
   const proFeatures = [
@@ -47,7 +57,7 @@ export default function LandingPage() {
                </a>
             )
           )}
-          <Button variant="ghost" onClick={() => handleStart('/login')}>
+          <Button variant="ghost" onClick={() => router.push('/login')}>
             Entrar
           </Button>
         </div>
@@ -90,7 +100,7 @@ export default function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" variant="outline" onClick={() => handleStart('/login')}>
+                <Button className="w-full" variant="outline" onClick={() => router.push('/login')}>
                   Começar a Testar
                 </Button>
               </CardFooter>
@@ -117,7 +127,7 @@ export default function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={() => handleStart('/login')}>
+                <Button className="w-full" onClick={() => handleSubscriptionClick('Mensal')}>
                   Assinar Plano Mensal
                 </Button>
               </CardFooter>
@@ -145,7 +155,7 @@ export default function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={() => handleStart('/login')}>
+                <Button className="w-full" onClick={() => handleSubscriptionClick('Semestral')}>
                   Assinar Plano Semestral
                 </Button>
               </CardFooter>
@@ -172,7 +182,7 @@ export default function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={() => handleStart('/login')}>
+                <Button className="w-full" onClick={() => handleSubscriptionClick('Anual')}>
                   Assinar Plano Anual
                 </Button>
               </CardFooter>
