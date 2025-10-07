@@ -88,10 +88,13 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     }
 
     if (!user) {
-      router.replace('/login');
+      if (pathname !== '/login' && pathname !== '/') {
+        router.replace('/login');
+      }
       return;
     }
     
+    // User is authenticated
     if (userProfile) {
         const isAdmin = userProfile.role === 'admin';
 
@@ -100,7 +103,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
           return;
         }
         
-        // This handles redirecting a logged-in user away from login/landing
+        // Redirect a logged-in user away from login or landing
         if (pathname === '/login' || pathname === '/') {
             if (isAdmin) {
                 router.replace('/admin');
@@ -123,7 +126,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
 
   }, [isLoading, user, userProfile, adminOnly, router, pathname]);
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -131,7 +134,21 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
   
-  // If profile is still loading, show loader but user is authenticated
+  // If user is not logged in and is on a public page (login or landing), show the page.
+  if (!user && (pathname === '/login' || pathname === '/')) {
+      return <>{children}</>;
+  }
+  
+  // If user is not logged in and trying to access a protected page, show loader while redirecting.
+  if (!user) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+  }
+  
+  // If user is logged in, but profile is still loading, show a loader.
   if (!userProfile) {
      return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -151,12 +168,13 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
 
-  if (isAdmin && !pathname.startsWith('/admin')) {
-      return (
+  // If a logged-in user is on the login/landing page, show loader while redirecting.
+  if (pathname === '/login' || pathname === '/') {
+    return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
-          <p>Redirecionando para o painel de administração...</p>
+            <Loader className="h-8 w-8 animate-spin text-primary" />
         </div>
-      );
+    );
   }
   
   return <>{children}</>;
