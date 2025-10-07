@@ -381,6 +381,29 @@ function ClientsPage() {
   const daysUsed = remainingDays !== null ? daysLimit - remainingDays : 0;
   const daysProgress = (daysUsed / daysLimit) * 100;
 
+  const getPlanExpirationWarning = () => {
+    if (userProfile?.plan !== 'pro' || !userProfile.planExpirationDate) {
+      return null;
+    }
+    const expirationDate = userProfile.planExpirationDate.toDate();
+    const daysUntilExpiration = differenceInDays(expirationDate, new Date());
+
+    if (daysUntilExpiration <= 3 && daysUntilExpiration >= 0) {
+      return (
+        <CardHeader className="p-4 pt-0">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Seu plano Pro está prestes a expirar!</AlertTitle>
+            <AlertDescription>
+              Sua assinatura expira em <strong>{format(expirationDate, 'dd/MM/yyyy')}</strong>. Renove para evitar a interrupção do serviço.
+            </AlertDescription>
+          </Alert>
+        </CardHeader>
+      );
+    }
+    return null;
+  };
+
 
   return (
     <ProtectedRoute>
@@ -560,17 +583,7 @@ function ClientsPage() {
                     </div>
                  </CardHeader>
             )}
-             {userProfile?.plan === 'pro' && userProfile.planExpirationDate && (
-                <CardHeader className="p-4 pt-0">
-                    <Alert>
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Aviso de Expiração</AlertTitle>
-                        <AlertDescription>
-                            Seu plano Pro expira em <strong>{format(userProfile.planExpirationDate.toDate(), 'dd/MM/yyyy')}</strong>. Para evitar a interrupção do serviço, considere renovar seu plano.
-                        </AlertDescription>
-                    </Alert>
-                </CardHeader>
-             )}
+             {getPlanExpirationWarning()}
         </Card>
 
 
@@ -729,5 +742,3 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
-
-    
