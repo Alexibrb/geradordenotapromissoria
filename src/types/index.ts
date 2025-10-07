@@ -81,6 +81,7 @@ export type UserRole = 'admin' | 'user';
 export interface AppUser {
   id: string;
   email: string;
+  cpf?: string;
   plan: UserPlan;
   role: UserRole;
   displayName?: string;

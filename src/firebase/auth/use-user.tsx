@@ -23,10 +23,16 @@ const createUserDocument = async (user: User, firestore: any) => {
             const isUserAdmin = user.email === ADMIN_EMAIL;
             const role = isUserAdmin ? 'admin' : 'user';
             const plan = isUserAdmin ? 'pro' : 'free';
+            
+            // Retrieve CPF from session storage and then clear it
+            const cpf = sessionStorage.getItem('tempCpfForSignUp');
+            sessionStorage.removeItem('tempCpfForSignUp');
+
 
             await setDoc(userDocRef, {
                 id: user.uid,
                 email: user.email,
+                cpf: cpf || null, // Save CPF, or null if not present
                 plan: plan,
                 role: role,
                 displayName: user.displayName || user.email,
@@ -131,5 +137,3 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   
   return <>{children}</>;
 }
-
-    

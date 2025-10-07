@@ -154,6 +154,10 @@
           "format": "email",
           "description": "User's email address."
         },
+        "cpf": {
+          "type": "string",
+          "description": "User's CPF number for unique identification."
+        },
         "displayName": {
           "type": "string",
           "description": "The user's display name."
@@ -179,7 +183,7 @@
           "description": "The timestamp when the user's pro plan expires."
         }
       },
-      "required": ["id", "email", "plan", "role", "createdAt"]
+      "required": ["id", "email", "cpf", "plan", "role", "createdAt"]
     },
     "UserSettings": {
       "title": "UserSettings",

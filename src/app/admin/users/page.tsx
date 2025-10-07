@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
-import { Loader, Users, Trash2, Calendar as CalendarIcon, Gem } from 'lucide-react';
+import { Loader, Users, Trash2, Calendar as CalendarIcon, Gem, Fingerprint } from 'lucide-react';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -153,6 +153,7 @@ function AdminUsersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Email do Usuário</TableHead>
+                      <TableHead>CPF</TableHead>
                       <TableHead>Plano</TableHead>
                       <TableHead>Expiração do Plano</TableHead>
                       <TableHead>Role</TableHead>
@@ -164,6 +165,11 @@ function AdminUsersPage() {
                     {users.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Fingerprint className="h-3 w-3"/>{user.cpf || 'N/A'}
+                          </Badge>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={user.plan === 'pro' ? 'default' : 'secondary'} className="flex items-center gap-1 w-fit">
                             <Gem className="h-3 w-3"/>{user.plan}
@@ -278,5 +284,3 @@ function AdminUsersPage() {
 }
 
 export default AdminUsersPage;
-
-    
