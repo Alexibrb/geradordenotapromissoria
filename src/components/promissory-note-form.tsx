@@ -98,7 +98,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
       paymentDate: new Date(),
       hasDownPayment: false,
       downPaymentValue: 0,
-      latePaymentClause: "O atraso nos pagamentos por até 03 meses, acarretará na perda da propriedade e posse do imóvel, sem fazer jus a indenização ou ressarcimento de valores já efetuados pelo comprador.",
+      latePaymentClause: currentSettings?.latePaymentClause || "O atraso nos pagamentos por até 03 meses, acarretará na perda da propriedade e posse do imóvel, sem fazer jus a indenização ou ressarcimento de valores já efetuados pelo comprador.",
     };
 
     if (!data) return defaults;
@@ -408,3 +408,5 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
     </Card>
   );
 }
+
+    

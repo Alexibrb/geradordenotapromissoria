@@ -41,6 +41,7 @@ import { DateRange } from 'react-day-picker';
 import { startOfDay, endOfDay, addDays, differenceInDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
 
 
 function ClientsPage() {
@@ -137,6 +138,7 @@ function ClientsPage() {
   const [settingsCreditorName, setSettingsCreditorName] = useState('');
   const [settingsCreditorCpf, setSettingsCreditorCpf] = useState('');
   const [settingsCreditorAddress, setSettingsCreditorAddress] = useState('');
+  const [settingsLatePaymentClause, setSettingsLatePaymentClause] = useState('');
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredClients, setFilteredClients] = useState<Client[] | null>(null);
@@ -152,6 +154,7 @@ function ClientsPage() {
       setSettingsCreditorName(settings.creditorName || '');
       setSettingsCreditorCpf(settings.creditorCpf || '');
       setSettingsCreditorAddress(settings.creditorAddress || '');
+      setSettingsLatePaymentClause(settings.latePaymentClause || '');
     }
   }, [settings]);
   
@@ -220,6 +223,10 @@ function ClientsPage() {
     setCurrentClient(null);
   };
 
+  const isFreePlanAndLimitReached = userProfile?.plan === 'free' && ((clients && clients.length >= clientLimit) || (remainingDays !== null && remainingDays <= 0));
+  const clientLimit = 3;
+  const daysLimit = 30;
+
   const handleAddClient = () => {
     if (!user || !clientsCollection) return;
 
@@ -264,7 +271,7 @@ function ClientsPage() {
   };
 
   const handleEditClient = (client: Client) => {
-    if (isFreePlanAndLimitReached) {
+    if (isFreePlanAndLimitReached && userProfile?.plan !== 'pro') {
         toast({
             variant: 'destructive',
             title: 'Funcionalidade Pro',
@@ -314,7 +321,7 @@ function ClientsPage() {
 
   const handleDeleteClient = async (clientId: string) => {
     if (!user) return;
-    if (isFreePlanAndLimitReached) {
+    if (isFreePlanAndLimitReached && userProfile?.plan !== 'pro') {
         toast({
             variant: 'destructive',
             title: 'Funcionalidade Pro',
@@ -349,6 +356,7 @@ function ClientsPage() {
       creditorName: settingsCreditorName,
       creditorCpf: settingsCreditorCpf,
       creditorAddress: settingsCreditorAddress,
+      latePaymentClause: settingsLatePaymentClause,
     };
     setDocumentNonBlocking(settingsDocRef, settingsData, { merge: true });
     toast({
@@ -366,12 +374,7 @@ function ClientsPage() {
   };
   
   const isLoading = isLoadingClients || isLoadingAggregates;
-
-  const clientLimit = 3;
-  const daysLimit = 30;
   
-  const isFreePlanAndLimitReached = userProfile?.plan === 'free' && ((clients && clients.length >= clientLimit) || (remainingDays !== null && remainingDays <= 0));
-
   const clientCount = clients?.length || 0;
   const clientProgress = (clientCount / clientLimit) * 100;
   const daysUsed = remainingDays !== null ? daysLimit - remainingDays : 0;
@@ -464,7 +467,7 @@ function ClientsPage() {
                         Configurações
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Configurações da Nota</DialogTitle>
                         <DialogDescription>
@@ -487,6 +490,10 @@ function ClientsPage() {
                         <div className="space-y-2">
                             <Label htmlFor="settings-creditor-cpf">CPF/CNPJ do Credor</Label>
                             <Input id="settings-creditor-cpf" value={settingsCreditorCpf} onChange={(e) => setSettingsCreditorCpf(e.target.value)} placeholder="00.000.000/0001-00" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="settings-late-payment-clause">Cláusula de Atraso de Pagamento</Label>
+                            <Textarea id="settings-late-payment-clause" value={settingsLatePaymentClause} onChange={(e) => setSettingsLatePaymentClause(e.target.value)} placeholder="Descreva a cláusula por atraso de pagamento..." />
                         </div>
                     </div>
                     <DialogFooter>
@@ -705,3 +712,5 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+
+    

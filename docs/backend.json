@@ -201,6 +201,10 @@
         "creditorAddress": {
           "type": "string",
           "description": "Default address of the creditor."
+        },
+        "latePaymentClause": {
+            "type": "string",
+            "description": "Default clause for late payments to be included in promissory notes."
         }
       }
     },
@@ -289,4 +293,6 @@
 }
     
     
+    
+
     

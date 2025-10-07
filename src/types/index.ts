@@ -67,6 +67,7 @@ export interface UserSettings {
   creditorName?: string;
   creditorCpf?: string;
   creditorAddress?: string;
+  latePaymentClause?: string;
 }
 
 export interface AppSettings {
@@ -86,5 +87,7 @@ export interface AppUser {
   createdAt: Timestamp;
   planExpirationDate?: Timestamp;
 }
+
+    
 
     
