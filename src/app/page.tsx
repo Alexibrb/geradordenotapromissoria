@@ -58,7 +58,7 @@ export default function LandingPage() {
                </a>
             )
           )}
-          <Button variant="ghost" onClick={() => router.push('/login')}>
+          <Button onClick={() => router.push('/login')}>
             Entrar
           </Button>
         </div>
@@ -66,7 +66,7 @@ export default function LandingPage() {
 
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter">
+          <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter">
             Simples, Rápido e Profissional.
           </h1>
           <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
