@@ -67,12 +67,9 @@ export default function LandingPage() {
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter">
-            Gerador de Nota Promissória
-          </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-xl md:text-5xl text-muted-foreground font-semibold">
             Simples, Rápido e Profissional.
-          </p>
-          <p className="mt-2 max-w-2xl mx-auto text-lg text-muted-foreground">
+          </h1>
+          <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
             Crie, gerencie e imprima notas promissórias e carnês de pagamento com facilidade. Escolha o plano que melhor se adapta a você.
           </p>
 
