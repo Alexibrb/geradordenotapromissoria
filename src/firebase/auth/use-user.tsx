@@ -89,7 +89,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
 
-    // 2. If user IS logged in
+    // 2. If user IS logged in and on an auth page, redirect them away.
     if (isAuthPage) {
       router.replace(isAdmin ? '/admin' : '/clients');
       return;
@@ -101,28 +101,15 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
 
-    // 4. If an admin is on a non-admin page, redirect them to the admin dashboard.
-    if (isAdmin && !pathname.startsWith('/admin')) {
-      router.replace('/admin');
-      return;
-    }
+    // This was the problematic rule. Admins should be able to access client pages.
+    // We keep rule #3 to protect admin routes, but we remove the rule that forces admins out of client pages.
 
   }, [isLoading, user, userProfile, router, pathname, adminOnly]);
 
 
   // While loading, or if a redirect is imminent, show a full-screen loader.
-  if (isLoading) {
+  if (isLoading || (!user && !(pathname === '/login' || pathname === '/signup' || pathname === '/')) || (user && (pathname === '/login' || pathname === '/signup' || pathname === '/'))) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-  
-  // Prevent rendering children if a redirect is likely to happen, avoids flickering
-  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/';
-  if ((!user && !isAuthPage) || (user && isAuthPage)) {
-      return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
       </div>
