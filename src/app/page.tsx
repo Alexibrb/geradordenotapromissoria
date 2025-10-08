@@ -42,7 +42,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-center">
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
           Gerador de Nota Promissória
         </h1>
         <div className="flex items-center gap-2">
@@ -66,7 +66,7 @@ export default function LandingPage() {
 
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16 text-center">
-          <p className="mt-4 max-w-2xl mx-auto text-5xl md:text-6xl text-muted-foreground font-semibold">
+          <p className="mt-4 max-w-2xl mx-auto text-3xl md:text-4xl text-muted-foreground font-semibold">
             Simples, Rápido e Profissional.
           </p>
           <p className="mt-2 max-w-2xl mx-auto text-lg text-muted-foreground">
