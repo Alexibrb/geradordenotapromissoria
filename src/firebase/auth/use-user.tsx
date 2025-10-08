@@ -72,52 +72,61 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const { user, userProfile, isLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  
-  useEffect(() => {
-    if (isLoading) {
-      return; 
-    }
 
-    const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/';
-    
-    // If user is not logged in, redirect to login page if not already on an auth page.
-    if (!user) {
-      if (!isAuthPage) {
-        router.replace('/login');
-      }
-      return;
-    }
-
-    // If user is logged in, handle redirections.
-    const isAdmin = userProfile?.role === 'admin';
-
-    // If on an auth page, redirect to the appropriate dashboard.
-    if (isAuthPage) {
-        if (isAdmin) {
-            router.replace('/admin');
-        } else {
-            router.replace('/clients');
-        }
-        return;
-    }
-
-    // Enforce admin-only routes.
-    if (adminOnly && !isAdmin) {
-        router.replace('/clients');
-        return;
-    }
-    
-    // Redirect admin from non-admin pages to the admin dashboard.
-    if (isAdmin && !pathname.startsWith('/admin')) {
-        router.replace('/admin');
-        return;
-    }
-
-  }, [isLoading, user, userProfile, router, pathname, adminOnly]);
-
-  // While loading, or if conditions for rendering haven't been met, show a loader.
   const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/';
-  if (isLoading || (!user && !isAuthPage) || (user && isAuthPage)) {
+
+  // While loading, show a full-screen loader.
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // --- Redirection logic ---
+
+  // 1. If user is NOT logged in
+  if (!user) {
+    // If they are on an auth page, allow them to stay. Otherwise, redirect to login.
+    if (!isAuthPage) {
+      router.replace('/login');
+      return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+          <Loader className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+    // Render auth pages for unauthenticated users
+    return <>{children}</>;
+  }
+
+  // 2. If user IS logged in
+  const isAdmin = userProfile?.role === 'admin';
+
+  // If user is on an auth page, redirect them to their respective dashboard.
+  if (isAuthPage) {
+    router.replace(isAdmin ? '/admin' : '/clients');
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If it's an admin-only page and the user is not an admin, redirect.
+  if (adminOnly && !isAdmin) {
+    router.replace('/clients');
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If an admin is on a non-admin page, redirect them to the admin dashboard.
+  if (isAdmin && !pathname.startsWith('/admin')) {
+    router.replace('/admin');
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -125,6 +134,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
   
-  // Render children only if all auth checks have passed and user is on the correct page.
+  // --- Render Children ---
+  // If none of the above redirection conditions were met, render the page.
   return <>{children}</>;
 }
