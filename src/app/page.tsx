@@ -102,7 +102,7 @@ export default function LandingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" variant="outline" onClick={() => router.push('/login')}>
+                <Button className="w-full" variant="outline" onClick={() => router.push('/signup')}>
                   Começar a Testar
                 </Button>
               </CardFooter>

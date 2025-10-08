@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -38,7 +38,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import {
   initiateEmailSignIn,
-  initiateEmailSignUp,
   initiatePasswordReset
 } from '@/firebase/non-blocking-login';
 import { FirebaseError } from 'firebase/app';
@@ -53,12 +52,6 @@ const loginSchema = z.object({
     .min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
 });
 
-const signupSchema = z.object({
-    email: z.string().email({ message: 'Por favor, insira um email válido.' }),
-    password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
-    cpf: z.string().min(11, { message: 'O CPF deve ter pelo menos 11 caracteres.' }),
-});
-
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -68,29 +61,17 @@ export default function LoginPage() {
   const [isResetting, setIsResetting] = useState(false);
   const [isResetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  const [isSigningUp, setIsSigningUp] = useState(false);
 
   const appSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'general') : null, [firestore]);
   const { data: appSettings } = useDoc<AppSettings>(appSettingsRef);
   
   const form = useForm({
-    resolver: zodResolver(isSigningUp ? signupSchema : loginSchema),
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
-      cpf: '',
     },
   });
-  
-  // Reset form when switching between login and signup
-  useEffect(() => {
-    form.reset({
-      email: '',
-      password: '',
-      cpf: ''
-    });
-  }, [isSigningUp, form]);
-
 
   const handleError = (error: FirebaseError) => {
     setIsSubmitting(false);
@@ -103,10 +84,6 @@ export default function LoginPage() {
         case 'auth/invalid-credential':
             title = 'Credenciais inválidas';
             description = 'O e-mail ou a senha estão incorretos.';
-            break;
-        case 'auth/email-already-in-use':
-            title = 'E-mail já cadastrado';
-            description = 'Este e-mail já está em uso. Tente fazer login ou use outro e-mail.';
             break;
         case 'auth/invalid-email':
             title = 'E-mail inválido';
@@ -127,18 +104,12 @@ export default function LoginPage() {
   
   const handleSuccess = () => {
     setIsSubmitting(false);
-    // Redirection is now handled by the useUser hook and ProtectedRoute
+    // Redirection is handled by the useUser hook and ProtectedRoute
   };
 
-  const onSubmit = (values: z.infer<typeof loginSchema> | z.infer<typeof signupSchema>) => {
+  const onSubmit = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    if (isSigningUp) {
-        const signUpValues = values as z.infer<typeof signupSchema>;
-        initiateEmailSignUp(auth, signUpValues.email, signUpValues.password, signUpValues.cpf, handleSuccess, handleError);
-    } else {
-        const signInValues = values as z.infer<typeof loginSchema>;
-        initiateEmailSignIn(auth, signInValues.email, signInValues.password, handleSuccess, handleError);
-    }
+    initiateEmailSignIn(auth, values.email, values.password, handleSuccess, handleError);
   };
   
   const handlePasswordReset = () => {
@@ -192,9 +163,9 @@ export default function LoginPage() {
         </Link>
         <Card className="w-full max-w-sm">
             <CardHeader>
-            <CardTitle className="text-2xl font-bold">{isSigningUp ? 'Crie Sua Conta' : 'Acesse sua Conta'}</CardTitle>
+            <CardTitle className="text-2xl font-bold">Acesse sua Conta</CardTitle>
             <CardDescription>
-                {isSigningUp ? 'Preencha os campos para começar a gerenciar suas notas.' : 'Entre com seus dados para acessar o sistema.'}
+                Entre com seus dados para acessar o sistema.
             </CardDescription>
             </CardHeader>
             <CardContent>
@@ -235,85 +206,57 @@ export default function LoginPage() {
                     </FormItem>
                     )}
                 />
-                {isSigningUp && (
-                    <FormField
-                        control={form.control}
-                        name="cpf"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="flex items-center"><Fingerprint className='mr-2 h-4 w-4' />CPF</FormLabel>
-                            <FormControl>
-                            <Input
-                                placeholder="Seu CPF (somente números)"
-                                {...field}
-                                disabled={isSubmitting}
-                            />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    )}
                 
-                {!isSigningUp && (
-                    <Dialog open={isResetDialogOpen} onOpenChange={setResetDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="link" size="sm" className="p-0 h-auto font-normal text-muted-foreground" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setResetDialogOpen(true); }}>
-                            Esqueceu a senha?
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2"><MailQuestion/>Redefinir Senha</DialogTitle>
-                            <DialogDescription>
-                                Digite seu e-mail para receber um link de redefinição de senha.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="reset-email">E-mail</Label>
-                                <Input
-                                    id="reset-email"
-                                    type="email"
-                                    value={resetEmail}
-                                    onChange={(e) => setResetEmail(e.target.value)}
-                                    placeholder="seu@email.com"
-                                    disabled={isResetting}
-                                />
-                            </div>
+                <Dialog open={isResetDialogOpen} onOpenChange={setResetDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="link" size="sm" className="p-0 h-auto font-normal text-muted-foreground" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setResetDialogOpen(true); }}>
+                        Esqueceu a senha?
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><MailQuestion/>Redefinir Senha</DialogTitle>
+                        <DialogDescription>
+                            Digite seu e-mail para receber um link de redefinição de senha.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="reset-email">E-mail</Label>
+                            <Input
+                                id="reset-email"
+                                type="email"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                placeholder="seu@email.com"
+                                disabled={isResetting}
+                            />
                         </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={isResetting}>Cancelar</Button>
-                            <Button onClick={handlePasswordReset} disabled={isResetting}>
-                                {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Enviar E-mail
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                    </Dialog>
-                )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setResetDialogOpen(false)} disabled={isResetting}>Cancelar</Button>
+                        <Button onClick={handlePasswordReset} disabled={isResetting}>
+                            {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Enviar E-mail
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+                </Dialog>
                 
                 <div className="flex flex-col gap-2 pt-4">
-                    {isSigningUp ? (
-                        <Button type="submit" className="w-full" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Criar Conta
-                        </Button>
-                    ) : (
-                        <Button type="submit" className="w-full" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Entrar
-                        </Button>
-                    )}
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Entrar
+                    </Button>
                     
                     <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsSigningUp(!isSigningUp)}
-                    className="w-full"
-                    disabled={isSubmitting}
+                        type="button"
+                        variant="outline"
+                        onClick={() => window.location.href = '/signup'}
+                        className="w-full"
+                        disabled={isSubmitting}
                     >
-                    {isSigningUp ? 'Já tenho uma conta' : 'Criar uma Conta'}
+                        Criar uma Conta
                     </Button>
                 </div>
                 </form>

@@ -11,7 +11,7 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const ADMIN_EMAIL = 'alexandro.ibrb@gmail.com';
 
-export const createUserDocument = async (user: User, firestore: any, cpf?: string | null) => {
+export const createUserDocument = async (user: User, firestore: any, cpf: string) => {
     if (!user || !firestore) return null;
 
     const userDocRef = doc(firestore, 'users', user.uid);
@@ -25,7 +25,7 @@ export const createUserDocument = async (user: User, firestore: any, cpf?: strin
 
             const newUser: Omit<AppUser, 'id'> = {
                 email: user.email!,
-                cpf: cpf || undefined,
+                cpf: cpf,
                 plan: plan,
                 role: role,
                 displayName: user.displayName || user.email,
@@ -78,12 +78,12 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return; 
     }
 
-    const isOnAuthPage = pathname === '/login' || pathname === '/';
+    const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/';
     const isAdminPage = pathname.startsWith('/admin');
     
     // 1. User is not logged in
     if (!user) {
-      if (!isOnAuthPage) {
+      if (!isAuthPage) {
         router.replace('/login');
       }
       return;
@@ -93,7 +93,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     const isAdmin = userProfile?.role === 'admin';
 
     // Redirect away from auth pages if logged in
-    if (isOnAuthPage) {
+    if (isAuthPage) {
         if (isAdmin) {
             router.replace('/admin');
         } else {
@@ -117,7 +117,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   }, [isLoading, user, userProfile, router, pathname, adminOnly]);
 
   // While loading, or if conditions for rendering haven't been met, show a loader.
-  if (isLoading || (!user && pathname !== '/login' && pathname !== '/') || (user && (pathname === '/login' || pathname === '/'))) {
+  if (isLoading || (!user && (pathname !== '/login' && pathname !== '/signup' && pathname !== '/')) || (user && (pathname === '/login' || pathname === '/signup' || pathname === '/'))) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
