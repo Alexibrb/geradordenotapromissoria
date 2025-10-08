@@ -70,7 +70,7 @@ export default function LandingPage() {
           <h1 className="text-4xl md:text-7xl font-bold tracking-tighter">
             Simples, Rápido e Profissional.
           </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-xl md:text-5xl text-muted-foreground font-semibold">
+          <p className="mt-4 max-w-2xl mx-auto text-xl md:text-2xl text-muted-foreground font-semibold">
             Crie, gerencie e imprima notas promissórias e carnês de pagamento com facilidade. Escolha o plano que melhor se adapta a você.
           </p>
 
