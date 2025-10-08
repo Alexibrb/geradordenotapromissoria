@@ -8,22 +8,30 @@ import {
   User,
   updateProfile
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { createUserDocument } from './auth/use-user';
+
 
 type ErrorCallback = (error: FirebaseError) => void;
 type SuccessCallback = (user: User) => void;
 
 /** Initiate email/password sign-up (non-blocking). */
 export function initiateEmailSignUp(authInstance: Auth, email: string, password: string, cpf: string, onSuccess: SuccessCallback, onError: ErrorCallback): void {
-  // Store the CPF in a way that can be retrieved after redirect, e.g., temporary session storage
-  sessionStorage.setItem('tempCpfForSignUp', cpf);
-  
   createUserWithEmailAndPassword(authInstance, email, password)
     .then(async (userCredential) => {
-        onSuccess(userCredential.user);
+        // After creating the user in Auth, create their document in Firestore.
+        const firestore = getFirestore(authInstance.app);
+        const userProfile = await createUserDocument(userCredential.user, firestore, cpf);
+        
+        if (userProfile) {
+            onSuccess(userCredential.user);
+        } else {
+            // This case is unlikely but handles failure in creating the Firestore doc.
+            const error = new FirebaseError('auth/internal-error', 'Failed to create user profile in database.');
+            onError(error);
+        }
     })
     .catch((error: FirebaseError) => {
-        // Clear the stored CPF if sign-up fails
-        sessionStorage.removeItem('tempCpfForSignUp');
         onError(error);
     });
 }

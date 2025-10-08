@@ -12,8 +12,8 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const ADMIN_EMAIL = 'alexandro.ibrb@gmail.com';
 
-const createUserDocument = async (user: User, firestore: any, cpf?: string | null) => {
-    if (!user || !firestore) return;
+export const createUserDocument = async (user: User, firestore: any, cpf?: string | null) => {
+    if (!user || !firestore) return null;
 
     const userDocRef = doc(firestore, 'users', user.uid);
     try {
@@ -24,18 +24,23 @@ const createUserDocument = async (user: User, firestore: any, cpf?: string | nul
             const role = isUserAdmin ? 'admin' : 'user';
             const plan = isUserAdmin ? 'pro' : 'free';
 
-            await setDoc(userDocRef, {
-                id: user.uid,
-                email: user.email,
-                cpf: cpf || null,
+            const newUser: Omit<AppUser, 'id'> = {
+                email: user.email!,
+                cpf: cpf || undefined,
                 plan: plan,
                 role: role,
                 displayName: user.displayName || user.email,
                 createdAt: Timestamp.now(),
-            });
+            };
+
+            await setDoc(userDocRef, newUser);
+            return { id: user.uid, ...newUser } as AppUser;
+        } else {
+             return { id: userDocSnap.id, ...userDocSnap.data() } as AppUser;
         }
     } catch (error) {
-        console.error("Error creating user document:", error);
+        console.error("Error creating or getting user document:", error);
+        return null;
     }
 };
 
@@ -47,19 +52,16 @@ export function useUser() {
     () => (user ? doc(firestore, 'users', user.uid) : null),
     [firestore, user]
   );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<AppUser>(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useDoc<AppUser>(userProfileRef);
 
   useEffect(() => {
-    if (user && firestore && !isProfileLoading && !userProfile) {
-        // If user is authenticated but has no profile, it might be their first login.
-        // We call createUserDocument to be sure. The function itself checks existence.
-        const storedCpf = sessionStorage.getItem('tempCpfForSignUp');
-        createUserDocument(user, firestore, storedCpf);
-        if (storedCpf) {
-            sessionStorage.removeItem('tempCpfForSignUp');
-        }
+    // This effect handles the case where a user might already exist in Auth but not in Firestore.
+    // The primary creation path is now in initiateEmailSignUp.
+    if (user && firestore && !isProfileLoading && !userProfile && !profileError) {
+        createUserDocument(user, firestore, sessionStorage.getItem('tempCpfForSignUp'));
+        sessionStorage.removeItem('tempCpfForSignUp');
     }
-  }, [user, firestore, isProfileLoading, userProfile]);
+  }, [user, firestore, isProfileLoading, userProfile, profileError]);
 
   useEffect(() => {
     if (userProfile && userProfile.plan === 'pro' && userProfile.planExpirationDate) {
