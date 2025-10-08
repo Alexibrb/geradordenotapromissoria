@@ -119,7 +119,10 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="flex-1 space-y-4 text-left">
                  <p className="text-3xl font-bold">R$10<span className="text-sm font-normal text-muted-foreground">/mês</span></p>
-                <ul className="space-y-2 text-sm">
+                  <div className="text-center bg-green-100 text-green-800 p-2 rounded-lg">
+                      <p className="font-semibold text-md">Pagamento via PIX</p>
+                  </div>
+                <ul className="space-y-2 text-sm pt-4">
                    {proFeatures.map(feature => (
                      <li key={feature} className="flex items-start gap-2">
                        <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
@@ -147,7 +150,10 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="flex-1 space-y-4 text-left">
                  <p className="text-3xl font-bold">R$50<span className="text-sm font-normal text-muted-foreground">/semestre</span></p>
-                <ul className="space-y-2 text-sm">
+                  <div className="text-center bg-green-100 text-green-800 p-2 rounded-lg">
+                      <p className="font-semibold text-md">Pagamento via PIX</p>
+                  </div>
+                <ul className="space-y-2 text-sm pt-4">
                    {proFeatures.map(feature => (
                      <li key={feature} className="flex items-start gap-2">
                        <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
@@ -174,7 +180,10 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="flex-1 space-y-4 text-left">
                  <p className="text-3xl font-bold">R$80<span className="text-sm font-normal text-muted-foreground">/ano</span></p>
-                <ul className="space-y-2 text-sm">
+                  <div className="text-center bg-green-100 text-green-800 p-2 rounded-lg">
+                      <p className="font-semibold text-md">Pagamento via PIX</p>
+                  </div>
+                <ul className="space-y-2 text-sm pt-4">
                    {proFeatures.map(feature => (
                      <li key={feature} className="flex items-start gap-2">
                        <Check className="h-4 w-4 text-green-500 mt-1 shrink-0" />
