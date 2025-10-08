@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { Loader } from 'lucide-react';
@@ -8,7 +8,6 @@ import type { AppUser } from '@/types';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-
 
 const ADMIN_EMAIL = 'alexandro.ibrb@gmail.com';
 
@@ -56,7 +55,7 @@ export function useUser() {
 
   useEffect(() => {
     if (user && firestore && !isProfileLoading && !userProfile && !profileError) {
-        createUserDocument(user, firestore);
+        createUserDocument(user, firestore, sessionStorage.getItem('cpfForSignUp'));
     }
   }, [user, firestore, isProfileLoading, userProfile, profileError]);
 
@@ -82,25 +81,26 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   
   useEffect(() => {
     if (isLoading) {
-      return; // Aguarde o carregamento do usuário e do perfil
+      return; 
     }
 
     const isOnAuthPage = pathname === '/login' || pathname === '/';
-
-    // 1. Lógica para usuário não logado
+    const isAdminPage = pathname.startsWith('/admin');
+    
+    // 1. User is not logged in
     if (!user) {
       if (!isOnAuthPage) {
-        router.replace('/login'); // Se não estiver logado e não estiver na pág. de login/landing, redirecione para login
+        router.replace('/login');
       }
-      return; // Permanece nas páginas de login/landing
+      return;
     }
 
-    // 2. Lógica para usuário LOGADO
-    // Se o usuário está logado e na página de login/landing, redirecione-o.
+    // 2. User is logged in
+    const isAdmin = userProfile?.role === 'admin';
+
+    // Redirect away from auth pages if logged in
     if (isOnAuthPage) {
-        // Redireciona para admin se o perfil já carregou E é admin.
-        // Senão, redireciona para a página principal de clientes como padrão.
-        if (userProfile?.role === 'admin') {
+        if (isAdmin) {
             router.replace('/admin');
         } else {
             router.replace('/clients');
@@ -108,32 +108,26 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
         return;
     }
 
-    // 3. Lógica de proteção de rota para usuário LOGADO e FORA da página de login
-    if (userProfile) { // Apenas execute se o perfil já foi carregado
-        const isAdmin = userProfile.role === 'admin';
-
-        // Redireciona não-admin da área de admin
-        if (adminOnly && !isAdmin) {
-          router.replace('/clients');
-          return;
-        }
-
-        // Redireciona admin que está fora da área de admin
-        if (isAdmin && !pathname.startsWith('/admin')) {
+    // Admin user logic
+    if (isAdmin) {
+        if (!isAdminPage) {
             router.replace('/admin');
-            return;
         }
-
-        // Redireciona não-admin que tenta acessar a área de admin
-        if (!isAdmin && pathname.startsWith('/admin')) {
-            router.replace('/clients');
-            return;
-        }
+        return;
     }
-  }, [isLoading, user, userProfile, adminOnly, router, pathname]);
 
-  // Enquanto o estado de autenticação está sendo verificado, mostre um loader.
-  if (isLoading) {
+    // Non-admin user logic
+    if (!isAdmin) {
+        if (isAdminPage) {
+            router.replace('/clients');
+        }
+        return;
+    }
+
+  }, [isLoading, user, userProfile, router, pathname]);
+
+  // While loading, or if conditions for rendering haven't been met, show a loader.
+  if (isLoading || (!user && pathname !== '/login' && pathname !== '/') || (user && (pathname === '/login' || pathname === '/'))) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -141,25 +135,6 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
   
-  // Se o usuário não está logado, só permite renderizar as páginas de login/landing.
-  if (!user && (pathname !== '/login' && pathname !== '/')) {
-      // Este return age como uma segunda barreira, mostrando um loader enquanto o redirect do useEffect acontece.
-       return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Loader className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-  }
-  
-  // Se o usuário está logado, mas nas páginas de login/landing, mostra um loader enquanto é redirecionado.
-  if (user && (pathname === '/login' || pathname === '/')) {
-     return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Loader className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-  }
-  
-  // Renderiza o conteúdo da página protegida se todas as verificações passarem.
+  // Render children only if all auth checks have passed and user is on the correct page.
   return <>{children}</>;
 }
