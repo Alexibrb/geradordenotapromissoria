@@ -79,9 +79,8 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     }
 
     const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/';
-    const isAdminPage = pathname.startsWith('/admin');
     
-    // 1. User is not logged in
+    // If user is not logged in, redirect to login page if not already on an auth page.
     if (!user) {
       if (!isAuthPage) {
         router.replace('/login');
@@ -89,10 +88,10 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
 
-    // 2. User is logged in
+    // If user is logged in, handle redirections.
     const isAdmin = userProfile?.role === 'admin';
 
-    // Redirect away from auth pages if logged in
+    // If on an auth page, redirect to the appropriate dashboard.
     if (isAuthPage) {
         if (isAdmin) {
             router.replace('/admin');
@@ -102,22 +101,23 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
         return;
     }
 
-    // Role-based redirection for authenticated users
-    if (adminOnly) { // This route is for admins only
-      if (!isAdmin) {
-        router.replace('/clients'); // Non-admin tries to access admin page
-      }
-    } else { // This is a general protected route (not exclusively for admins)
-      if (isAdmin && !isAdminPage) {
-        router.replace('/admin'); // Admin is on a non-admin page
-      }
+    // Enforce admin-only routes.
+    if (adminOnly && !isAdmin) {
+        router.replace('/clients');
+        return;
     }
     
+    // Redirect admin from non-admin pages to the admin dashboard.
+    if (isAdmin && !pathname.startsWith('/admin')) {
+        router.replace('/admin');
+        return;
+    }
 
   }, [isLoading, user, userProfile, router, pathname, adminOnly]);
 
   // While loading, or if conditions for rendering haven't been met, show a loader.
-  if (isLoading || (!user && (pathname !== '/login' && pathname !== '/signup' && pathname !== '/')) || (user && (pathname === '/login' || pathname === '/signup' || pathname === '/'))) {
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/';
+  if (isLoading || (!user && !isAuthPage) || (user && isAuthPage)) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
