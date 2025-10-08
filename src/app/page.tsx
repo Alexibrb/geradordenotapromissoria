@@ -42,7 +42,8 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="container mx-auto px-4 py-6 flex justify-center items-center relative">
-        <h1 className="text-xl md:text-5xl font-extrabold tracking-tight text-center">
+        <h1 className="text-xl md:text-5xl font-extrabold tracking-tight text-center flex items-center gap-4">
+          <StickyNote className="h-10 w-10" />
           Gerador de Nota Promissória
         </h1>
         <div className="absolute right-4 flex items-center gap-2">
@@ -58,7 +59,7 @@ export default function LandingPage() {
                </a>
             )
           )}
-          <Button onClick={() => router.push('/login')}>
+          <Button onClick={() => router.push('/login')} variant="default">
             Entrar
           </Button>
         </div>
