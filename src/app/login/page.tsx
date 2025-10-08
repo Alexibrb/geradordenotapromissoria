@@ -51,7 +51,10 @@ const loginSchema = z.object({
   password: z
     .string()
     .min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
-  cpf: z.string().optional(),
+});
+
+const signupSchema = loginSchema.extend({
+    cpf: z.string().min(11, { message: 'O CPF deve ter pelo menos 11 caracteres.' }),
 });
 
 const resetPasswordSchema = z.object({
@@ -71,15 +74,27 @@ export default function LoginPage() {
 
   const appSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'general') : null, [firestore]);
   const { data: appSettings } = useDoc<AppSettings>(appSettingsRef);
+  
+  const currentSchema = isSigningUp ? signupSchema : loginSchema;
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof currentSchema>>({
+    resolver: zodResolver(currentSchema),
     defaultValues: {
       email: '',
       password: '',
-      cpf: '',
+      ...(isSigningUp && { cpf: '' }),
     },
   });
+  
+  // Reset form when switching between login and signup
+  React.useEffect(() => {
+    form.reset({
+      email: '',
+      password: '',
+      ...(isSigningUp && { cpf: '' }),
+    });
+  }, [isSigningUp, form]);
+
 
   const handleError = (error: FirebaseError) => {
     setIsSubmitting(false);
@@ -119,18 +134,15 @@ export default function LoginPage() {
     // Redirection is now handled by the useUser hook and ProtectedRoute
   };
 
-  const handleLogin = (values: z.infer<typeof loginSchema>) => {
+  const onSubmit = (values: z.infer<typeof currentSchema>) => {
     setIsSubmitting(true);
-    initiateEmailSignIn(auth, values.email, values.password, handleSuccess, handleError);
-  };
-  
-  const handleSignUp = (values: z.infer<typeof loginSchema>) => {
-    if (!values.cpf || values.cpf.trim() === '' || values.cpf.length < 11) {
-        form.setError('cpf', { type: 'manual', message: 'O CPF é obrigatório e deve ser válido.' });
-        return;
+    if (isSigningUp) {
+        const signUpValues = values as z.infer<typeof signupSchema>;
+        initiateEmailSignUp(auth, signUpValues.email, signUpValues.password, signUpValues.cpf, handleSuccess, handleError);
+    } else {
+        const loginValues = values as z.infer<typeof loginSchema>;
+        initiateEmailSignIn(auth, loginValues.email, loginValues.password, handleSuccess, handleError);
     }
-    setIsSubmitting(true);
-    initiateEmailSignUp(auth, values.email, values.password, values.cpf, handleSuccess, handleError);
   };
   
   const handlePasswordReset = () => {
@@ -181,7 +193,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
         <Link href="/" className="mb-6 flex flex-col items-center gap-2 text-foreground hover:text-primary transition-colors">
-            <StickyNote className="h-10 w-10"/>
+            <StickyNote className="h-10 w-10" />
             <h1 className="text-4xl font-bold tracking-tight">Gerador de Nota Promissória</h1>
         </Link>
         <Card className="w-full max-w-sm">
@@ -193,7 +205,7 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent>
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(isSigningUp ? handleSignUp : handleLogin)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
                     name="email"
