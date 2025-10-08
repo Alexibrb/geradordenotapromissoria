@@ -92,8 +92,10 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
     
-    // If user is authenticated but still on login/landing, redirect them.
-    // This is crucial for new sign-ups.
+    // User is authenticated.
+    
+    // If user is on login/landing, redirect them immediately to the correct dashboard.
+    // This is the main fix for the login issue.
     if (user && (pathname === '/login' || pathname === '/')) {
       if (userProfile?.role === 'admin') {
         router.replace('/admin');
@@ -103,7 +105,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
     
-    // User is authenticated, now check profile for role-based redirects
+    // If profile is loaded, enforce role-based access.
     if (userProfile) {
         const isAdmin = userProfile.role === 'admin';
 
@@ -138,42 +140,33 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return <>{children}</>;
   }
   
-  // If user is not logged in and trying to access a protected page, show loader while redirecting.
-  if (!user) {
-      return (
+  // While redirects are happening for a logged-in user, show a loader.
+  if (user) {
+    if (pathname === '/login' || pathname === '/') {
+       return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <Loader className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
+    }
+    
+    if (adminOnly && userProfile && userProfile.role !== 'admin') {
+      return (
+          <div className="flex h-screen w-full items-center justify-center bg-background">
+               <p>Redirecionando...</p>
+          </div>
+      );
+    }
   }
   
-  // If user is logged in, but profile is still loading (and they are not on login/landing), show a loader.
-  if (!userProfile && (pathname !== '/login' && pathname !== '/')) {
-     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader className="h-8 w-8 animate-spin text-primary" />
-         <p className="ml-2">Carregando perfil...</p>
-      </div>
-    );
-  }
-  
-  const isAdmin = userProfile?.role === 'admin';
-  
-  if (adminOnly && !isAdmin) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-             <p>Redirecionando...</p>
-        </div>
-    );
-  }
-
-  // If a logged-in user is on the login/landing page, show loader while redirecting.
-  if (pathname === '/login' || pathname === '/') {
-    return (
+  // If no user and not on a public page, this will be caught by the redirect logic
+  // but showing a loader is a good fallback.
+  if (!user) {
+       return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <Loader className="h-8 w-8 animate-spin text-primary" />
         </div>
-    );
+      );
   }
   
   return <>{children}</>;
