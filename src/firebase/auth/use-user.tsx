@@ -82,51 +82,57 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   
   useEffect(() => {
     if (isLoading) {
-      return; 
+      return; // Aguarde o carregamento do usuário e do perfil
     }
 
+    const isOnAuthPage = pathname === '/login' || pathname === '/';
+
+    // 1. Lógica para usuário não logado
     if (!user) {
-      if (pathname !== '/login' && pathname !== '/') {
-        router.replace('/login');
+      if (!isOnAuthPage) {
+        router.replace('/login'); // Se não estiver logado e não estiver na pág. de login/landing, redirecione para login
       }
-      return;
+      return; // Permanece nas páginas de login/landing
     }
-    
-    // User is authenticated.
-    
-    // If user is on login/landing, redirect them immediately to the correct dashboard.
-    // This is the main fix for the login issue.
-    if (user && (pathname === '/login' || pathname === '/')) {
-      if (userProfile?.role === 'admin') {
-        router.replace('/admin');
-      } else {
-        router.replace('/clients');
-      }
-      return;
+
+    // 2. Lógica para usuário LOGADO
+    // Se o usuário está logado e na página de login/landing, redirecione-o.
+    if (isOnAuthPage) {
+        // Redireciona para admin se o perfil já carregou E é admin.
+        // Senão, redireciona para a página principal de clientes como padrão.
+        if (userProfile?.role === 'admin') {
+            router.replace('/admin');
+        } else {
+            router.replace('/clients');
+        }
+        return;
     }
-    
-    // If profile is loaded, enforce role-based access.
-    if (userProfile) {
+
+    // 3. Lógica de proteção de rota para usuário LOGADO e FORA da página de login
+    if (userProfile) { // Apenas execute se o perfil já foi carregado
         const isAdmin = userProfile.role === 'admin';
 
+        // Redireciona não-admin da área de admin
         if (adminOnly && !isAdmin) {
-          router.replace('/clients'); // Redirect non-admins from admin area
+          router.replace('/clients');
           return;
         }
 
+        // Redireciona admin que está fora da área de admin
         if (isAdmin && !pathname.startsWith('/admin')) {
             router.replace('/admin');
             return;
         }
 
+        // Redireciona não-admin que tenta acessar a área de admin
         if (!isAdmin && pathname.startsWith('/admin')) {
             router.replace('/clients');
             return;
         }
     }
-
   }, [isLoading, user, userProfile, adminOnly, router, pathname]);
 
+  // Enquanto o estado de autenticação está sendo verificado, mostre um loader.
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -135,33 +141,9 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
   
-  // If user is not logged in and is on a public page (login or landing), show the page.
-  if (!user && (pathname === '/login' || pathname === '/')) {
-      return <>{children}</>;
-  }
-  
-  // While redirects are happening for a logged-in user, show a loader.
-  if (user) {
-    if (pathname === '/login' || pathname === '/') {
-       return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <Loader className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-    }
-    
-    if (adminOnly && userProfile && userProfile.role !== 'admin') {
-      return (
-          <div className="flex h-screen w-full items-center justify-center bg-background">
-               <p>Redirecionando...</p>
-          </div>
-      );
-    }
-  }
-  
-  // If no user and not on a public page, this will be caught by the redirect logic
-  // but showing a loader is a good fallback.
-  if (!user) {
+  // Se o usuário não está logado, só permite renderizar as páginas de login/landing.
+  if (!user && (pathname !== '/login' && pathname !== '/')) {
+      // Este return age como uma segunda barreira, mostrando um loader enquanto o redirect do useEffect acontece.
        return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -169,5 +151,15 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       );
   }
   
+  // Se o usuário está logado, mas nas páginas de login/landing, mostra um loader enquanto é redirecionado.
+  if (user && (pathname === '/login' || pathname === '/')) {
+     return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+  }
+  
+  // Renderiza o conteúdo da página protegida se todas as verificações passarem.
   return <>{children}</>;
 }
