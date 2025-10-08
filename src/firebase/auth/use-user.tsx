@@ -55,11 +55,10 @@ export function useUser() {
   const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useDoc<AppUser>(userProfileRef);
 
   useEffect(() => {
-    // This effect handles the case where a user might already exist in Auth but not in Firestore.
-    // The primary creation path is now in initiateEmailSignUp.
     if (user && firestore && !isProfileLoading && !userProfile && !profileError) {
-        createUserDocument(user, firestore, sessionStorage.getItem('tempCpfForSignUp'));
-        sessionStorage.removeItem('tempCpfForSignUp');
+        // This effect is a fallback. The primary user creation path is now initiateEmailSignUp.
+        // It handles cases where a user might exist in Auth but not in Firestore for any reason.
+        createUserDocument(user, firestore);
     }
   }, [user, firestore, isProfileLoading, userProfile, profileError]);
 
