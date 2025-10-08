@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Gem, Star, Video, Loader } from 'lucide-react';
+import { Check, Gem, Star, Video, Loader, StickyNote } from 'lucide-react';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import type { AppSettings } from '@/types';
 import { doc } from 'firebase/firestore';
@@ -66,10 +66,10 @@ export default function LandingPage() {
 
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter">
             Gerador de Nota Promissória
           </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-xl md:text-2xl text-muted-foreground font-semibold">
+          <p className="mt-4 max-w-2xl mx-auto text-xl md:text-5xl text-muted-foreground font-semibold">
             Simples, Rápido e Profissional.
           </p>
           <p className="mt-2 max-w-2xl mx-auto text-lg text-muted-foreground">
