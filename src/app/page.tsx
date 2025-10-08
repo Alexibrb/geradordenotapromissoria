@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, Gem, Star, Video, Loader } from 'lucide-react';
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import type { AppSettings } from '@/types';
 import { doc } from 'firebase/firestore';
 import Link from 'next/link';
@@ -41,7 +41,10 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="container mx-auto px-4 py-6 flex justify-end items-center">
+      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
+        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-center">
+          Gerador de Nota Promissória
+        </h1>
         <div className="flex items-center gap-2">
           {areAppSettingsLoading ? (
             <Loader className="animate-spin h-5 w-5" />
@@ -63,10 +66,7 @@ export default function LandingPage() {
 
       <main className="flex-1 flex items-center justify-center">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-            Gerador de Nota Promissória
-          </h1>
-          <p className="mt-4 max-w-2xl mx-auto text-3xl md:text-4xl text-muted-foreground font-semibold">
+          <p className="mt-4 max-w-2xl mx-auto text-5xl md:text-6xl text-muted-foreground font-semibold">
             Simples, Rápido e Profissional.
           </p>
           <p className="mt-2 max-w-2xl mx-auto text-lg text-muted-foreground">
