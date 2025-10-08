@@ -74,35 +74,36 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
   const pathname = usePathname();
 
   useEffect(() => {
+    // Don't do anything while loading.
     if (isLoading) {
-      return; // Do nothing while loading
+      return;
     }
 
     const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/';
-    const isAdmin = userProfile?.role === 'admin';
-
-    // 1. If user is NOT logged in
+    
+    // Case 1: User is not logged in.
     if (!user) {
       if (!isAuthPage) {
         router.replace('/login');
       }
       return;
     }
+    
+    // After this point, user is guaranteed to be logged in.
+    
+    const isAdmin = userProfile?.role === 'admin';
 
-    // 2. If user IS logged in and on an auth page, redirect them away.
+    // Case 2: Logged-in user is on an auth page.
     if (isAuthPage) {
       router.replace(isAdmin ? '/admin' : '/clients');
       return;
     }
-    
-    // 3. If it's an admin-only page and the user is not an admin, redirect.
+
+    // Case 3: Non-admin user tries to access an admin-only page.
     if (adminOnly && !isAdmin) {
       router.replace('/clients');
       return;
     }
-
-    // This was the problematic rule. Admins should be able to access client pages.
-    // We keep rule #3 to protect admin routes, but we remove the rule that forces admins out of client pages.
 
   }, [isLoading, user, userProfile, router, pathname, adminOnly]);
 
