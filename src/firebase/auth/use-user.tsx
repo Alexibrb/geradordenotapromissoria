@@ -56,8 +56,6 @@ export function useUser() {
 
   useEffect(() => {
     if (user && firestore && !isProfileLoading && !userProfile && !profileError) {
-        // This effect is a fallback. The primary user creation path is now initiateEmailSignUp.
-        // It handles cases where a user might exist in Auth but not in Firestore for any reason.
         createUserDocument(user, firestore);
     }
   }, [user, firestore, isProfileLoading, userProfile, profileError]);
@@ -66,7 +64,6 @@ export function useUser() {
     if (userProfile && userProfile.plan === 'pro' && userProfile.planExpirationDate) {
         const now = Timestamp.now();
         if (now > userProfile.planExpirationDate) {
-            // Plan expired, downgrade to free
             const userDocRef = doc(firestore, 'users', userProfile.id);
             setDocumentNonBlocking(userDocRef, { plan: 'free' }, { merge: true });
         }
@@ -95,23 +92,24 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       return;
     }
     
-    // User is authenticated
+    // If user is authenticated but still on login/landing, redirect them.
+    // This is crucial for new sign-ups.
+    if (user && (pathname === '/login' || pathname === '/')) {
+      if (userProfile?.role === 'admin') {
+        router.replace('/admin');
+      } else {
+        router.replace('/clients');
+      }
+      return;
+    }
+    
+    // User is authenticated, now check profile for role-based redirects
     if (userProfile) {
         const isAdmin = userProfile.role === 'admin';
 
         if (adminOnly && !isAdmin) {
           router.replace('/clients'); // Redirect non-admins from admin area
           return;
-        }
-        
-        // Redirect a logged-in user away from login or landing
-        if (pathname === '/login' || pathname === '/') {
-            if (isAdmin) {
-                router.replace('/admin');
-            } else {
-                router.replace('/clients');
-            }
-            return;
         }
 
         if (isAdmin && !pathname.startsWith('/admin')) {
@@ -149,8 +147,8 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
       );
   }
   
-  // If user is logged in, but profile is still loading, show a loader.
-  if (!userProfile) {
+  // If user is logged in, but profile is still loading (and they are not on login/landing), show a loader.
+  if (!userProfile && (pathname !== '/login' && pathname !== '/')) {
      return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -159,7 +157,7 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
     );
   }
   
-  const isAdmin = userProfile.role === 'admin';
+  const isAdmin = userProfile?.role === 'admin';
   
   if (adminOnly && !isAdmin) {
     return (
