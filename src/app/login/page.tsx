@@ -84,7 +84,11 @@ export default function LoginPage() {
   
   // Reset form when switching between login and signup
   useEffect(() => {
-    form.reset();
+    form.reset({
+      email: '',
+      password: '',
+      cpf: ''
+    });
   }, [isSigningUp, form]);
 
 
@@ -126,12 +130,14 @@ export default function LoginPage() {
     // Redirection is now handled by the useUser hook and ProtectedRoute
   };
 
-  const onSubmit = (values: any) => {
+  const onSubmit = (values: z.infer<typeof loginSchema> | z.infer<typeof signupSchema>) => {
     setIsSubmitting(true);
     if (isSigningUp) {
-        initiateEmailSignUp(auth, values.email, values.password, values.cpf, handleSuccess, handleError);
+        const signUpValues = values as z.infer<typeof signupSchema>;
+        initiateEmailSignUp(auth, signUpValues.email, signUpValues.password, signUpValues.cpf, handleSuccess, handleError);
     } else {
-        initiateEmailSignIn(auth, values.email, values.password, handleSuccess, handleError);
+        const signInValues = values as z.infer<typeof loginSchema>;
+        initiateEmailSignIn(auth, signInValues.email, signInValues.password, handleSuccess, handleError);
     }
   };
   

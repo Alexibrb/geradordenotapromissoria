@@ -51,15 +51,7 @@ export function useUser() {
     () => (user ? doc(firestore, 'users', user.uid) : null),
     [firestore, user]
   );
-  const { data: userProfile, isLoading: isProfileLoading, error: profileError } = useDoc<AppUser>(userProfileRef);
-
-  useEffect(() => {
-    if (user && firestore && !isProfileLoading && !userProfile && !profileError) {
-        const cpf = sessionStorage.getItem('cpfForSignUp');
-        createUserDocument(user, firestore, cpf);
-        if (cpf) sessionStorage.removeItem('cpfForSignUp');
-    }
-  }, [user, firestore, isProfileLoading, userProfile, profileError]);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<AppUser>(userProfileRef);
 
   useEffect(() => {
     if (userProfile && userProfile.plan === 'pro' && userProfile.planExpirationDate) {
