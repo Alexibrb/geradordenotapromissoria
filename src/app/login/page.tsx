@@ -53,12 +53,10 @@ const loginSchema = z.object({
     .min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
 });
 
-const signupSchema = loginSchema.extend({
+const signupSchema = z.object({
+    email: z.string().email({ message: 'Por favor, insira um email válido.' }),
+    password: z.string().min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
     cpf: z.string().min(11, { message: 'O CPF deve ter pelo menos 11 caracteres.' }),
-});
-
-const resetPasswordSchema = z.object({
-  email: z.string().email({ message: 'Por favor, insira um email válido para redefinir a senha.' }),
 });
 
 
@@ -75,24 +73,18 @@ export default function LoginPage() {
   const appSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'general') : null, [firestore]);
   const { data: appSettings } = useDoc<AppSettings>(appSettingsRef);
   
-  const currentSchema = isSigningUp ? signupSchema : loginSchema;
-
-  const form = useForm<z.infer<typeof currentSchema>>({
-    resolver: zodResolver(currentSchema),
+  const form = useForm({
+    resolver: zodResolver(isSigningUp ? signupSchema : loginSchema),
     defaultValues: {
       email: '',
       password: '',
-      ...(isSigningUp && { cpf: '' }),
+      cpf: '',
     },
   });
   
   // Reset form when switching between login and signup
   useEffect(() => {
-    form.reset({
-      email: '',
-      password: '',
-      ...(isSigningUp && { cpf: '' }),
-    });
+    form.reset();
   }, [isSigningUp, form]);
 
 
@@ -134,28 +126,24 @@ export default function LoginPage() {
     // Redirection is now handled by the useUser hook and ProtectedRoute
   };
 
-  const onSubmit = (values: z.infer<typeof currentSchema>) => {
+  const onSubmit = (values: any) => {
     setIsSubmitting(true);
     if (isSigningUp) {
-        const signUpValues = values as z.infer<typeof signupSchema>;
-        initiateEmailSignUp(auth, signUpValues.email, signUpValues.password, signUpValues.cpf, handleSuccess, handleError);
+        initiateEmailSignUp(auth, values.email, values.password, values.cpf, handleSuccess, handleError);
     } else {
-        const loginValues = values as z.infer<typeof loginSchema>;
-        initiateEmailSignIn(auth, loginValues.email, loginValues.password, handleSuccess, handleError);
+        initiateEmailSignIn(auth, values.email, values.password, handleSuccess, handleError);
     }
   };
   
   const handlePasswordReset = () => {
     try {
-        resetPasswordSchema.parse({ email: resetEmail });
+        z.string().email().parse(resetEmail);
     } catch (error) {
-        if (error instanceof z.ZodError) {
-            toast({
-                variant: 'destructive',
-                title: 'Email inválido',
-                description: error.errors[0].message,
-            });
-        }
+        toast({
+            variant: 'destructive',
+            title: 'Email inválido',
+            description: 'Por favor, insira um email válido.',
+        });
         return;
     }
 

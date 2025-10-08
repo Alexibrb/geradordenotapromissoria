@@ -55,7 +55,9 @@ export function useUser() {
 
   useEffect(() => {
     if (user && firestore && !isProfileLoading && !userProfile && !profileError) {
-        createUserDocument(user, firestore, sessionStorage.getItem('cpfForSignUp'));
+        const cpf = sessionStorage.getItem('cpfForSignUp');
+        createUserDocument(user, firestore, cpf);
+        if (cpf) sessionStorage.removeItem('cpfForSignUp');
     }
   }, [user, firestore, isProfileLoading, userProfile, profileError]);
 
@@ -108,23 +110,19 @@ export function ProtectedRoute({ children, adminOnly = false }: { children: Reac
         return;
     }
 
-    // Admin user logic
-    if (isAdmin) {
-        if (!isAdminPage) {
-            router.replace('/admin');
-        }
-        return;
+    // Role-based redirection for authenticated users
+    if (adminOnly) { // This route is for admins only
+      if (!isAdmin) {
+        router.replace('/clients'); // Non-admin tries to access admin page
+      }
+    } else { // This is a general protected route (not exclusively for admins)
+      if (isAdmin && !isAdminPage) {
+        router.replace('/admin'); // Admin is on a non-admin page
+      }
     }
+    
 
-    // Non-admin user logic
-    if (!isAdmin) {
-        if (isAdminPage) {
-            router.replace('/clients');
-        }
-        return;
-    }
-
-  }, [isLoading, user, userProfile, router, pathname]);
+  }, [isLoading, user, userProfile, router, pathname, adminOnly]);
 
   // While loading, or if conditions for rendering haven't been met, show a loader.
   if (isLoading || (!user && pathname !== '/login' && pathname !== '/') || (user && (pathname === '/login' || pathname === '/'))) {
