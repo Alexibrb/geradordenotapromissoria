@@ -41,11 +41,11 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
-        <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">
+      <header className="container mx-auto px-4 py-6 flex justify-center items-center relative">
+        <h1 className="text-xl md:text-5xl font-extrabold tracking-tight text-center">
           Gerador de Nota Promissória
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="absolute right-4 flex items-center gap-2">
           {areAppSettingsLoading ? (
             <Loader className="animate-spin h-5 w-5" />
           ) : (
