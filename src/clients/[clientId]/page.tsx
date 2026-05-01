@@ -53,6 +53,7 @@ function ClientDetailPage() {
       creditorCpf: note.creditorCpf,
       creditorAddress: note.creditorAddress,
       paymentDate: note.paymentDate.toDate(),
+      firstInstallmentDate: note.firstInstallmentDate ? note.firstInstallmentDate.toDate() : undefined,
       totalValue: note.value,
       installments: note.numberOfInstallments,
       productReference: note.productServiceReference,
@@ -178,7 +179,7 @@ function ClientDetailPage() {
             {selectedNote ? (
               <>
                 <PromissoryNoteDisplay data={selectedNote} />
-                <CarneDisplay data={selectedNote} />
+                <CarneDisplay data={selectedNote} onPaymentStatusChange={() => {}} />
               </>
             ) : (
               <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
@@ -198,5 +199,3 @@ function ClientDetailPage() {
 }
 
 export default ClientDetailPage;
-
-    

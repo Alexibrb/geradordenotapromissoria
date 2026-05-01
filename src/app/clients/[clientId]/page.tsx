@@ -44,8 +44,6 @@ function ClientDetailPage() {
     const fetchPayments = async () => {
         setLoadingPayments(true);
         const paymentsData: Payment[] = [];
-        // Instead of a single collectionGroup query, iterate through each note
-        // to fetch its payments. This respects the path-based security rules.
         for (const note of notes) {
             const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', note.id, 'payments');
             const paymentsSnapshot = await getDocs(paymentsRef);
@@ -62,7 +60,7 @@ function ClientDetailPage() {
 
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote(note);
-    setActiveView('note'); // Reset to note view when a new note is selected
+    setActiveView('note');
   };
 
   const handleDeleteNote = async (e: React.MouseEvent, noteId: string) => {
@@ -80,8 +78,6 @@ function ClientDetailPage() {
     }
 
     const noteDocRef = doc(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', noteId);
-    
-    // Delete associated payments first
     const paymentsRef = collection(noteDocRef, 'payments');
     const paymentsSnapshot = await getDocs(paymentsRef);
     paymentsSnapshot.forEach((paymentDoc) => {
@@ -136,7 +132,6 @@ function ClientDetailPage() {
             className: 'bg-accent text-accent-foreground',
         });
      } else {
-        // Find and delete the payment document
         const q = query(paymentsRef, where("installmentNumber", "==", installmentNumber));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
@@ -162,6 +157,7 @@ function ClientDetailPage() {
         creditorCpf: note.creditorCpf,
         creditorAddress: note.creditorAddress,
         paymentDate: note.paymentDate.toDate(),
+        firstInstallmentDate: note.firstInstallmentDate ? note.firstInstallmentDate.toDate() : undefined,
         totalValue: note.value,
         installments: note.numberOfInstallments,
         productReference: note.productServiceReference,
