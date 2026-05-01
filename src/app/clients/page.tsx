@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle, Filter } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle, Filter, ListOrdered } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { collection, doc, query, getDocs } from 'firebase/firestore';
@@ -153,6 +153,7 @@ function ClientsPage() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [notesCountFilter, setNotesCountFilter] = useState('all');
   const [filteredClients, setFilteredClients] = useState<Client[] | null>(null);
 
   // Dashboard state
@@ -169,6 +170,17 @@ function ClientsPage() {
       setSettingsLatePaymentClause(settings.latePaymentClause || '');
     }
   }, [settings]);
+
+  // Calculate unique note counts available in the dataset for the filter
+  const availableNoteCounts = useMemo(() => {
+    if (!clients || !allNotes) return [];
+    const counts = new Set<number>();
+    clients.forEach(client => {
+      const count = allNotes.filter(n => n.clientId === client.id).length;
+      counts.add(count);
+    });
+    return Array.from(counts).sort((a, b) => a - b);
+  }, [clients, allNotes]);
 
   // Calculate counters for status
   const clientStatusCounts = useMemo(() => {
@@ -240,8 +252,16 @@ function ClientsPage() {
       });
     }
 
+    // Notes count filter
+    if (notesCountFilter !== 'all') {
+      result = result.filter(client => {
+        const clientNotes = allNotes?.filter(n => n.clientId === client.id) || [];
+        return clientNotes.length.toString() === notesCountFilter;
+      });
+    }
+
     setFilteredClients(result);
-  }, [searchTerm, statusFilter, clients, allNotes, allPayments]);
+  }, [searchTerm, statusFilter, notesCountFilter, clients, allNotes, allPayments]);
 
   useEffect(() => {
     const finalNotes = allNotes || [];
@@ -673,7 +693,7 @@ function ClientsPage() {
             />
         </div>
         
-        <div className="mb-8 flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+        <div className="mb-8 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
             <div className="relative flex-1 group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-colors" />
                 <Input
@@ -684,19 +704,38 @@ function ClientsPage() {
                     className="pl-12 w-full h-14 text-lg bg-card border-2 border-primary shadow-sm focus:ring-4 focus:ring-primary/10 rounded-xl transition-all"
                 />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-[240px] h-14 border-2 border-primary rounded-xl font-bold text-primary bg-card">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    <SelectValue placeholder="Filtrar por Status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Todos os Clientes</SelectItem>
-                    <SelectItem value="paid">Totalmente Quitados</SelectItem>
-                    <SelectItem value="pending">Com Pendências</SelectItem>
-                </SelectContent>
-            </Select>
+            <div className="flex flex-col sm:flex-row gap-4">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[200px] h-14 border-2 border-primary rounded-xl font-bold text-primary bg-card">
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        <SelectValue placeholder="Status" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos os Status</SelectItem>
+                        <SelectItem value="paid">Totalmente Quitados</SelectItem>
+                        <SelectItem value="pending">Com Pendências</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                <Select value={notesCountFilter} onValueChange={setNotesCountFilter}>
+                    <SelectTrigger className="w-full sm:w-[200px] h-14 border-2 border-primary rounded-xl font-bold text-primary bg-card">
+                      <div className="flex items-center gap-2">
+                        <ListOrdered className="h-4 w-4" />
+                        <SelectValue placeholder="Qtde de Notas" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Qualquer Quantidade</SelectItem>
+                        {availableNoteCounts.map(count => (
+                            <SelectItem key={count} value={count.toString()}>
+                                {count} {count === 1 ? 'Nota' : 'Notas'}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
         </div>
 
         {/* Edit Client Dialog */}
