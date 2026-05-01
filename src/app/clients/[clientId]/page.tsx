@@ -16,6 +16,7 @@ import { CarneDisplay } from '@/components/carne-display';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PromissoryNoteCard } from '@/components/promissory-note-card';
+import { cn } from '@/lib/utils';
 
 function ClientDetailPage() {
   const { clientId } = useParams();
@@ -292,7 +293,10 @@ function ClientDetailPage() {
                     <Button 
                       onClick={() => setActiveView('slips')} 
                       variant={activeView === 'slips' ? 'default' : 'ghost'} 
-                      className="flex-1 sm:flex-none"
+                      className={cn(
+                        "flex-1 sm:flex-none",
+                        activeView !== 'slips' && "text-green-600 hover:text-green-700 hover:bg-green-50"
+                      )}
                     >
                         <Receipt className="mr-2 h-4 w-4"/>
                         Comprovantes
@@ -327,3 +331,4 @@ function ClientDetailPage() {
 }
 
 export default ClientDetailPage;
+    
