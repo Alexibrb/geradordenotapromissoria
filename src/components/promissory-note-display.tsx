@@ -37,8 +37,13 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
   const handleGeneratePdf = () => {
     const input = document.getElementById("note-print-area");
     if (input) {
-      html2canvas(input, { scale: 2 }).then((canvas) => {
-        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      html2canvas(input, { 
+        scale: 3, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      }).then((canvas) => {
+        const imgData = canvas.toDataURL("image/jpeg", 1.0);
         const pdf = new jsPDF("p", "mm", "a4");
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -57,7 +62,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         const x = 10;
         const y = 10; // Position from the top
 
-        pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
+        pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'SLOW');
         pdf.save(`nota_promissoria_${noteNumber}.pdf`);
       });
     }

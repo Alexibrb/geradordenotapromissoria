@@ -77,8 +77,13 @@ export function InstallmentSlip({
           stamp.style.display = 'block';
         }
 
-        html2canvas(pdfArea, { scale: 1 }).then((canvas) => {
-            const imgData = canvas.toDataURL("image/jpeg", 0.7);
+        html2canvas(pdfArea, { 
+          scale: 3, 
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        }).then((canvas) => {
+            const imgData = canvas.toDataURL("image/jpeg", 1.0);
             const pdf = new jsPDF("p", "mm", "a5");
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -97,7 +102,7 @@ export function InstallmentSlip({
             const x = (pdfWidth - imgWidth) / 2;
             const y = 10;
 
-            pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
+            pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'SLOW');
             pdf.save(`comprovante_${isDownPayment ? 'entrada' : `parcela_${installmentNumber}`}_${noteNumber}.pdf`);
 
             if (!wasVisible) {

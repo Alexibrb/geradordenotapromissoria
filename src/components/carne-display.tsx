@@ -150,7 +150,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
       let y = margin;
 
       const addCanvasToPdf = (canvas: HTMLCanvasElement) => {
-        const imgData = canvas.toDataURL("image/jpeg", 0.7);
+        const imgData = canvas.toDataURL("image/jpeg", 1.0);
         const ratio = canvas.width / canvas.height;
         const imgWidth = availableWidth;
         const imgHeight = imgWidth / ratio;
@@ -159,7 +159,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
           pdf.addPage();
           y = margin;
         }
-        pdf.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight, undefined, 'SLOW');
         y += imgHeight + 10;
       };
 
@@ -169,19 +169,16 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
         promiseChain = promiseChain.then(() => {
           return new Promise<void>(resolve => {
             const pdfArea = slipElement.querySelector<HTMLElement>('[id^="slip-"][id$="-pdf-area"]');
-            const checkbox = slipElement.querySelector<HTMLInputElement>('input[type="checkbox"]');
             const stamp = slipElement.querySelector('.paid-stamp-area') as HTMLElement;
-            const wasVisible = stamp.style.display === 'block';
-
-            if (checkbox?.checked) {
-              stamp.style.display = 'block';
-            }
+            const isPaid = stamp && stamp.style.display !== 'none';
             
-            html2canvas(pdfArea!, { scale: 1, backgroundColor: null }).then(canvas => {
+            html2canvas(pdfArea!, { 
+              scale: 2, 
+              useCORS: true,
+              logging: false,
+              backgroundColor: '#ffffff'
+            }).then(canvas => {
               addCanvasToPdf(canvas);
-              if (!wasVisible) {
-                stamp.style.display = 'none';
-              }
               resolve();
             });
           });
