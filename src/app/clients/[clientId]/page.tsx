@@ -10,9 +10,10 @@ import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper, FileCheck } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
+import { PaymentStatement } from '@/components/payment-statement';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PromissoryNoteCard } from '@/components/promissory-note-card';
@@ -26,7 +27,7 @@ function ClientDetailPage() {
   const { toast } = useToast();
   
   const [selectedNote, setSelectedNote] = useState<PromissoryNote | null>(null);
-  const [activeView, setActiveView] = useState<'note' | 'slips'>('note');
+  const [activeView, setActiveView] = useState<'note' | 'slips' | 'statement'>('note');
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
 
@@ -132,7 +133,6 @@ function ClientDetailPage() {
              const updatedPayments = [...allPayments, newPayment];
              setAllPayments(updatedPayments);
 
-             // Verificamos se esta foi a última parcela
              const notePayments = updatedPayments.filter(p => p.promissoryNoteId === selectedNote.id);
              const totalPaid = notePayments.reduce((acc, p) => acc + p.amount, 0);
              const totalInstallments = selectedNote.numberOfInstallments + (selectedNote.hasDownPayment ? 1 : 0);
@@ -209,6 +209,8 @@ function ClientDetailPage() {
   const selectedNoteData = getNoteData(selectedNote);
   const selectedNotePayments = selectedNote ? allPayments.filter(p => p.promissoryNoteId === selectedNote.id) : [];
 
+  const isFullyPaid = selectedNote && selectedNotePayments.length >= (selectedNote.numberOfInstallments + (selectedNote.hasDownPayment ? 1 : 0)) && selectedNotePayments.reduce((acc, p) => acc + p.amount, 0) >= selectedNote.value;
+
   if (isClientLoading || areNotesLoading || loadingPayments) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -281,7 +283,7 @@ function ClientDetailPage() {
           <div className="space-y-8">
             {selectedNoteData ? (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex gap-2 mb-6 p-1 bg-secondary rounded-lg w-fit mx-auto sm:mx-0">
+                <div className="flex flex-wrap gap-2 mb-6 p-1 bg-secondary rounded-lg w-fit mx-auto sm:mx-0">
                     <Button 
                       onClick={() => setActiveView('note')} 
                       variant={activeView === 'note' ? 'default' : 'secondary'} 
@@ -304,6 +306,19 @@ function ClientDetailPage() {
                         <Receipt className="mr-2 h-4 w-4"/>
                         Comprovantes
                     </Button>
+                    {isFullyPaid && (
+                       <Button 
+                        onClick={() => setActiveView('statement')} 
+                        variant={activeView === 'statement' ? 'default' : 'secondary'} 
+                        className={cn(
+                          "flex-1 sm:flex-none transition-all",
+                          activeView !== 'statement' && "bg-green-600 text-white hover:bg-green-700 border-none"
+                        )}
+                      >
+                          <FileCheck className="mr-2 h-4 w-4"/>
+                          Extrato de Quitação
+                      </Button>
+                    )}
                 </div>
                 {activeView === 'note' && (
                     <PromissoryNoteDisplay data={selectedNoteData} />
@@ -313,6 +328,12 @@ function ClientDetailPage() {
                         data={selectedNoteData} 
                         payments={selectedNotePayments}
                         onPaymentStatusChange={handlePaymentStatusChange}
+                    />
+                )}
+                {activeView === 'statement' && (
+                    <PaymentStatement 
+                        data={selectedNoteData} 
+                        payments={selectedNotePayments} 
                     />
                 )}
               </div>
