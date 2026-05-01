@@ -10,7 +10,7 @@ import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 import { useToast } from '@/hooks/use-toast';
@@ -128,14 +128,28 @@ function ClientDetailPage() {
         addDocumentNonBlocking(paymentsRef, paymentData).then((docRef) => {
           if (docRef) {
              const newPayment = { id: docRef.id, ...paymentData } as Payment;
-             setAllPayments(prev => [...prev, newPayment]);
-          }
-        });
+             const updatedPayments = [...allPayments, newPayment];
+             setAllPayments(updatedPayments);
 
-        toast({
-            title: `Confirmado: ${installmentNumber === 0 ? 'Entrada' : `Parcela ${installmentNumber}`} Paga`,
-            description: `O pagamento de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} foi registrado.`,
-            className: 'bg-green-600 text-white',
+             // Verificamos se esta foi a última parcela
+             const notePayments = updatedPayments.filter(p => p.promissoryNoteId === selectedNote.id);
+             const totalPaid = notePayments.reduce((acc, p) => acc + p.amount, 0);
+             const totalInstallments = selectedNote.numberOfInstallments + (selectedNote.hasDownPayment ? 1 : 0);
+             
+             if (totalPaid >= selectedNote.value && notePayments.length >= totalInstallments) {
+                toast({
+                    title: "🎉 NOTA TOTALMENTE QUITADA!",
+                    description: `Excelente! Todos os pagamentos desta nota foram concluídos.`,
+                    className: "bg-blue-600 text-white border-none shadow-2xl",
+                });
+             } else {
+                toast({
+                    title: `Confirmado: ${installmentNumber === 0 ? 'Entrada' : `Parcela ${installmentNumber}`} Paga`,
+                    description: `O pagamento de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} foi registrado.`,
+                    className: 'bg-blue-600 text-white',
+                });
+             }
+          }
         });
      } else {
         const q = query(paymentsRef, where("installmentNumber", "==", installmentNumber));
