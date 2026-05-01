@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { PromissoryNoteData, Payment } from "@/types";
@@ -8,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { FileDown, Receipt, CircleOff, CheckCircle } from "lucide-react";
 import { InstallmentSlip } from "@/components/installment-slip";
 import React, { useState, useMemo } from "react";
-import jsPDF from "jsPDF";
+import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 type CarneDisplayProps = {
@@ -160,7 +159,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
           pdf.addPage();
           y = margin;
         }
-        pdf.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight, undefined, 'SLOW');
+        pdf.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight, undefined, 'FAST');
         y += imgHeight + 10;
       };
 

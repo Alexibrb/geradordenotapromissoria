@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -103,7 +102,7 @@ export function InstallmentSlip({
             const x = (pdfWidth - imgWidth) / 2;
             const y = 15;
 
-            pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'SLOW');
+            pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
             pdf.save(`comprovante_${isDownPayment ? 'entrada' : `parcela_${installmentNumber}`}_${noteNumber}.pdf`);
 
             if (!wasVisible) {

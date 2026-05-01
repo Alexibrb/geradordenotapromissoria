@@ -1,4 +1,3 @@
-
 "use-client";
 
 import type { PromissoryNoteData } from "@/types";
@@ -63,7 +62,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         const x = (pdfWidth - imgWidth) / 2;
         const y = 15; // Position from the top
 
-        pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'SLOW');
+        pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
         pdf.save(`nota_promissoria_${noteNumber}.pdf`);
       });
     }
