@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle, Filter } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { collection, doc, query, getDocs } from 'firebase/firestore';
@@ -35,6 +35,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -148,6 +155,7 @@ function ClientsPage() {
   const [settingsLatePaymentClause, setSettingsLatePaymentClause] = useState('');
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [filteredClients, setFilteredClients] = useState<Client[] | null>(null);
 
   // Dashboard state
@@ -166,25 +174,47 @@ function ClientsPage() {
   }, [settings]);
   
   useEffect(() => {
-    // Initially set filtered clients to the full list
-    if (clients) {
-        setFilteredClients(clients);
-    }
-  }, [clients]);
-
-  useEffect(() => {
     if (!clients) return;
+    
+    let result = clients;
+
+    // Search term filter
     const lowercasedFilter = searchTerm.toLowerCase().trim();
-      if (!lowercasedFilter) {
-        setFilteredClients(clients);
-        return;
-      }
-      const filteredData = clients.filter(client =>
+    if (lowercasedFilter) {
+      result = result.filter(client =>
         client.name.toLowerCase().includes(lowercasedFilter) ||
         client.cpf.replace(/[.\-]/g, '').includes(lowercasedFilter.replace(/[.\-]/g, ''))
       );
-      setFilteredClients(filteredData);
-  }, [searchTerm, clients]);
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      result = result.filter(client => {
+        const clientNotes = allNotes?.filter(n => n.clientId === client.id) || [];
+        
+        // Se o filtro não for 'all', só mostramos clientes que tem notas
+        if (clientNotes.length === 0) return false;
+
+        const clientPaidNotes = clientNotes.filter(note => {
+          const notePayments = allPayments?.filter(p => p.promissoryNoteId === note.id) || [];
+          const totalPaid = notePayments.reduce((acc, p) => acc + p.amount, 0);
+          const totalToReceive = Math.max(0, note.value - totalPaid);
+          const totalInstallments = note.numberOfInstallments + (note.hasDownPayment ? 1 : 0);
+          const paidInstallments = notePayments.length;
+          return totalToReceive < 0.01 && paidInstallments >= totalInstallments && totalInstallments > 0;
+        });
+
+        const allPaid = clientPaidNotes.length === clientNotes.length;
+        const hasPending = clientPaidNotes.length < clientNotes.length;
+
+        if (statusFilter === 'paid') return allPaid;
+        if (statusFilter === 'pending') return hasPending;
+        return true;
+      });
+    }
+
+    setFilteredClients(result);
+  }, [searchTerm, statusFilter, clients, allNotes, allPayments]);
 
   useEffect(() => {
     const finalNotes = allNotes || [];
@@ -604,9 +634,9 @@ function ClientsPage() {
             />
         </div>
         
-        <div className="mb-8 group">
-            <div className="relative flex items-center">
-                <Search className="absolute left-4 h-5 w-5 text-primary transition-colors" />
+        <div className="mb-8 flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+            <div className="relative flex-1 group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-colors" />
                 <Input
                     type="text"
                     placeholder="Buscar cliente por nome ou CPF..."
@@ -615,6 +645,19 @@ function ClientsPage() {
                     className="pl-12 w-full h-14 text-lg bg-card border-2 border-primary shadow-sm focus:ring-4 focus:ring-primary/10 rounded-xl transition-all"
                 />
             </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[240px] h-14 border-2 border-primary rounded-xl font-bold text-primary bg-card">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <SelectValue placeholder="Filtrar por Status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todos os Clientes</SelectItem>
+                    <SelectItem value="paid">Totalmente Quitados</SelectItem>
+                    <SelectItem value="pending">Com Pendências</SelectItem>
+                </SelectContent>
+            </Select>
         </div>
 
         {/* Edit Client Dialog */}
@@ -741,7 +784,7 @@ function ClientsPage() {
              <UserIcon className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-semibold">{clients && clients.length > 0 ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              {clients && clients.length > 0 ? 'Tente uma busca diferente or adicione um novo cliente.' : 'Comece adicionando seu primeiro cliente para criar notas promissórias.'}
+              {clients && clients.length > 0 ? 'Tente uma busca ou filtro diferente, ou adicione um novo cliente.' : 'Comece adicionando seu primeiro cliente para criar notas promissórias.'}
             </p>
              <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
