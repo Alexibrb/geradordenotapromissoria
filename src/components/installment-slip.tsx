@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -223,10 +222,10 @@ export function InstallmentSlip({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => {
+              <AlertDialogAction variant="default" onClick={() => {
                 onPaidChange(true);
                 setShowConfirmPaid(false);
-              }} className="bg-green-600 hover:bg-green-700 text-white">
+              }}>
                 Confirmar Pagamento
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -243,10 +242,10 @@ export function InstallmentSlip({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => {
+              <AlertDialogAction variant="destructive" onClick={() => {
                 onPaidChange(false);
                 setShowConfirmUnpaid(false);
-              }} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+              }}>
                 Sim, Estornar
               </AlertDialogAction>
             </AlertDialogFooter>
