@@ -1,13 +1,14 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
-import { collection, doc, collectionGroup, query, where, getDocs } from 'firebase/firestore';
+import { collection, doc, query, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import type { Client, UserSettings, PromissoryNote, Payment, AppUser } from '@/types';
+import type { Client, UserSettings, PromissoryNote, Payment } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -410,7 +411,10 @@ function ClientsPage() {
       <div className="container mx-auto px-4 py-8">
         <header className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4 md:gap-0">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Meus Clientes</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-primary flex items-center gap-2">
+                <Users className="h-8 w-8" />
+                Meus Clientes
+            </h1>
             {settings?.creditorName && (
               <p className="text-muted-foreground">Bem-vindo(a) de volta, {settings.creditorName}!</p>
             )}
@@ -650,44 +654,84 @@ function ClientsPage() {
           </div>
         ) : filteredClients && filteredClients.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
-            {filteredClients.map((client) => (
-              <Card key={client.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-4 flex flex-wrap items-center justify-between gap-4">
-                    <div className='flex-1 min-w-[200px]'>
-                        <Link href={`/clients/${client.id}`} className="font-semibold truncate hover:underline">{client.name}</Link>
-                        <p className="text-sm text-muted-foreground truncate">CPF: {client.cpf}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                         <Link href={`/clients/${client.id}`} passHref>
-                            <Button variant="outline" size="sm">
-                              Ver Notas
-                            </Button>
-                          </Link>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0 flex-shrink-0">
-                                <span className="sr-only">Abrir menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditClient(client)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onClick={() => handleDeleteClient(client.id)}
-                                className="text-destructive focus:text-destructive"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Excluir
-                            </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </CardContent>
-              </Card>
-            ))}
+            {filteredClients.map((client) => {
+                const clientNotes = allNotes?.filter(n => n.clientId === client.id) || [];
+                const clientPaidNotes = clientNotes.filter(note => {
+                    const notePayments = allPayments?.filter(p => p.promissoryNoteId === note.id) || [];
+                    const totalPaid = notePayments.reduce((acc, p) => acc + p.amount, 0);
+                    const totalToReceive = Math.max(0, note.value - totalPaid);
+                    const totalInstallments = note.numberOfInstallments + (note.hasDownPayment ? 1 : 0);
+                    const paidInstallments = notePayments.length;
+                    return totalToReceive < 0.01 && paidInstallments >= totalInstallments && totalInstallments > 0;
+                });
+                
+                const totalNotes = clientNotes.length;
+                const paidNotesCount = clientPaidNotes.length;
+                const pendingNotesCount = totalNotes - paidNotesCount;
+
+                return (
+                    <Card key={client.id} className="hover:shadow-lg transition-all border-l-4 border-l-primary">
+                        <CardContent className="p-6 flex flex-wrap items-center justify-between gap-6">
+                            <div className='flex-1 min-w-[280px]'>
+                                <Link href={`/clients/${client.id}`} className="font-bold text-xl truncate hover:underline text-primary block mb-1">
+                                    {client.name}
+                                </Link>
+                                <p className="text-sm text-muted-foreground flex items-center gap-2 mb-4">
+                                    <ShieldCheck className="h-3 w-3" /> CPF: {client.cpf}
+                                </p>
+                                
+                                <div className='flex flex-wrap gap-2 mt-2'>
+                                    <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider h-6 gap-1.5 px-3">
+                                        <StickyNote className="w-3.5 h-3.5" /> {totalNotes} {totalNotes === 1 ? 'Nota' : 'Notas'}
+                                    </Badge>
+                                    {totalNotes > 0 && (
+                                        <>
+                                            {paidNotesCount > 0 && (
+                                                <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider h-6 gap-1.5 px-3 bg-blue-50 text-blue-700 border-blue-100">
+                                                    <CheckCircle className="w-3.5 h-3.5 text-blue-500" /> {paidNotesCount} Quitadas
+                                                </Badge>
+                                            )}
+                                            {pendingNotesCount > 0 && (
+                                                <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider h-6 gap-1.5 px-3 bg-amber-50 text-amber-700 border-amber-100">
+                                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> {pendingNotesCount} a Quitar
+                                                </Badge>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                                <Link href={`/clients/${client.id}`} passHref>
+                                    <Button variant="default" size="sm" className="shadow-sm">
+                                    Ver Notas
+                                    </Button>
+                                </Link>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-9 w-9 p-0 flex-shrink-0 border">
+                                        <span className="sr-only">Abrir menu</span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditClient(client)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Editar Dados
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => handleDeleteClient(client.id)}
+                                        className="text-destructive focus:text-destructive"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Excluir Cliente
+                                    </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
           </div>
         ) : (
           <div className="text-center py-12 border-2 border-dashed rounded-lg">
@@ -724,8 +768,8 @@ function ClientsPage() {
                         <Input id="client-address-modal" value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} placeholder="Rua Exemplo, 123" />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="client-contact-modal">Contato (Email/Telefone)</Label>
-                        <Input id="client-contact-modal" value={clientContact} onChange={(e) => setClientContact(e.target.value)} placeholder="contato@email.com" />
+                        <Label htmlFor="client-modal-contact">Contato (Email/Telefone)</Label>
+                        <Input id="client-modal-contact" value={clientContact} onChange={(e) => setClientContact(e.target.value)} placeholder="contato@email.com" />
                     </div>
                     </div>
                     <DialogFooter>
