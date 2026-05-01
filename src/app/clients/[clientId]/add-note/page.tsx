@@ -64,6 +64,7 @@ function AddNotePage() {
       clientContact: dataWithNumber.clientContact || '',
       clientId: client.id,
       paymentDate: Timestamp.fromDate(dataWithNumber.paymentDate),
+      firstInstallmentDate: dataWithNumber.firstInstallmentDate ? Timestamp.fromDate(dataWithNumber.firstInstallmentDate) : null,
       value: dataWithNumber.totalValue,
       numberOfInstallments: dataWithNumber.installments,
       productServiceReference: dataWithNumber.productReference,

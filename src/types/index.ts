@@ -14,6 +14,7 @@ export type PromissoryNoteData = {
   productReference: string;
   totalValue: number;
   paymentDate: Date;
+  firstInstallmentDate?: Date;
   installments: number;
   noteNumber?: string;
   paymentType: PaymentType;
@@ -37,6 +38,7 @@ export interface PromissoryNote {
   productServiceReference: string;
   value: number;
   paymentDate: Timestamp;
+  firstInstallmentDate?: Timestamp;
   numberOfInstallments: number;
   creditorName: string;
   creditorCpf: string;
@@ -88,7 +90,3 @@ export interface AppUser {
   createdAt: Timestamp;
   planExpirationDate?: Timestamp;
 }
-
-    
-
-    

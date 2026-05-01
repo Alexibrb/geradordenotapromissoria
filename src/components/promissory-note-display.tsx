@@ -25,6 +25,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     creditorAddress,
     totalValue,
     paymentDate,
+    firstInstallmentDate,
     installments,
     productReference,
     paymentType,
@@ -90,13 +91,14 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
       );
     }
 
-    const paymentDay = format(paymentDate, "dd");
-
-    if (hasDownPayment && downPaymentValue) {
+    if (hasDownPayment && downPaymentValue && firstInstallmentDate) {
+      const firstDateFormatted = format(firstInstallmentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
+      const installmentDay = format(firstInstallmentDate, "dd");
+      
       return (
         <p>
           O pagamento será feito com uma entrada de <strong>{downPaymentValueFormatted}</strong> paga em <strong>{formattedDate}</strong>, e o restante em{" "}
-          <strong>{installments}</strong> parcelas mensais de <strong>{installmentValueFormatted}</strong> cada. O primeiro pagamento da parcela será devido todo dia <strong>{paymentDay}</strong> de cada mês subsequente.
+          <strong>{installments}</strong> parcelas mensais de <strong>{installmentValueFormatted}</strong> cada. O primeiro pagamento da parcela será devido em <strong>{firstDateFormatted}</strong>, e os pagamentos subsequentes serão devidos todo dia <strong>{installmentDay}</strong> de cada mês subsequente.
         </p>
       );
     }

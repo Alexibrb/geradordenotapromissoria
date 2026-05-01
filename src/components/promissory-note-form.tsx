@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   User,
@@ -47,6 +47,7 @@ const formSchema = z.object({
   productReference: z.string().min(2, { message: "Por favor, insira uma referência do produto." }),
   totalValue: z.coerce.number().positive({ message: "O valor deve ser um número positivo." }),
   paymentDate: z.date({ required_error: "A data de início do pagamento é obrigatória." }),
+  firstInstallmentDate: z.date().optional(),
   installments: z.coerce.number().int().min(1, { message: "É necessária pelo menos uma parcela." }),
   paymentType: z.enum(['a-vista', 'a-prazo'], { required_error: "Selecione o tipo de pagamento."}),
   hasDownPayment: z.boolean().optional(),
@@ -68,6 +69,14 @@ const formSchema = z.object({
 }, {
     message: "A entrada não pode ser maior ou igual ao valor total.",
     path: ["downPaymentValue"],
+}).refine(data => {
+    if (data.paymentType === 'a-prazo' && data.hasDownPayment) {
+        return !!data.firstInstallmentDate;
+    }
+    return true;
+}, {
+    message: "A data da primeira parcela é obrigatória para planos com entrada.",
+    path: ["firstInstallmentDate"],
 });
 
 type PromissoryNoteFormProps = {
@@ -96,6 +105,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
       paymentType: "a-prazo" as const,
       installments: 1,
       paymentDate: new Date(),
+      firstInstallmentDate: addMonths(new Date(), 1),
       hasDownPayment: false,
       downPaymentValue: 0,
       latePaymentClause: currentSettings?.latePaymentClause || "O atraso nos pagamentos por até 03 meses, acarretará na perda da propriedade e posse do imóvel, sem fazer jus a indenização ou ressarcimento de valores já efetuados pelo comprador.",
@@ -117,6 +127,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
       paymentType: data.paymentType || defaults.paymentType,
       installments: data.installments || defaults.installments,
       paymentDate: data.paymentDate ? new Date(data.paymentDate) : defaults.paymentDate,
+      firstInstallmentDate: data.firstInstallmentDate ? new Date(data.firstInstallmentDate) : (data.hasDownPayment ? addMonths(new Date(data.paymentDate), 1) : undefined),
       hasDownPayment: data.hasDownPayment || defaults.hasDownPayment,
       downPaymentValue: data.downPaymentValue || defaults.downPaymentValue,
       latePaymentClause: data.latePaymentClause || defaults.latePaymentClause,
@@ -130,6 +141,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
   
   const paymentType = form.watch("paymentType");
   const hasDownPayment = form.watch("hasDownPayment");
+  const paymentDate = form.watch("paymentDate");
 
   useEffect(() => {
     form.reset(getSafeInitialData(initialData, settings));
@@ -142,15 +154,27 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
     }
   }, [paymentType, form]);
 
+  useEffect(() => {
+    if (hasDownPayment && paymentDate) {
+        // Default first installment to 1 month after down payment if not set
+        const currentFirst = form.getValues('firstInstallmentDate');
+        if (!currentFirst) {
+            form.setValue('firstInstallmentDate', addMonths(paymentDate, 1));
+        }
+    }
+  }, [hasDownPayment, paymentDate, form]);
+
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const dataToGenerate = {...values};
+    const dataToGenerate = {...values} as PromissoryNoteData;
     if (dataToGenerate.paymentType === 'a-vista') {
         dataToGenerate.installments = 1;
         dataToGenerate.hasDownPayment = false;
         dataToGenerate.downPaymentValue = 0;
         dataToGenerate.latePaymentClause = '';
+        dataToGenerate.firstInstallmentDate = undefined;
     } else if (!dataToGenerate.hasDownPayment) {
         dataToGenerate.downPaymentValue = 0;
+        dataToGenerate.firstInstallmentDate = undefined;
     }
     
     onGenerate(dataToGenerate);
@@ -371,45 +395,90 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
               </div>
             )}
             
-            <FormField
-              control={form.control}
-              name="paymentDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Data do {paymentType === 'a-prazo' ? (hasDownPayment ? 'Pagamento da Entrada' : 'Primeiro Pagamento') : 'Pagamento'}</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: ptBR })
-                          ) : (
-                            <span>Escolha uma data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        locale={ptBR}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="paymentDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> {paymentType === 'a-prazo' && hasDownPayment ? 'Data da Entrada' : 'Data do Primeiro Pagamento'}</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Escolha uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {paymentType === 'a-prazo' && hasDownPayment && (
+                 <FormField
+                  control={form.control}
+                  name="firstInstallmentDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Data da 1ª Parcela</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP", { locale: ptBR })
+                              ) : (
+                                <span>Escolha uma data</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                            locale={ptBR}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
+            </div>
+
             <Button type="submit" className="w-full" size="lg">
               {isEditing ? 'Salvar Alterações' : 'Gerar Documentos'}
               <Send className="ml-2 h-4 w-4"/>

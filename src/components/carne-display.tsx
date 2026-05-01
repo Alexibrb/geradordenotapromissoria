@@ -41,6 +41,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
       totalValue, 
       installments, 
       paymentDate, 
+      firstInstallmentDate,
       clientName, 
       clientCpf,
       clientAddress,
@@ -98,7 +99,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
           });
         }
 
-        const firstInstallmentDate = hasDownPayment ? addMonths(paymentDate, 1) : paymentDate;
+        const installmentStartDate = (hasDownPayment && firstInstallmentDate) ? firstInstallmentDate : paymentDate;
 
         for (let i = 0; i < installments; i++) {
           slips.push({
@@ -107,7 +108,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
               installmentNumber: i + 1,
               totalInstallments: installments,
               value: installmentValue,
-              dueDate: addMonths(firstInstallmentDate, i),
+              dueDate: addMonths(installmentStartDate, i),
               clientName: clientName,
               clientCpf: clientCpf,
               clientAddress: clientAddress,
