@@ -284,18 +284,21 @@ function ClientDetailPage() {
                 <div className="flex gap-2 mb-6 p-1 bg-secondary rounded-lg w-fit mx-auto sm:mx-0">
                     <Button 
                       onClick={() => setActiveView('note')} 
-                      variant={activeView === 'note' ? 'default' : 'ghost'} 
-                      className="flex-1 sm:flex-none"
+                      variant={activeView === 'note' ? 'default' : 'secondary'} 
+                      className={cn(
+                        "flex-1 sm:flex-none transition-all",
+                        activeView !== 'note' && "bg-green-600 text-white hover:bg-green-700 border-none"
+                      )}
                     >
                         <StickyNote className="mr-2 h-4 w-4"/>
                         Nota Promissória
                     </Button>
                     <Button 
                       onClick={() => setActiveView('slips')} 
-                      variant={activeView === 'slips' ? 'default' : 'ghost'} 
+                      variant={activeView === 'slips' ? 'default' : 'secondary'} 
                       className={cn(
-                        "flex-1 sm:flex-none",
-                        activeView !== 'slips' && "text-green-600 hover:text-green-700 hover:bg-green-50"
+                        "flex-1 sm:flex-none transition-all",
+                        activeView !== 'slips' && "bg-green-600 text-white hover:bg-green-700 border-none"
                       )}
                     >
                         <Receipt className="mr-2 h-4 w-4"/>
@@ -331,4 +334,3 @@ function ClientDetailPage() {
 }
 
 export default ClientDetailPage;
-    
