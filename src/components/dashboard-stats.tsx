@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { PromissoryNote, Payment } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, TrendingDown, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Calendar as CalendarIcon, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -33,40 +33,53 @@ export function DashboardStats({ notes, payments, isLoading, dateRange, onDateCh
     <div>
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
             <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-             <Popover>
-                <PopoverTrigger asChild>
-                <Button
-                    id="date"
-                    variant={"outline"}
-                    className="w-full sm:w-[300px] justify-start text-left font-normal"
-                >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                    dateRange.to ? (
-                        <>
-                        {format(dateRange.from, "LLL dd, y", {locale: ptBR})} -{" "}
-                        {format(dateRange.to, "LLL dd, y", {locale: ptBR})}
-                        </>
-                    ) : (
-                        format(dateRange.from, "LLL dd, y", {locale: ptBR})
-                    )
-                    ) : (
-                    <span>Selecione um período</span>
-                    )}
-                </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={onDateChange}
-                    numberOfMonths={2}
-                    locale={ptBR}
-                />
-                </PopoverContent>
-            </Popover>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        id="date"
+                        variant={"outline"}
+                        className="w-full sm:w-[300px] justify-start text-left font-normal"
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange?.from ? (
+                        dateRange.to ? (
+                            <>
+                            {format(dateRange.from, "LLL dd, y", {locale: ptBR})} -{" "}
+                            {format(dateRange.to, "LLL dd, y", {locale: ptBR})}
+                            </>
+                        ) : (
+                            format(dateRange.from, "LLL dd, y", {locale: ptBR})
+                        )
+                        ) : (
+                        <span>Selecione um período</span>
+                        )}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange?.from}
+                        selected={dateRange}
+                        onSelect={onDateChange}
+                        numberOfMonths={2}
+                        locale={ptBR}
+                    />
+                    </PopoverContent>
+                </Popover>
+                {dateRange && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => onDateChange(undefined)}
+                        title="Limpar filtro de data"
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
         </div>
       {isLoading ? (
          <div className="grid gap-4 md:grid-cols-3">
