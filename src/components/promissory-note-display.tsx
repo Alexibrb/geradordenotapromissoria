@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FileDown } from "lucide-react";
-import jsPDF from "jspdf";
+import jspdf from "jspdf";
 import html2canvas from "html2canvas";
 
 type PromissoryNoteDisplayProps = {
@@ -44,7 +44,7 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         backgroundColor: '#ffffff'
       }).then((canvas) => {
         const imgData = canvas.toDataURL("image/jpeg", 1.0);
-        const pdf = new jsPDF("p", "mm", "a4");
+        const pdf = new jspdf("p", "mm", "a4");
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const canvasWidth = canvas.width;
@@ -89,9 +89,9 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
   const renderPaymentTerms = () => {
     if (paymentType === 'a-vista') {
       return (
-        <p>
+        <p className="text-xl">
           O valor principal será pago à vista em{" "}
-          <strong>{formattedDate}</strong>.
+          <strong className="font-black underline">{formattedDate}</strong>.
         </p>
       );
     }
@@ -101,26 +101,26 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
       const installmentDay = format(firstInstallmentDate, "dd");
       
       return (
-        <p>
-          O pagamento será feito com uma entrada de <strong>{downPaymentValueFormatted}</strong> paga em <strong>{formattedDate}</strong>, e o restante em{" "}
-          <strong>{installments}</strong> parcelas mensais de <strong>{installmentValueFormatted}</strong> cada. O primeiro pagamento da parcela será devido em <strong>{firstDateFormatted}</strong>, e os pagamentos subsequentes serão devidos todo dia <strong>{installmentDay}</strong> de cada mês subsequente.
+        <p className="text-xl leading-relaxed">
+          O pagamento será feito com uma entrada de <strong className="font-black">{downPaymentValueFormatted}</strong> paga em <strong className="font-black">{formattedDate}</strong>, e o restante em{" "}
+          <strong className="font-black">{installments}</strong> parcelas mensais de <strong className="font-black">{installmentValueFormatted}</strong> cada. O primeiro pagamento da parcela será devido em <strong className="font-black underline">{firstDateFormatted}</strong>, e os pagamentos subsequentes serão devidos todo dia <strong className="font-black">{installmentDay}</strong> de cada mês subsequente.
         </p>
       );
     }
     
     return (
-       <p>
+       <p className="text-xl leading-relaxed">
           O valor principal será pago em{" "}
           {installments === 1 ? (
             <>
-              <strong>{installments}</strong> parcela única de <strong>{installmentValueFormatted}</strong>
+              <strong className="font-black">{installments}</strong> parcela única de <strong className="font-black">{installmentValueFormatted}</strong>
             </>
           ) : (
             <>
-              <strong>{installments}</strong> parcelas mensais iguais de <strong>{installmentValueFormatted}</strong> cada
+              <strong className="font-black">{installments}</strong> parcelas mensais iguais de <strong className="font-black">{installmentValueFormatted}</strong> cada
             </>
           )}
-          . O primeiro pagamento será devido em <strong>{formattedDate}</strong>, e os pagamentos subsequentes serão
+          . O primeiro pagamento será devido em <strong className="font-black underline">{formattedDate}</strong>, e os pagamentos subsequentes serão
           devidos no mesmo dia de cada mês consecutivo até que o principal seja
           pago integralmente.
         </p>
@@ -135,54 +135,56 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
               <CardTitle className="font-headline">Nota Promissória Gerada</CardTitle>
               <CardDescription>Revise o documento gerado abaixo.</CardDescription>
             </div>
-            <Button onClick={handleGeneratePdf} className="mt-4 sm:mt-0 no-print">
-              <FileDown className="mr-2" />
+            <Button onClick={handleGeneratePdf} className="mt-4 sm:mt-0 no-print h-10 px-6">
+              <FileDown className="mr-2 h-5 w-5" />
               Gerar PDF da Nota
             </Button>
         </div>
       </CardHeader>
-      <CardContent id="note-print-area" className="prose prose-sm max-w-none bg-card p-6">
+      <CardContent id="note-print-area" className="prose prose-lg max-w-none bg-card p-12 text-black">
         {header && (
-          <div className="text-center mb-6 border-b pb-4">
-              <h1 className="text-xl font-bold uppercase tracking-wider">{header}</h1>
-              {creditorAddress && <p className="text-xs text-muted-foreground">{creditorAddress}</p>}
+          <div className="text-center mb-10 border-b-2 pb-6">
+              <h1 className="text-3xl font-black uppercase tracking-widest">{header}</h1>
+              {creditorAddress && <p className="text-base text-muted-foreground mt-2">{creditorAddress}</p>}
           </div>
         )}
-        <div className="flex justify-between items-start mb-6">
-          <h2 className="text-center font-bold text-xl">NOTA PROMISSÓRIA</h2>
-          {noteNumber && <span className="font-mono text-xs">Nº {noteNumber}</span>}
+        <div className="flex justify-between items-start mb-10">
+          <h2 className="text-center font-black text-4xl underline decoration-double">NOTA PROMISSÓRIA</h2>
+          {noteNumber && <span className="font-mono text-sm bg-secondary px-3 py-1 rounded">Nº {noteNumber}</span>}
         </div>
-        <p>
-          Pelo valor recebido, o signatário, <strong>{clientName}</strong>, inscrito no CPF sob o nº{" "}
-          <strong>{clientCpf}</strong>, residente em <strong>{clientAddress}</strong> (doravante "o Devedor"), promete
-          pagar à ordem de <strong>{creditorName}</strong>, inscrito no CPF/CNPJ sob o nº{" "}
-          <strong>{creditorCpf}</strong> (doravante "o Credor"), a quantia principal de{" "}
-          <strong>{formattedValue}</strong>.
+        <p className="text-xl leading-relaxed">
+          Pelo valor recebido, o signatário, <strong className="font-black uppercase">{clientName}</strong>, inscrito no CPF sob o nº{" "}
+          <strong className="font-black">{clientCpf}</strong>, residente em <strong className="font-black">{clientAddress}</strong> (doravante "o Devedor"), promete
+          pagar à ordem de <strong className="font-black uppercase">{creditorName}</strong>, inscrito no CPF/CNPJ sob o nº{" "}
+          <strong className="font-black">{creditorCpf}</strong> (doravante "o Credor"), a quantia principal de{" "}
+          <strong className="font-black text-2xl">{formattedValue}</strong>.
         </p>
-        <p>
+        <p className="text-xl">
           Esta nota refere-se ao produto/serviço:{" "}
-          <strong>{productReference}</strong>.
+          <strong className="font-black underline">{productReference}</strong>.
         </p>
         
         {renderPaymentTerms()}
         
         {paymentType === 'a-prazo' && latePaymentClause && (
-          <p>
-            {latePaymentClause}
-          </p>
+          <div className="bg-secondary/10 p-4 border-l-4 border-primary rounded mt-6">
+             <p className="text-lg italic leading-snug">
+              {latePaymentClause}
+            </p>
+          </div>
         )}
-        <div className="mt-16 flex justify-between">
-            <div className="w-2/5 text-center">
-                <div className="w-full border-b border-foreground pb-1"></div>
-                <p className="mt-1 text-sm">Assinatura do Devedor</p>
-                <p className="font-semibold text-sm leading-tight mt-1">{clientName}</p>
-                <p className="text-xs leading-tight">{clientCpf}</p>
+        <div className="mt-24 flex justify-between gap-12">
+            <div className="w-1/2 text-center">
+                <div className="w-full border-b-2 border-black pb-2"></div>
+                <p className="mt-2 text-sm font-bold uppercase tracking-widest">Assinatura do Devedor</p>
+                <p className="font-black text-lg leading-tight mt-1">{clientName}</p>
+                <p className="text-base leading-tight">{clientCpf}</p>
             </div>
-            <div className="w-2/5 text-center">
-                <div className="w-full border-b border-foreground pb-1"></div>
-                 <p className="mt-1 text-sm">Assinatura do Credor</p>
-                <p className="font-semibold text-sm leading-tight mt-1">{creditorName}</p>
-                <p className="text-xs leading-tight">{creditorCpf}</p>
+            <div className="w-1/2 text-center">
+                <div className="w-full border-b-2 border-black pb-2"></div>
+                 <p className="mt-2 text-sm font-bold uppercase tracking-widest">Assinatura do Credor</p>
+                <p className="font-black text-lg leading-tight mt-1">{creditorName}</p>
+                <p className="text-base leading-tight">{creditorCpf}</p>
             </div>
         </div>
       </CardContent>
