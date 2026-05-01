@@ -182,7 +182,7 @@ function ClientsPage() {
     return Array.from(counts).sort((a, b) => a - b);
   }, [clients, allNotes]);
 
-  // Calculate counters for status
+  // Calculate counters for general status
   const clientStatusCounts = useMemo(() => {
     if (!clients || !allNotes || !allPayments) return { paid: 0, pending: 0 };
     
@@ -211,6 +211,36 @@ function ClientsPage() {
 
     return { paid, pending };
   }, [clients, allNotes, allPayments]);
+
+  // Calculate filtered totals
+  const filteredStatusCounts = useMemo(() => {
+    if (!filteredClients || !allNotes || !allPayments) return { total: 0, paid: 0, pending: 0 };
+    
+    let paid = 0;
+    let pending = 0;
+
+    filteredClients.forEach(client => {
+      const clientNotes = allNotes.filter(n => n.clientId === client.id);
+      if (clientNotes.length === 0) return;
+
+      const clientPaidNotes = clientNotes.filter(note => {
+        const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
+        const totalPaid = notePayments.reduce((acc, p) => acc + p.amount, 0);
+        const totalToReceive = Math.max(0, note.value - totalPaid);
+        const totalInstallments = note.numberOfInstallments + (note.hasDownPayment ? 1 : 0);
+        const paidInstallments = notePayments.length;
+        return totalToReceive < 0.01 && paidInstallments >= totalInstallments && totalInstallments > 0;
+      });
+
+      if (clientPaidNotes.length === clientNotes.length) {
+        paid++;
+      } else {
+        pending++;
+      }
+    });
+
+    return { total: filteredClients.length, paid, pending };
+  }, [filteredClients, allNotes, allPayments]);
   
   useEffect(() => {
     if (!clients) return;
@@ -693,7 +723,7 @@ function ClientsPage() {
             />
         </div>
         
-        <div className="mb-8 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+        <div className="mb-4 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
             <div className="relative flex-1 group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary transition-colors" />
                 <Input
@@ -737,6 +767,25 @@ function ClientsPage() {
                 </Select>
             </div>
         </div>
+
+        {/* Totais Filtrados */}
+        {!isLoading && filteredClients && filteredClients.length > 0 && (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 px-2 py-3 bg-secondary/30 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                <p className="text-sm font-medium text-muted-foreground italic">
+                    Mostrando <span className="font-bold text-foreground text-base">{filteredStatusCounts.total}</span> clientes encontrados na busca
+                </p>
+                <div className="flex flex-wrap gap-4">
+                    <div className="flex items-center gap-1.5 text-sm">
+                        <CheckCircle className="h-4 w-4 text-blue-500" />
+                        <span className="font-bold">{filteredStatusCounts.paid}</span> Quitados
+                    </div>
+                    <div className="flex items-center gap-1.5 text-sm">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <span className="font-bold">{filteredStatusCounts.pending}</span> Pendentes
+                    </div>
+                </div>
+            </div>
+        )}
 
         {/* Edit Client Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) resetForm(); }}>
