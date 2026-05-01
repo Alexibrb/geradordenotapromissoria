@@ -1,3 +1,4 @@
+
 "use-client";
 
 import type { PromissoryNoteData } from "@/types";
@@ -51,16 +52,16 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
         
-        let imgWidth = pdfWidth - 20; // 10mm margin on each side
+        let imgWidth = pdfWidth - 30; // 15mm margin on each side
         let imgHeight = imgWidth / ratio;
 
-        if (imgHeight > pdfHeight - 20) {
-            imgHeight = pdfHeight - 20;
+        if (imgHeight > pdfHeight - 30) {
+            imgHeight = pdfHeight - 30;
             imgWidth = imgHeight * ratio;
         }
         
-        const x = 10;
-        const y = 10; // Position from the top
+        const x = (pdfWidth - imgWidth) / 2;
+        const y = 15; // Position from the top
 
         pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'SLOW');
         pdf.save(`nota_promissoria_${noteNumber}.pdf`);

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { PromissoryNoteData, Payment } from "@/types";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { FileDown, Receipt, CircleOff, CheckCircle } from "lucide-react";
 import { InstallmentSlip } from "@/components/installment-slip";
 import React, { useState, useMemo } from "react";
-import jsPDF from "jspdf";
+import jsPDF from "jsPDF";
 import html2canvas from "html2canvas";
 
 type CarneDisplayProps = {
@@ -145,7 +146,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
       
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const margin = 10;
+      const margin = 15;
       const availableWidth = pdfWidth - margin * 2;
       let y = margin;
 
@@ -169,11 +170,9 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
         promiseChain = promiseChain.then(() => {
           return new Promise<void>(resolve => {
             const pdfArea = slipElement.querySelector<HTMLElement>('[id^="slip-"][id$="-pdf-area"]');
-            const stamp = slipElement.querySelector('.paid-stamp-area') as HTMLElement;
-            const isPaid = stamp && stamp.style.display !== 'none';
             
             html2canvas(pdfArea!, { 
-              scale: 2, 
+              scale: 3, 
               useCORS: true,
               logging: false,
               backgroundColor: '#ffffff'
@@ -220,7 +219,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
           {filteredSlips.map((slipData) => {
             const isPaid = payments.some(p => p.installmentNumber === slipData.installmentNumber);
             const paidInfo = payments.find(p => p.installmentNumber === slipData.installmentNumber);
-            const paidDate = paidInfo?.paymentDate ? (paidInfo.paymentDate instanceof Date ? paidInfo.paymentDate : paidInfo.paymentDate.toDate()) : undefined;
+            const paidDate = paidInfo?.paymentDate ? (paidInfo.paymentDate instanceof Date ? paidInfo.paymentDate : (paidInfo.paymentDate as any).toDate()) : undefined;
 
             return (
               <React.Fragment key={slipData.slipId}>

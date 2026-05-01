@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -84,23 +85,23 @@ export function InstallmentSlip({
           backgroundColor: '#ffffff'
         }).then((canvas) => {
             const imgData = canvas.toDataURL("image/jpeg", 1.0);
-            const pdf = new jsPDF("p", "mm", "a5");
+            const pdf = new jsPDF("p", "mm", "a4");
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
             const canvasWidth = canvas.width;
             const canvasHeight = canvas.height;
             const ratio = canvasWidth / canvasHeight;
             
-            let imgWidth = pdfWidth - 20;
+            let imgWidth = pdfWidth - 30; // 15mm margins
             let imgHeight = imgWidth / ratio;
 
-            if (imgHeight > pdfHeight - 20) {
-              imgHeight = pdfHeight - 20;
+            if (imgHeight > pdfHeight - 30) {
+              imgHeight = pdfHeight - 30;
               imgWidth = imgHeight * ratio;
             }
 
             const x = (pdfWidth - imgWidth) / 2;
-            const y = 10;
+            const y = 15;
 
             pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'SLOW');
             pdf.save(`comprovante_${isDownPayment ? 'entrada' : `parcela_${installmentNumber}`}_${noteNumber}.pdf`);
