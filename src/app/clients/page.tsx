@@ -27,6 +27,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  DialogClose,
+} from '@/components/ui/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -601,15 +604,15 @@ function ClientsPage() {
             />
         </div>
         
-        <div className="mb-8">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <div className="mb-8 group">
+            <div className="relative flex items-center">
+                <Search className="absolute left-4 h-5 w-5 text-primary/60 transition-colors group-focus-within:text-primary" />
                 <Input
                     type="text"
                     placeholder="Buscar cliente por nome ou CPF..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full"
+                    className="pl-12 w-full h-14 text-lg bg-card border-2 border-primary/10 shadow-sm focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl transition-all"
                 />
             </div>
         </div>
