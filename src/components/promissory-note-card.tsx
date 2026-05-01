@@ -45,7 +45,7 @@ export function PromissoryNoteCard({ note, payments, isSelected, onSelect, onEdi
     >
       {isFullyPaid && (
         <div className="absolute top-0 right-0 z-10">
-          <div className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-bl-lg flex items-center gap-1 shadow-md animate-in slide-in-from-top-full duration-500">
+          <div className="bg-green-600 text-white text-[10px] font-black px-3 py-1 rounded-bl-lg flex items-center gap-1 shadow-md animate-in slide-in-from-top-full duration-500">
             <CheckCircle className="h-3 w-3" />
             QUITADA
           </div>
