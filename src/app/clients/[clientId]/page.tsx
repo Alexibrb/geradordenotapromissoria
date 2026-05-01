@@ -1,14 +1,15 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, where, getDocs, collectionGroup, orderBy, addDoc } from 'firebase/firestore';
+import { collection, doc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
@@ -110,7 +111,7 @@ function ClientDetailPage() {
     router.push(`/clients/${clientId}/edit-note/${noteId}`);
   };
 
-  const handlePaymentStatusChange = async (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => {
+  const handlePaymentStatusChange = (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => {
      if (!user || !selectedNote) return;
 
      const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', selectedNote.id, 'payments');
@@ -123,24 +124,32 @@ function ClientDetailPage() {
             installmentNumber: installmentNumber,
             isDownPayment: isDownPayment
         };
-        const newPaymentDoc = await addDoc(paymentsRef, paymentData);
-        const newPayment = { id: newPaymentDoc.id, ...paymentData } as Payment;
-        setAllPayments([...allPayments, newPayment]);
-         toast({
-            title: `Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Paga!`,
-            description: 'O pagamento foi registrado com sucesso.',
-            className: 'bg-accent text-accent-foreground',
+        
+        addDocumentNonBlocking(paymentsRef, paymentData).then((docRef) => {
+          if (docRef) {
+             const newPayment = { id: docRef.id, ...paymentData } as Payment;
+             setAllPayments(prev => [...prev, newPayment]);
+          }
+        });
+
+        toast({
+            title: `Confirmado: ${installmentNumber === 0 ? 'Entrada' : `Parcela ${installmentNumber}`} Paga`,
+            description: `O pagamento de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} foi registrado.`,
+            className: 'bg-green-600 text-white',
         });
      } else {
         const q = query(paymentsRef, where("installmentNumber", "==", installmentNumber));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
-            deleteDocumentNonBlocking(doc.ref);
-            setAllPayments(allPayments.filter(p => p.id !== doc.id));
-             toast({
-                title: `Pagamento da Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Revertido`,
-                variant: 'destructive',
-            });
+        getDocs(q).then(querySnapshot => {
+          querySnapshot.forEach((docSnap) => {
+              deleteDocumentNonBlocking(docSnap.ref);
+              setAllPayments(prev => prev.filter(p => p.id !== docSnap.id));
+          });
+          
+          toast({
+              title: `Pagamento Estornado`,
+              description: `O status da ${installmentNumber === 0 ? 'Entrada' : `Parcela ${installmentNumber}`} voltou para pendente.`,
+              variant: 'destructive',
+          });
         });
      }
   };
@@ -188,7 +197,7 @@ function ClientDetailPage() {
   if (isClientLoading || areNotesLoading || loadingPayments) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Loader className="animate-spin" />
+        <Loader className="animate-spin h-8 w-8 text-primary" />
       </div>
     );
   }
@@ -209,27 +218,29 @@ function ClientDetailPage() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8">
-        <Button variant="ghost" onClick={() => router.push('/clients')} className="mb-4">
-          <ArrowLeft className="mr-2" />
+        <Button variant="ghost" onClick={() => router.push('/clients')} className="mb-4 hover:bg-secondary">
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar para Clientes
         </Button>
 
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <header className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{client.name}</h1>
-            <p className="text-muted-foreground">{client.address}</p>
+            <h1 className="text-3xl font-bold tracking-tight text-primary">{client.name}</h1>
+            <p className="text-muted-foreground flex items-center gap-2">
+              {client.address}
+            </p>
           </div>
-          <Button className="mt-4 md:mt-0" onClick={handleAddNoteClick}>
-            <Plus className="mr-2" />
+          <Button className="mt-4 md:mt-0 shadow-md" onClick={handleAddNoteClick}>
+            <Plus className="mr-2 h-4 w-4" />
             Adicionar Nota
           </Button>
         </header>
 
         <div className="flex flex-col gap-8">
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Notas Promissórias</h2>
+            <h2 className="text-xl font-semibold border-l-4 border-primary pl-3">Notas Promissórias</h2>
             {notes && notes.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {notes.map((note) => {
                 const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
                 return (
@@ -246,20 +257,31 @@ function ClientDetailPage() {
               })}
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm">Nenhuma nota encontrada para este cliente.</p>
+              <div className="text-center py-10 bg-secondary/20 rounded-lg border-2 border-dashed">
+                <p className="text-muted-foreground text-sm">Nenhuma nota encontrada para este cliente.</p>
+              </div>
             )}
           </div>
+          
           <div className="space-y-8">
             {selectedNoteData ? (
-              <div>
-                <div className="flex gap-2 mb-4">
-                    <Button onClick={() => setActiveView('note')} variant={activeView === 'note' ? 'default' : 'outline'} className="w-full">
-                        <StickyNote className="mr-2"/>
-                        Ver Nota Promissória
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex gap-2 mb-6 p-1 bg-secondary rounded-lg w-fit mx-auto sm:mx-0">
+                    <Button 
+                      onClick={() => setActiveView('note')} 
+                      variant={activeView === 'note' ? 'default' : 'ghost'} 
+                      className="flex-1 sm:flex-none"
+                    >
+                        <StickyNote className="mr-2 h-4 w-4"/>
+                        Nota Promissória
                     </Button>
-                    <Button onClick={() => setActiveView('slips')} variant={activeView === 'slips' ? 'default' : 'outline'} className="w-full">
-                        <Receipt className="mr-2"/>
-                        Ver Comprovantes
+                    <Button 
+                      onClick={() => setActiveView('slips')} 
+                      variant={activeView === 'slips' ? 'default' : 'ghost'} 
+                      className="flex-1 sm:flex-none"
+                    >
+                        <Receipt className="mr-2 h-4 w-4"/>
+                        Comprovantes
                     </Button>
                 </div>
                 {activeView === 'note' && (
@@ -274,11 +296,11 @@ function ClientDetailPage() {
                 )}
               </div>
             ) : (
-              <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
+              <Card className="h-full min-h-[400px] flex items-center justify-center border-dashed border-2 bg-secondary/10">
                 <CardContent className="text-center p-8">
-                  <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    Selecione uma nota para visualizar os detalhes ou adicione uma nova.
+                  <FileText className="mx-auto h-16 w-16 text-muted-foreground opacity-20" />
+                  <p className="mt-4 text-sm text-muted-foreground font-medium">
+                    Selecione uma nota acima para visualizar os detalhes e gerenciar pagamentos.
                   </p>
                 </CardContent>
               </Card>

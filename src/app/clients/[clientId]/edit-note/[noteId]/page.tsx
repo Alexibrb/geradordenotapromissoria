@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, getDocs, Timestamp, addDoc } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import type { Client, PromissoryNote, PromissoryNoteData, UserSettings, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { PromissoryNoteForm } from '@/components/promissory-note-form';
@@ -11,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader, ArrowLeft, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 
@@ -29,8 +30,8 @@ function EditNotePage() {
   const { data: note, isLoading: isNoteLoading } = useDoc<PromissoryNote>(noteDocRef);
 
   const paymentsQuery = useMemoFirebase(() =>
-    user ? query(collection(noteDocRef!, 'payments')) : null,
-    [user, noteDocRef]
+    noteDocRef ? query(collection(noteDocRef, 'payments')) : null,
+    [noteDocRef]
   );
   const { data: payments, isLoading: arePaymentsLoading } = useCollection<Payment>(paymentsQuery);
 
@@ -72,7 +73,7 @@ function EditNotePage() {
     }
   }, [note]);
 
-  const handleUpdate = async (updatedFormData: PromissoryNoteData) => {
+  const handleUpdate = (updatedFormData: PromissoryNoteData) => {
     if (!user || !note || !noteDocRef) {
       toast({
         variant: 'destructive',
@@ -82,7 +83,6 @@ function EditNotePage() {
       return;
     }
     
-    // Preserve the original noteNumber
     const finalFormData = { ...updatedFormData, noteNumber: note.noteNumber };
     setFormData(finalFormData);
 
@@ -99,7 +99,6 @@ function EditNotePage() {
       creditorAddress: finalFormData.creditorAddress || '',
     };
     
-    // Remove fields from PromissoryNoteData that are not in PromissoryNote
     delete (noteToUpdate as any).totalValue;
     delete (noteToUpdate as any).installments;
     delete (noteToUpdate as any).productReference;
@@ -108,7 +107,7 @@ function EditNotePage() {
 
     toast({
       title: 'Nota Atualizada!',
-      description: 'A nota promissória foi atualizada com sucesso.',
+      description: 'As alterações foram salvas com sucesso.',
       className: 'bg-accent text-accent-foreground',
     });
 
@@ -117,7 +116,7 @@ function EditNotePage() {
     }, 1500);
   };
   
-    const handlePaymentStatusChange = async (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => {
+    const handlePaymentStatusChange = (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => {
      if (!user || !note) return;
 
      const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', note.id, 'payments');
@@ -132,26 +131,28 @@ function EditNotePage() {
         };
         addDocumentNonBlocking(paymentsRef, paymentData);
         toast({
-            title: `Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Paga!`,
-            description: 'O pagamento foi registrado com sucesso.',
-            className: 'bg-accent text-accent-foreground',
+            title: `Pagamento Confirmado`,
+            description: `${installmentNumber === 0 ? 'Entrada' : `Parcela ${installmentNumber}`} marcada como paga.`,
+            className: 'bg-green-600 text-white',
         });
      } else {
         const q = query(paymentsRef, where("installmentNumber", "==", installmentNumber));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
-            deleteDocumentNonBlocking(doc.ref);
-             toast({
-                title: `Pagamento da Parcela ${installmentNumber === 0 ? 'de Entrada' : installmentNumber} Revertido`,
-                variant: 'destructive',
-            });
+        getDocs(q).then(querySnapshot => {
+          querySnapshot.forEach((docSnap) => {
+              deleteDocumentNonBlocking(docSnap.ref);
+          });
+          toast({
+              title: `Pagamento Estornado`,
+              description: `O status da parcela voltou para pendente.`,
+              variant: 'destructive',
+          });
         });
      }
   };
 
 
   if (isNoteLoading || isClientLoading || areSettingsLoading || arePaymentsLoading) {
-    return <div className="flex h-screen items-center justify-center"><Loader className="animate-spin" /></div>;
+    return <div className="flex h-screen items-center justify-center"><Loader className="animate-spin h-8 w-8 text-primary" /></div>;
   }
 
   if (!note || !client) {
@@ -162,27 +163,27 @@ function EditNotePage() {
     <ProtectedRoute>
       <main className="min-h-full bg-background">
         <div className="container mx-auto px-4 py-8 md:py-12">
-            <Button variant="ghost" onClick={() => router.push(`/clients/${clientId}`)} className="mb-4">
-                <ArrowLeft className="mr-2" />
+            <Button variant="ghost" onClick={() => router.push(`/clients/${clientId}`)} className="mb-4 hover:bg-secondary">
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar para {client.name}
             </Button>
-          <header className="text-center mb-10">
-            <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tight">
+          <header className="mb-10">
+            <h1 className="text-3xl font-bold tracking-tight text-primary">
               EDITAR NOTA PROMISSÓRIA {note.noteNumber ? `(Nº ${note.noteNumber})` : ''}
             </h1>
-            <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
-              Altere os detalhes da nota promissória para {client.name}.
+            <p className="text-muted-foreground mt-1">
+              Altere os detalhes da nota para {client.name}.
             </p>
           </header>
 
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-10">
             <div>
               {formData ? (
                  <PromissoryNoteForm onGenerate={handleUpdate} client={client} initialData={formData} settings={settings || undefined} isEditing />
               ) : (
-                <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
+                <Card className="h-[400px] flex items-center justify-center border-dashed border-2">
                     <CardContent className="text-center p-8">
-                        <Loader className="mx-auto h-12 w-12 text-muted-foreground animate-spin" />
+                        <Loader className="mx-auto h-10 w-10 text-muted-foreground animate-spin" />
                         <p className="mt-4 text-sm text-muted-foreground">
                         Carregando dados da nota...
                         </p>
@@ -190,7 +191,7 @@ function EditNotePage() {
                 </Card>
               )}
             </div>
-             <div className="space-y-8">
+             <div className="space-y-10">
               {formData ? (
                 <>
                   <PromissoryNoteDisplay data={formData} />
@@ -201,11 +202,11 @@ function EditNotePage() {
                    />
                 </>
               ) : (
-                <Card className="h-full min-h-[500px] flex items-center justify-center border-dashed">
+                <Card className="h-[400px] flex items-center justify-center border-dashed border-2">
                   <CardContent className="text-center p-8">
-                    <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      A visualização do documento aparecerá aqui.
+                    <FileText className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+                    <p className="mt-4 text-sm text-muted-foreground font-medium">
+                      Aguardando carregamento...
                     </p>
                   </CardContent>
                 </Card>
