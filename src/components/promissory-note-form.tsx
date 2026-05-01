@@ -279,7 +279,13 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
                 <FormItem>
                   <FormLabel className="flex items-center"><CircleDollarSign className="mr-2 h-4 w-4" /> Valor Total (R$)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="1000,00" {...field} />
+                    <Input 
+                      type="number" 
+                      step="any"
+                      placeholder="1000,00" 
+                      {...field} 
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -316,7 +322,13 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
                         <FormItem>
                         <FormLabel className="flex items-center"><CircleDollarSign className="mr-2 h-4 w-4" /> Valor da Entrada (R$)</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="200,00" {...field} />
+                            <Input 
+                              type="number" 
+                              step="any"
+                              placeholder="200,00" 
+                              {...field} 
+                              className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -408,5 +420,3 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
     </Card>
   );
 }
-
-    
