@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle, Filter } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
@@ -25,9 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -172,6 +169,36 @@ function ClientsPage() {
       setSettingsLatePaymentClause(settings.latePaymentClause || '');
     }
   }, [settings]);
+
+  // Calculate counters for status
+  const clientStatusCounts = useMemo(() => {
+    if (!clients || !allNotes || !allPayments) return { paid: 0, pending: 0 };
+    
+    let paid = 0;
+    let pending = 0;
+
+    clients.forEach(client => {
+      const clientNotes = allNotes.filter(n => n.clientId === client.id);
+      if (clientNotes.length === 0) return;
+
+      const clientPaidNotes = clientNotes.filter(note => {
+        const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
+        const totalPaid = notePayments.reduce((acc, p) => acc + p.amount, 0);
+        const totalToReceive = Math.max(0, note.value - totalPaid);
+        const totalInstallments = note.numberOfInstallments + (note.hasDownPayment ? 1 : 0);
+        const paidInstallments = notePayments.length;
+        return totalToReceive < 0.01 && paidInstallments >= totalInstallments && totalInstallments > 0;
+      });
+
+      if (clientPaidNotes.length === clientNotes.length) {
+        paid++;
+      } else {
+        pending++;
+      }
+    });
+
+    return { paid, pending };
+  }, [clients, allNotes, allPayments]);
   
   useEffect(() => {
     if (!clients) return;
@@ -584,28 +611,40 @@ function ClientsPage() {
         </header>
 
          <Card className="mb-6">
-            <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
+            <CardContent className="p-4 flex flex-col md:flex-row gap-6 items-center">
                 <div className="flex-1 w-full">
-                    <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium flex items-center gap-2"><Users className="h-4 w-4"/> Clientes Cadastrados</span>
+                    <div className="flex justify-between text-sm mb-2">
+                        <span className="font-bold flex items-center gap-2 text-primary">
+                          <Users className="h-4 w-4"/> Clientes Cadastrados
+                        </span>
                         {userProfile?.plan === 'free' ? (
-                             <span className="text-muted-foreground">{clientCount} / {clientLimit}</span>
+                             <span className="text-muted-foreground font-bold">{clientCount} / {clientLimit}</span>
                         ) : (
                              <span className="font-bold">{clientCount}</span>
                         )}
                     </div>
-                    {userProfile?.plan === 'free' && <Progress value={clientProgress} />}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1.5 px-3 py-1">
+                          <CheckCircle className="h-3.5 w-3.5" /> 
+                          {clientStatusCounts.paid} Quitados
+                        </Badge>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1.5 px-3 py-1">
+                          <AlertTriangle className="h-3.5 w-3.5" /> 
+                          {clientStatusCounts.pending} Com Pendências
+                        </Badge>
+                    </div>
+                    {userProfile?.plan === 'free' && <Progress value={clientProgress} className="h-2" />}
                 </div>
 
                 {userProfile?.plan === 'free' && remainingDays !== null && (
                     <>
-                        <div className="w-full md:w-px md:h-8 bg-border"></div>
+                        <div className="hidden md:block w-px h-12 bg-border"></div>
                         <div className="flex-1 w-full">
                             <div className="flex justify-between text-sm mb-1">
                                 <span className="font-medium">Período de Teste</span>
-                                <span className="text-muted-foreground">{remainingDays} dias restantes</span>
+                                <span className="text-muted-foreground font-bold">{remainingDays} dias restantes</span>
                             </div>
-                            <Progress value={daysProgress} />
+                            <Progress value={daysProgress} className="h-2" />
                         </div>
                     </>
                 )}
@@ -832,3 +871,4 @@ function ClientsPage() {
 }
 
 export default ClientsPage;
+    
