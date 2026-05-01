@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle, Filter, ListOrdered } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle, Filter, ListOrdered, PartyPopper } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { collection, doc, query, getDocs } from 'firebase/firestore';
@@ -51,6 +51,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 
 function ClientsPage() {
@@ -841,14 +842,29 @@ function ClientsPage() {
                 const totalNotes = clientNotes.length;
                 const paidNotesCount = clientPaidNotes.length;
                 const pendingNotesCount = totalNotes - paidNotesCount;
+                const isClientFullyPaid = totalNotes > 0 && paidNotesCount === totalNotes;
 
                 return (
-                    <Card key={client.id} className="hover:shadow-lg transition-all border-l-4 border-l-primary">
+                    <Card key={client.id} className={cn(
+                        "hover:shadow-lg transition-all border-l-4 border-l-primary relative overflow-hidden",
+                        isClientFullyPaid ? "bg-blue-50/40 border-blue-200" : ""
+                    )}>
+                        {isClientFullyPaid && (
+                            <div className="absolute top-0 right-0 z-10">
+                                <div className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-bl-lg flex items-center gap-1 shadow-md animate-in slide-in-from-top-full duration-500">
+                                    <CheckCircle className="h-3 w-3" />
+                                    QUITADO
+                                </div>
+                            </div>
+                        )}
                         <CardContent className="p-6 flex flex-wrap items-center justify-between gap-6">
                             <div className='flex-1 min-w-[280px]'>
-                                <Link href={`/clients/${client.id}`} className="font-bold text-xl truncate hover:underline text-primary block mb-1">
-                                    {client.name}
-                                </Link>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Link href={`/clients/${client.id}`} className="font-bold text-xl truncate hover:underline text-primary">
+                                        {client.name}
+                                    </Link>
+                                    {isClientFullyPaid && <PartyPopper className="h-5 w-5 text-blue-600 animate-bounce" />}
+                                </div>
                                 <p className="text-sm text-muted-foreground flex items-center gap-2 mb-4">
                                     <ShieldCheck className="h-3 w-3" /> CPF: {client.cpf}
                                 </p>
