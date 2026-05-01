@@ -606,13 +606,13 @@ function ClientsPage() {
         
         <div className="mb-8 group">
             <div className="relative flex items-center">
-                <Search className="absolute left-4 h-5 w-5 text-primary/60 transition-colors group-focus-within:text-primary" />
+                <Search className="absolute left-4 h-5 w-5 text-primary transition-colors" />
                 <Input
                     type="text"
                     placeholder="Buscar cliente por nome ou CPF..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 w-full h-14 text-lg bg-card border-2 border-primary/10 shadow-sm focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl transition-all"
+                    className="pl-12 w-full h-14 text-lg bg-card border-2 border-primary shadow-sm focus:ring-4 focus:ring-primary/10 rounded-xl transition-all"
                 />
             </div>
         </div>
@@ -741,7 +741,7 @@ function ClientsPage() {
              <UserIcon className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-semibold">{clients && clients.length > 0 ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              {clients && clients.length > 0 ? 'Tente uma busca diferente ou adicione um novo cliente.' : 'Comece adicionando seu primeiro cliente para criar notas promissórias.'}
+              {clients && clients.length > 0 ? 'Tente uma busca diferente or adicione um novo cliente.' : 'Comece adicionando seu primeiro cliente para criar notas promissórias.'}
             </p>
              <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
