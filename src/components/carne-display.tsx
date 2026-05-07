@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { PromissoryNoteData, Payment } from "@/types";
@@ -145,7 +146,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
       
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const margin = 15;
+      const margin = 10;
       const availableWidth = pdfWidth - margin * 2;
       let y = margin;
 
@@ -160,7 +161,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
           y = margin;
         }
         pdf.addImage(imgData, "JPEG", margin, y, imgWidth, imgHeight, undefined, 'FAST');
-        y += imgHeight + 10;
+        y += imgHeight + 5;
       };
 
       let promiseChain = Promise.resolve();
@@ -171,10 +172,11 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
             const pdfArea = slipElement.querySelector<HTMLElement>('[id^="slip-"][id$="-pdf-area"]');
             
             html2canvas(pdfArea!, { 
-              scale: 3, 
+              scale: 2, 
               useCORS: true,
               logging: false,
-              backgroundColor: '#ffffff'
+              backgroundColor: '#ffffff',
+              windowWidth: 1200, // Força layout de desktop para captura
             }).then(canvas => {
               addCanvasToPdf(canvas);
               resolve();

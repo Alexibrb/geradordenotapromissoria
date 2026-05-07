@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -78,10 +79,11 @@ export function InstallmentSlip({
         }
 
         html2canvas(pdfArea, { 
-          scale: 3, 
+          scale: 2, 
           useCORS: true,
           logging: false,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          windowWidth: 1200, // Força layout consistente
         }).then((canvas) => {
             const imgData = canvas.toDataURL("image/jpeg", 1.0);
             const pdf = new jspdf("p", "mm", "a4");
@@ -91,7 +93,7 @@ export function InstallmentSlip({
             const canvasHeight = canvas.height;
             const ratio = canvasWidth / canvasHeight;
             
-            let imgWidth = pdfWidth - 20; // 10mm margins for A4
+            let imgWidth = pdfWidth - 20; 
             let imgHeight = imgWidth / ratio;
 
             if (imgHeight > pdfHeight - 20) {

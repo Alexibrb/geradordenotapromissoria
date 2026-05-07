@@ -38,10 +38,11 @@ export function PaymentStatement({ data, payments }: PaymentStatementProps) {
     const input = document.getElementById("statement-print-area");
     if (input) {
       html2canvas(input, { 
-        scale: 3, 
+        scale: 2, 
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: 1200, // Força layout consistente
       }).then((canvas) => {
         const imgData = canvas.toDataURL("image/jpeg", 1.0);
         const pdf = new jspdf("p", "mm", "a4");
@@ -51,16 +52,16 @@ export function PaymentStatement({ data, payments }: PaymentStatementProps) {
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
         
-        let imgWidth = pdfWidth - 30;
+        let imgWidth = pdfWidth - 20;
         let imgHeight = imgWidth / ratio;
 
-        if (imgHeight > pdfHeight - 30) {
-            imgHeight = pdfHeight - 30;
+        if (imgHeight > pdfHeight - 20) {
+            imgHeight = pdfHeight - 20;
             imgWidth = imgHeight * ratio;
         }
         
         const x = (pdfWidth - imgWidth) / 2;
-        const y = 15;
+        const y = 10;
 
         pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
         pdf.save(`extrato_quitacao_${noteNumber}.pdf`);

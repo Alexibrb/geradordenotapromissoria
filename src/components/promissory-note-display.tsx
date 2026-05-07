@@ -1,3 +1,4 @@
+
 "use-client";
 
 import type { PromissoryNoteData } from "@/types";
@@ -38,10 +39,11 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
     const input = document.getElementById("note-print-area");
     if (input) {
       html2canvas(input, { 
-        scale: 3, 
+        scale: 2, 
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: 1200, // Força layout de desktop para evitar distorção em mobile
       }).then((canvas) => {
         const imgData = canvas.toDataURL("image/jpeg", 1.0);
         const pdf = new jspdf("p", "mm", "a4");
@@ -51,16 +53,16 @@ export function PromissoryNoteDisplay({ data }: PromissoryNoteDisplayProps) {
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
         
-        let imgWidth = pdfWidth - 30; // 15mm margin on each side
+        let imgWidth = pdfWidth - 20; // Margens de 10mm
         let imgHeight = imgWidth / ratio;
 
-        if (imgHeight > pdfHeight - 30) {
-            imgHeight = pdfHeight - 30;
+        if (imgHeight > pdfHeight - 20) {
+            imgHeight = pdfHeight - 20;
             imgWidth = imgHeight * ratio;
         }
         
         const x = (pdfWidth - imgWidth) / 2;
-        const y = 15; // Position from the top
+        const y = 10;
 
         pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight, undefined, 'FAST');
         pdf.save(`nota_promissoria_${noteNumber}.pdf`);
