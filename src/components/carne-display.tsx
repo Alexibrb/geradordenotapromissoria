@@ -126,13 +126,29 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
   }, [data]);
 
   const filteredSlips = useMemo(() => {
-    if (filter === 'all') {
-      return allInstallmentSlips;
+    let result = allInstallmentSlips;
+    if (filter !== 'all') {
+      result = allInstallmentSlips.filter(slip => {
+        const isPaid = payments.some(p => p.installmentNumber === slip.installmentNumber);
+        return filter === 'paid' ? isPaid : !isPaid;
+      });
     }
-    return allInstallmentSlips.filter(slip => {
-      const isPaid = payments.some(p => p.installmentNumber === slip.installmentNumber);
-      return filter === 'paid' ? isPaid : !isPaid;
-    });
+
+    if (filter === 'paid') {
+      result = [...result].sort((a, b) => {
+        const paymentA = payments.find(p => p.installmentNumber === a.installmentNumber);
+        const paymentB = payments.find(p => p.installmentNumber === b.installmentNumber);
+        
+        const dateA = paymentA?.paymentDate ? 
+          (paymentA.paymentDate instanceof Date ? paymentA.paymentDate.getTime() : (paymentA.paymentDate as any).toDate().getTime()) : 0;
+        const dateB = paymentB?.paymentDate ? 
+          (paymentB.paymentDate instanceof Date ? paymentB.paymentDate.getTime() : (paymentB.paymentDate as any).toDate().getTime()) : 0;
+          
+        return dateB - dateA; // Descending
+      });
+    }
+
+    return result;
   }, [filter, allInstallmentSlips, payments]);
 
   const handleGeneratePdfAll = () => {
