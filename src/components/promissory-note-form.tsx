@@ -1,9 +1,10 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { format, addMonths } from "date-fns";
+import { format, addMonths, isValid, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   User,
@@ -18,17 +19,15 @@ import {
   Wallet,
   FileWarning,
 } from "lucide-react";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { cn } from "@/lib/utils";
 import type { PromissoryNoteData, UserSettings } from "@/types";
 
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
@@ -85,6 +84,53 @@ type PromissoryNoteFormProps = {
   initialData?: PromissoryNoteData;
   settings?: UserSettings;
   isEditing?: boolean;
+};
+
+// Componente auxiliar para Input de Data com Máscara
+const MaskedDateInput = ({ field, placeholder = "DD/MM/AAAA" }: any) => {
+  const [displayValue, setDisplayValue] = useState(field.value ? format(field.value, 'dd/MM/yyyy') : '');
+
+  useEffect(() => {
+    if (field.value && isValid(field.value)) {
+      const formatted = format(field.value, 'dd/MM/yyyy');
+      if (formatted !== displayValue) {
+        setDisplayValue(formatted);
+      }
+    } else if (!field.value) {
+      setDisplayValue('');
+    }
+  }, [field.value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 8) value = value.slice(0, 8);
+    
+    // Aplica a máscara
+    let masked = value;
+    if (value.length > 2) masked = value.slice(0, 2) + "/" + value.slice(2);
+    if (value.length > 4) masked = value.slice(0, 2) + "/" + value.slice(2, 4) + "/" + value.slice(4);
+    
+    setDisplayValue(masked);
+
+    // Se tiver 8 dígitos, tenta converter para Date
+    if (value.length === 8) {
+      const parsedDate = parse(masked, 'dd/MM/yyyy', new Date());
+      if (isValid(parsedDate)) {
+        field.onChange(parsedDate);
+      }
+    } else if (value.length === 0) {
+      field.onChange(undefined);
+    }
+  };
+
+  return (
+    <Input
+      placeholder={placeholder}
+      value={displayValue}
+      onChange={handleChange}
+      maxLength={10}
+    />
+  );
 };
 
 export function PromissoryNoteForm({ onGenerate, client, initialData, settings, isEditing = false }: PromissoryNoteFormProps) {
@@ -155,8 +201,7 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
   }, [paymentType, form]);
 
   useEffect(() => {
-    if (hasDownPayment && paymentDate) {
-        // Default first installment to 1 month after down payment if not set
+    if (hasDownPayment && paymentDate && isValid(paymentDate)) {
         const currentFirst = form.getValues('firstInstallmentDate');
         if (!currentFirst) {
             form.setValue('firstInstallmentDate', addMonths(paymentDate, 1));
@@ -402,35 +447,9 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> {paymentType === 'a-prazo' && hasDownPayment ? 'Data da Entrada' : 'Data do Primeiro Pagamento'}</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: ptBR })
-                            ) : (
-                              <span>Escolha uma data</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={ptBR}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <MaskedDateInput field={field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -443,35 +462,9 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Data da 1ª Parcela</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: ptBR })
-                              ) : (
-                                <span>Escolha uma data</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                            locale={ptBR}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <FormControl>
+                        <MaskedDateInput field={field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -489,3 +482,4 @@ export function PromissoryNoteForm({ onGenerate, client, initialData, settings, 
     </Card>
   );
 }
+
