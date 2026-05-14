@@ -9,7 +9,7 @@ import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper, FileCheck, AlertTriangle } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper, FileCheck, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 import { PaymentStatement } from '@/components/payment-statement';
@@ -20,6 +20,11 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { startOfDay, addMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 function ClientDetailPage() {
   const { clientId } = useParams();
@@ -32,6 +37,7 @@ function ClientDetailPage() {
   const [activeView, setActiveView] = useState<'note' | 'slips' | 'statement'>('note');
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
+  const [isAlertExpanded, setIsAlertExpanded] = useState(false);
 
   const clientDocRef = useMemoFirebase(() => 
     user ? doc(firestore, 'users', user.uid, 'clients', clientId as string) : null
@@ -304,20 +310,37 @@ function ClientDetailPage() {
         </header>
 
         {overdueInstallments.length > 0 && (
-          <Alert variant="destructive" className="mb-8 border-2 shadow-md">
-            <AlertTriangle className="h-5 w-5" />
-            <AlertTitle className="font-bold text-lg">Atenção: Parcelas em Atraso Detectadas!</AlertTitle>
-            <AlertDescription className="mt-2 space-y-2">
-              <p>Este cliente possui <strong>{overdueInstallments.length}</strong> {overdueInstallments.length === 1 ? 'pendência' : 'pendências'} vencidas:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                {overdueInstallments.map((item, idx) => (
-                  <li key={idx}>
-                    <strong>Nota #{item.noteNumber}</strong>: {item.installmentText} (Vencido em {format(item.dueDate, "dd/MM/yyyy", { locale: ptBR })})
-                  </li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
+          <Collapsible open={isAlertExpanded} onOpenChange={setIsAlertExpanded} className="mb-8">
+            <Alert variant="destructive" className="border-2 shadow-md relative pr-12">
+              <AlertTriangle className="h-5 w-5" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <AlertTitle className="font-bold text-lg">Atenção: Parcelas em Atraso Detectadas!</AlertTitle>
+                  <AlertDescription className="mt-1">
+                    Este cliente possui <strong>{overdueInstallments.length}</strong> {overdueInstallments.length === 1 ? 'pendência' : 'pendências'} vencidas.
+                  </AlertDescription>
+                </div>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-fit gap-2">
+                    {isAlertExpanded ? (
+                      <>Ocultar Detalhes <ChevronUp className="h-4 w-4" /></>
+                    ) : (
+                      <>Ver Detalhes <ChevronDown className="h-4 w-4" /></>
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent className="mt-4 pt-4 border-t border-destructive/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                <ul className="list-disc pl-5 space-y-1.5 text-sm">
+                  {overdueInstallments.map((item, idx) => (
+                    <li key={idx}>
+                      <span className="font-bold">Nota #{item.noteNumber}</span>: {item.installmentText} (Vencido em {format(item.dueDate, "dd/MM/yyyy", { locale: ptBR })})
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleContent>
+            </Alert>
+          </Collapsible>
         )}
 
         <div className="flex flex-col gap-8">
