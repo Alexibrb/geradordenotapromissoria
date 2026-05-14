@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
@@ -10,7 +9,7 @@ import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper, FileCheck } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper, FileCheck, AlertTriangle } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 import { PaymentStatement } from '@/components/payment-statement';
@@ -18,6 +17,9 @@ import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PromissoryNoteCard } from '@/components/promissory-note-card';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { startOfDay, addMonths, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 function ClientDetailPage() {
   const { clientId } = useParams();
@@ -60,6 +62,54 @@ function ClientDetailPage() {
 
     fetchPayments();
   }, [user, firestore, notes, clientId]);
+
+  const overdueInstallments = useMemo(() => {
+    if (!notes || loadingPayments) return [];
+    
+    const overdue: { noteNumber: string; installmentText: string; dueDate: Date }[] = [];
+    const today = startOfDay(new Date());
+
+    notes.forEach(note => {
+      const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
+      
+      const slips = [];
+      if (note.paymentType === 'a-vista') {
+        slips.push({ installmentNumber: 1, dueDate: note.paymentDate.toDate() });
+      } else {
+        const installments = note.numberOfInstallments;
+        const hasDownPayment = note.hasDownPayment;
+        const paymentDate = note.paymentDate.toDate();
+
+        if (hasDownPayment && (note.downPaymentValue || 0) > 0) {
+          slips.push({ installmentNumber: 0, dueDate: paymentDate });
+        }
+
+        const installmentStartDate = (hasDownPayment && note.firstInstallmentDate) 
+          ? note.firstInstallmentDate.toDate() 
+          : paymentDate;
+
+        for (let i = 0; i < installments; i++) {
+          slips.push({ 
+            installmentNumber: i + 1, 
+            dueDate: addMonths(installmentStartDate, i)
+          });
+        }
+      }
+
+      slips.forEach(slip => {
+        const isPaid = notePayments.some(p => p.installmentNumber === slip.installmentNumber);
+        if (!isPaid && slip.dueDate < today) {
+          overdue.push({
+            noteNumber: note.noteNumber,
+            installmentText: slip.installmentNumber === 0 ? 'Entrada' : `Parcela ${slip.installmentNumber}`,
+            dueDate: slip.dueDate
+          });
+        }
+      });
+    });
+
+    return overdue.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  }, [notes, allPayments, loadingPayments]);
 
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote(note);
@@ -252,6 +302,23 @@ function ClientDetailPage() {
             Adicionar Nota
           </Button>
         </header>
+
+        {overdueInstallments.length > 0 && (
+          <Alert variant="destructive" className="mb-8 border-2 shadow-md">
+            <AlertTriangle className="h-5 w-5" />
+            <AlertTitle className="font-bold text-lg">Atenção: Parcelas em Atraso Detectadas!</AlertTitle>
+            <AlertDescription className="mt-2 space-y-2">
+              <p>Este cliente possui <strong>{overdueInstallments.length}</strong> {overdueInstallments.length === 1 ? 'pendência' : 'pendências'} vencidas:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                {overdueInstallments.map((item, idx) => (
+                  <li key={idx}>
+                    <strong>Nota #{item.noteNumber}</strong>: {item.installmentText} (Vencido em {format(item.dueDate, "dd/MM/yyyy", { locale: ptBR })})
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="flex flex-col gap-8">
           <div className="space-y-4">
