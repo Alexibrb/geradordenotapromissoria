@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { FileDown, Receipt, CircleOff, CheckCircle } from "lucide-react";
 import { InstallmentSlip } from "@/components/installment-slip";
 import React, { useState, useMemo } from "react";
-import jsPDF from "jspdf";
+import jsPDF from "jsPDF";
 import html2canvas from "html2canvas";
 
 type CarneDisplayProps = {
@@ -122,8 +122,9 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
           });
         }
     }
-    return slips;
-  }, [data]);
+    // Ordenar da mais recente para a mais antiga (Decrescente por dueDate)
+    return slips.sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime());
+  }, [data, header, totalValue, installments, paymentDate, firstInstallmentDate, clientName, clientCpf, clientAddress, productReference, creditorName, creditorCpf, creditorAddress, noteNumber, paymentType, hasDownPayment, downPaymentValue]);
 
   const filteredSlips = useMemo(() => {
     if (filter === 'all') {
