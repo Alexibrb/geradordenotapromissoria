@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle, Filter, ListOrdered, PartyPopper } from 'lucide-react';
+import { Plus, UserPlus, Loader, User as UserIcon, MoreHorizontal, Trash2, LogOut, Edit, Settings, Search, ShieldCheck, Gem, Users, AlertTriangle, StickyNote, CheckCircle, Filter, ListOrdered, PartyPopper, ChevronDown, ChevronUp } from 'lucide-react';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { useCollection, useDoc, useFirestore, useMemoFirebase, useAuth, useUser } from '@/firebase';
 import { collection, doc, query, getDocs } from 'firebase/firestore';
@@ -46,12 +46,18 @@ import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocki
 import { useRouter } from 'next/navigation';
 import { DashboardStats } from '@/components/dashboard-stats';
 import { DateRange } from 'react-day-picker';
-import { startOfDay, endOfDay, addDays, differenceInDays, format } from 'date-fns';
+import { startOfDay, endOfDay, addDays, differenceInDays, format, addMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 
 function ClientsPage() {
@@ -71,6 +77,7 @@ function ClientsPage() {
   const [isLoadingAggregates, setIsLoadingAggregates] = useState(true);
   
   const [remainingDays, setRemainingDays] = useState<number | null>(null);
+  const [isGlobalOverdueAlertExpanded, setIsGlobalOverdueAlertExpanded] = useState(false);
 
   const clientLimit = 3;
   const daysLimit = 30;
@@ -182,6 +189,62 @@ function ClientsPage() {
     });
     return Array.from(counts).sort((a, b) => a - b);
   }, [clients, allNotes]);
+
+  // Calculate overdue clients globally
+  const globalOverdueClients = useMemo(() => {
+    if (!clients || !allNotes || !allPayments || isLoadingAggregates) return [];
+    
+    const overdueList: { id: string; name: string }[] = [];
+    const today = startOfDay(new Date());
+
+    clients.forEach(client => {
+      const clientNotes = allNotes.filter(n => n.clientId === client.id);
+      let isClientOverdue = false;
+
+      clientNotes.forEach(note => {
+        if (isClientOverdue) return;
+
+        const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
+        
+        const slips = [];
+        if (note.paymentType === 'a-vista') {
+          slips.push({ installmentNumber: 1, dueDate: note.paymentDate.toDate() });
+        } else {
+          const installments = note.numberOfInstallments;
+          const hasDownPayment = note.hasDownPayment;
+          const paymentDate = note.paymentDate.toDate();
+
+          if (hasDownPayment && (note.downPaymentValue || 0) > 0) {
+            slips.push({ installmentNumber: 0, dueDate: paymentDate });
+          }
+
+          const installmentStartDate = (hasDownPayment && note.firstInstallmentDate) 
+            ? note.firstInstallmentDate.toDate() 
+            : paymentDate;
+
+          for (let i = 0; i < installments; i++) {
+            slips.push({ 
+              installmentNumber: i + 1, 
+              dueDate: addMonths(installmentStartDate, i)
+            });
+          }
+        }
+
+        const hasOverdueSlip = slips.some(slip => {
+          const isPaid = notePayments.some(p => p.installmentNumber === slip.installmentNumber);
+          return !isPaid && slip.dueDate < today;
+        });
+
+        if (hasOverdueSlip) isClientOverdue = true;
+      });
+
+      if (isClientOverdue) {
+        overdueList.push({ id: client.id, name: client.name });
+      }
+    });
+
+    return overdueList;
+  }, [clients, allNotes, allPayments, isLoadingAggregates]);
 
   // Calculate counters for general status
   const clientStatusCounts = useMemo(() => {
@@ -712,6 +775,43 @@ function ClientsPage() {
             )}
              {getPlanExpirationWarning()}
         </Card>
+
+        {globalOverdueClients.length > 0 && (
+          <Collapsible open={isGlobalOverdueAlertExpanded} onOpenChange={setIsGlobalOverdueAlertExpanded} className="mb-8">
+            <Alert variant="destructive" className="border-2 shadow-md relative pr-12 bg-red-50">
+              <AlertTriangle className="h-5 w-5" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <AlertTitle className="font-bold text-lg">Atenção: Clientes Inadimplentes Detectados!</AlertTitle>
+                  <AlertDescription className="mt-1">
+                    Existem <strong>{globalOverdueClients.length}</strong> {globalOverdueClients.length === 1 ? 'cliente com parcelas vencidas' : 'clientes com parcelas vencidas'}.
+                  </AlertDescription>
+                </div>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-fit gap-2">
+                    {isGlobalOverdueAlertExpanded ? (
+                      <>Ocultar Clientes <ChevronUp className="h-4 w-4" /></>
+                    ) : (
+                      <>Ver Clientes <ChevronDown className="h-4 w-4" /></>
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent className="mt-4 pt-4 border-t border-destructive/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {globalOverdueClients.map((client) => (
+                    <Link key={client.id} href={`/clients/${client.id}`}>
+                      <Badge variant="outline" className="w-full justify-between hover:bg-red-100 transition-colors cursor-pointer py-2">
+                        <span className="font-bold truncate">{client.name}</span>
+                        <AlertTriangle className="h-3 w-3 ml-2 text-red-500" />
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Alert>
+          </Collapsible>
+        )}
 
 
         <div className="mb-8">
