@@ -135,12 +135,12 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
       });
     }
 
-    // Ordenação dinâmica baseada no filtro
+    // Ordenação dinâmica baseada no filtro solicitado
     if (filter === 'paid') {
-      // Decrescente (Mais recente primeiro)
+      // Decrescente (Mais recente primeiro) para a aba de Pagas
       return result.sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime());
     } else {
-      // Crescente (Mais antiga primeiro - padrão para pendentes e todas)
+      // Crescente (Mais antiga primeiro) para Pendentes e Todas
       return result.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
     }
   }, [filter, allInstallmentSlips, payments]);
