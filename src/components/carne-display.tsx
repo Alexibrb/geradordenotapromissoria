@@ -122,18 +122,27 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
           });
         }
     }
-    // Ordenar da mais recente para a mais antiga (Decrescente por dueDate)
-    return slips.sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime());
+    return slips;
   }, [data, header, totalValue, installments, paymentDate, firstInstallmentDate, clientName, clientCpf, clientAddress, productReference, creditorName, creditorCpf, creditorAddress, noteNumber, paymentType, hasDownPayment, downPaymentValue]);
 
   const filteredSlips = useMemo(() => {
-    if (filter === 'all') {
-      return allInstallmentSlips;
+    let result = [...allInstallmentSlips];
+    
+    if (filter !== 'all') {
+      result = result.filter(slip => {
+        const isPaid = payments.some(p => p.installmentNumber === slip.installmentNumber);
+        return filter === 'paid' ? isPaid : !isPaid;
+      });
     }
-    return allInstallmentSlips.filter(slip => {
-      const isPaid = payments.some(p => p.installmentNumber === slip.installmentNumber);
-      return filter === 'paid' ? isPaid : !isPaid;
-    });
+
+    // Ordenação dinâmica baseada no filtro
+    if (filter === 'paid') {
+      // Decrescente (Mais recente primeiro)
+      return result.sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime());
+    } else {
+      // Crescente (Mais antiga primeiro - padrão para pendentes e todas)
+      return result.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+    }
   }, [filter, allInstallmentSlips, payments]);
 
   const handleGeneratePdfAll = () => {
@@ -177,7 +186,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
               useCORS: true,
               logging: false,
               backgroundColor: '#ffffff',
-              windowWidth: 1200, // Força layout de desktop para captura
+              windowWidth: 1200, 
             }).then(canvas => {
               addCanvasToPdf(canvas);
               resolve();
