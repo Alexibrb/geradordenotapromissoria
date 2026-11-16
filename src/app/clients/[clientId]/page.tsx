@@ -9,7 +9,7 @@ import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper, FileCheck, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper, FileCheck, AlertTriangle, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 import { PaymentStatement } from '@/components/payment-statement';
@@ -25,6 +25,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function ClientDetailPage() {
   const { clientId } = useParams();
@@ -68,6 +69,31 @@ function ClientDetailPage() {
 
     fetchPayments();
   }, [user, firestore, notes, clientId]);
+
+  const { activeNotes, paidNotes } = useMemo(() => {
+    if (!notes || loadingPayments) return { activeNotes: [], paidNotes: [] };
+
+    const active: PromissoryNote[] = [];
+    const paid: PromissoryNote[] = [];
+
+    notes.forEach(note => {
+      const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
+      const totalPaid = notePayments.reduce((acc, p) => acc + p.amount, 0);
+      const totalToReceive = Math.max(0, note.value - totalPaid);
+      const totalInstallments = note.numberOfInstallments + (note.hasDownPayment ? 1 : 0);
+      const paidInstallments = notePayments.length;
+      
+      const isFullyPaid = totalToReceive < 0.01 && paidInstallments >= totalInstallments && totalInstallments > 0;
+
+      if (isFullyPaid) {
+        paid.push(note);
+      } else {
+        active.push(note);
+      }
+    });
+
+    return { activeNotes: active, paidNotes: paid };
+  }, [notes, allPayments, loadingPayments]);
 
   const overdueInstallments = useMemo(() => {
     if (!notes || loadingPayments) return [];
@@ -197,7 +223,7 @@ function ClientDetailPage() {
                 toast({
                     title: "🎉 NOTA TOTALMENTE QUITADA!",
                     description: `Excelente! Todos os pagamentos desta nota foram concluídos.`,
-                    className: "bg-blue-600 text-white border-none shadow-2xl",
+                    className: "bg-green-600 text-white border-none shadow-2xl",
                 });
              } else {
                 toast({
@@ -346,28 +372,69 @@ function ClientDetailPage() {
         <div className="flex flex-col gap-8">
           <div className="space-y-4">
             <h2 className="text-xl font-semibold border-l-4 border-primary pl-3">Notas Promissórias</h2>
-            {notes && notes.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {notes.map((note) => {
-                const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
-                return (
-                  <PromissoryNoteCard
-                    key={note.id}
-                    note={note}
-                    payments={notePayments}
-                    isSelected={selectedNote?.id === note.id}
-                    onSelect={() => handleSelectNote(note)}
-                    onEdit={(e) => handleEditNote(e, note.id)}
-                    onDelete={(e) => handleDeleteNote(e, note.id)}
-                  />
-                );
-              })}
-              </div>
-            ) : (
-              <div className="text-center py-10 bg-secondary/20 rounded-lg border-2 border-dashed">
-                <p className="text-muted-foreground text-sm">Nenhuma nota encontrada para este cliente.</p>
-              </div>
-            )}
+            
+            <Tabs defaultValue="active" className="w-full">
+              <TabsList className="grid w-full max-w-[400px] grid-cols-2 mb-4">
+                <TabsTrigger value="active" className="gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Em Aberto ({activeNotes.length})
+                </TabsTrigger>
+                <TabsTrigger value="paid" className="gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Quitadas ({paidNotes.length})
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="active" className="mt-6">
+                {activeNotes.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {activeNotes.map((note) => {
+                      const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
+                      return (
+                        <PromissoryNoteCard
+                          key={note.id}
+                          note={note}
+                          payments={notePayments}
+                          isSelected={selectedNote?.id === note.id}
+                          onSelect={() => handleSelectNote(note)}
+                          onEdit={(e) => handleEditNote(e, note.id)}
+                          onDelete={(e) => handleDeleteNote(e, note.id)}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-secondary/20 rounded-lg border-2 border-dashed">
+                    <p className="text-muted-foreground text-sm">Nenhuma nota em aberto encontrada para este cliente.</p>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="paid" className="mt-6">
+                {paidNotes.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {paidNotes.map((note) => {
+                      const notePayments = allPayments.filter(p => p.promissoryNoteId === note.id);
+                      return (
+                        <PromissoryNoteCard
+                          key={note.id}
+                          note={note}
+                          payments={notePayments}
+                          isSelected={selectedNote?.id === note.id}
+                          onSelect={() => handleSelectNote(note)}
+                          onEdit={(e) => handleEditNote(e, note.id)}
+                          onDelete={(e) => handleDeleteNote(e, note.id)}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-secondary/20 rounded-lg border-2 border-dashed">
+                    <p className="text-muted-foreground text-sm">Nenhuma nota quitada encontrada para este cliente.</p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
           
           <div className="space-y-8">
