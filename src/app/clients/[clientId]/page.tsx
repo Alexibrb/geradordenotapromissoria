@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -9,7 +10,7 @@ import type { Client, PromissoryNote, Payment } from '@/types';
 import { ProtectedRoute } from '@/firebase/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader, ArrowLeft, Plus, FileText, Receipt, StickyNote, PartyPopper, FileCheck, AlertTriangle, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
+import { Loader, ArrowLeft, Plus, Receipt, StickyNote, PartyPopper, FileCheck, AlertTriangle, ChevronDown, ChevronUp, CheckCircle, ListChecks } from 'lucide-react';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
 import { PaymentStatement } from '@/components/payment-statement';
@@ -26,6 +27,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NoteExtratoDialog } from '@/components/note-extrato-dialog';
 
 function ClientDetailPage() {
   const { clientId } = useParams();
@@ -39,6 +41,9 @@ function ClientDetailPage() {
   const [allPayments, setAllPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [isAlertExpanded, setIsAlertExpanded] = useState(false);
+  
+  // Estado para o novo modal de Extrato
+  const [extratoNote, setExtratoNote] = useState<PromissoryNote | null>(null);
 
   const clientDocRef = useMemoFirebase(() => 
     user ? doc(firestore, 'users', user.uid, 'clients', clientId as string) : null
@@ -56,15 +61,20 @@ function ClientDetailPage() {
     const fetchPayments = async () => {
         setLoadingPayments(true);
         const paymentsData: Payment[] = [];
-        for (const note of notes) {
-            const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', note.id, 'payments');
-            const paymentsSnapshot = await getDocs(paymentsRef);
-            paymentsSnapshot.forEach(doc => {
-                paymentsData.push({ id: doc.id, ...doc.data() } as Payment);
-            });
+        try {
+          for (const note of notes) {
+              const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', note.id, 'payments');
+              const paymentsSnapshot = await getDocs(paymentsRef);
+              paymentsSnapshot.forEach(doc => {
+                  paymentsData.push({ id: doc.id, ...doc.data() } as Payment);
+              });
+          }
+          setAllPayments(paymentsData);
+        } catch (err) {
+          console.error("Erro ao buscar pagamentos:", err);
+        } finally {
+          setLoadingPayments(false);
         }
-        setAllPayments(paymentsData);
-        setLoadingPayments(false);
     };
 
     fetchPayments();
@@ -146,6 +156,8 @@ function ClientDetailPage() {
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote(note);
     setActiveView('note');
+    // Scroll suave para os detalhes
+    window.scrollTo({ top: document.getElementById('note-details-section')?.offsetTop || 0, behavior: 'smooth' });
   };
 
   const handleDeleteNote = async (e: React.MouseEvent, noteId: string) => {
@@ -195,15 +207,24 @@ function ClientDetailPage() {
     router.push(`/clients/${clientId}/edit-note/${noteId}`);
   };
 
-  const handlePaymentStatusChange = (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => {
-     if (!user || !selectedNote) return;
+  const handlePaymentStatusChange = (
+    isPaid: boolean, 
+    installmentNumber: number, 
+    value: number, 
+    isDownPayment: boolean,
+    paymentDate: Date = new Date()
+  ) => {
+     if (!user || (!selectedNote && !extratoNote)) return;
+     
+     const currentNote = selectedNote || extratoNote;
+     if (!currentNote) return;
 
-     const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', selectedNote.id, 'payments');
+     const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', currentNote.id, 'payments');
 
      if (isPaid) {
         const paymentData: Omit<Payment, 'id'> = {
-            promissoryNoteId: selectedNote.id,
-            paymentDate: new Date(),
+            promissoryNoteId: currentNote.id,
+            paymentDate: paymentDate,
             amount: value,
             installmentNumber: installmentNumber,
             isDownPayment: isDownPayment
@@ -215,11 +236,11 @@ function ClientDetailPage() {
              const updatedPayments = [...allPayments, newPayment];
              setAllPayments(updatedPayments);
 
-             const notePayments = updatedPayments.filter(p => p.promissoryNoteId === selectedNote.id);
+             const notePayments = updatedPayments.filter(p => p.promissoryNoteId === currentNote.id);
              const totalPaid = notePayments.reduce((acc, p) => acc + p.amount, 0);
-             const totalInstallments = selectedNote.numberOfInstallments + (selectedNote.hasDownPayment ? 1 : 0);
+             const totalInstallments = currentNote.numberOfInstallments + (currentNote.hasDownPayment ? 1 : 0);
              
-             if (totalPaid >= selectedNote.value && notePayments.length >= totalInstallments) {
+             if (totalPaid >= currentNote.value && notePayments.length >= totalInstallments) {
                 toast({
                     title: "🎉 NOTA TOTALMENTE QUITADA!",
                     description: `Excelente! Todos os pagamentos desta nota foram concluídos.`,
@@ -228,7 +249,7 @@ function ClientDetailPage() {
              } else {
                 toast({
                     title: `Confirmado: ${installmentNumber === 0 ? 'Entrada' : `Parcela ${installmentNumber}`} Paga`,
-                    description: `O pagamento de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} foi registrado.`,
+                    description: `O pagamento em ${format(paymentDate, 'dd/MM/yyyy')} foi registrado.`,
                     className: 'bg-blue-600 text-white',
                 });
              }
@@ -371,7 +392,7 @@ function ClientDetailPage() {
 
         <div className="flex flex-col gap-8">
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold border-l-4 border-primary pl-3">Notas Promissórias</h2>
+            <h2 className="text-xl font-semibold border-l-4 border-primary pl-3">Minhas Notas</h2>
             
             <Tabs defaultValue="active" className="w-full">
               <TabsList className="grid w-full max-w-[400px] grid-cols-2 mb-4">
@@ -397,6 +418,7 @@ function ClientDetailPage() {
                           payments={notePayments}
                           isSelected={selectedNote?.id === note.id}
                           onSelect={() => handleSelectNote(note)}
+                          onExtrato={() => setExtratoNote(note)}
                           onEdit={(e) => handleEditNote(e, note.id)}
                           onDelete={(e) => handleDeleteNote(e, note.id)}
                         />
@@ -404,7 +426,7 @@ function ClientDetailPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-10 bg-secondary/20 rounded-lg border-2 border-dashed">
+                  <div className="text-center py-12 bg-secondary/20 rounded-lg border-2 border-dashed">
                     <p className="text-muted-foreground text-sm">Nenhuma nota em aberto encontrada para este cliente.</p>
                   </div>
                 )}
@@ -422,6 +444,7 @@ function ClientDetailPage() {
                           payments={notePayments}
                           isSelected={selectedNote?.id === note.id}
                           onSelect={() => handleSelectNote(note)}
+                          onExtrato={() => setExtratoNote(note)}
                           onEdit={(e) => handleEditNote(e, note.id)}
                           onDelete={(e) => handleDeleteNote(e, note.id)}
                         />
@@ -429,7 +452,7 @@ function ClientDetailPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-10 bg-secondary/20 rounded-lg border-2 border-dashed">
+                  <div className="text-center py-12 bg-secondary/20 rounded-lg border-2 border-dashed">
                     <p className="text-muted-foreground text-sm">Nenhuma nota quitada encontrada para este cliente.</p>
                   </div>
                 )}
@@ -437,7 +460,7 @@ function ClientDetailPage() {
             </Tabs>
           </div>
           
-          <div className="space-y-8">
+          <div id="note-details-section" className="space-y-8 scroll-mt-20">
             {selectedNoteData ? (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex flex-wrap gap-2 mb-6 p-1 bg-secondary rounded-lg w-fit mx-auto sm:mx-0">
@@ -446,22 +469,22 @@ function ClientDetailPage() {
                       variant={activeView === 'note' ? 'default' : 'secondary'} 
                       className={cn(
                         "flex-1 sm:flex-none transition-all",
-                        activeView !== 'note' && "bg-green-600 text-white hover:bg-green-700 border-none"
+                        activeView === 'note' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
                       )}
                     >
                         <StickyNote className="mr-2 h-4 w-4"/>
-                        Nota Promissória
+                        Documento da Nota
                     </Button>
                     <Button 
                       onClick={() => setActiveView('slips')} 
                       variant={activeView === 'slips' ? 'default' : 'secondary'} 
                       className={cn(
                         "flex-1 sm:flex-none transition-all",
-                        activeView !== 'slips' && "bg-green-600 text-white hover:bg-green-700 border-none"
+                        activeView === 'slips' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
                       )}
                     >
                         <Receipt className="mr-2 h-4 w-4"/>
-                        Comprovantes
+                        Carnê e Comprovantes
                     </Button>
                     {isFullyPaid && (
                        <Button 
@@ -469,11 +492,11 @@ function ClientDetailPage() {
                         variant={activeView === 'statement' ? 'default' : 'secondary'} 
                         className={cn(
                           "flex-1 sm:flex-none transition-all",
-                          activeView !== 'statement' && "bg-green-600 text-white hover:bg-green-700 border-none"
+                          activeView === 'statement' ? "bg-green-600 text-white shadow-sm" : "text-muted-foreground"
                         )}
                       >
                           <FileCheck className="mr-2 h-4 w-4"/>
-                          Extrato de Quitação
+                          Termo de Quitação
                       </Button>
                     )}
                 </div>
@@ -484,7 +507,7 @@ function ClientDetailPage() {
                     <CarneDisplay 
                         data={selectedNoteData} 
                         payments={selectedNotePayments}
-                        onPaymentStatusChange={handlePaymentStatusChange}
+                        onPaymentStatusChange={(isPaid, installmentNumber, value, isDownPayment) => handlePaymentStatusChange(isPaid, installmentNumber, value, isDownPayment)}
                     />
                 )}
                 {activeView === 'statement' && (
@@ -497,15 +520,27 @@ function ClientDetailPage() {
             ) : (
               <Card className="h-full min-h-[400px] flex items-center justify-center border-dashed border-2 bg-secondary/10">
                 <CardContent className="text-center p-8">
-                  <FileText className="mx-auto h-16 w-16 text-muted-foreground opacity-20" />
+                  <ListChecks className="mx-auto h-16 w-16 text-muted-foreground opacity-20" />
                   <p className="mt-4 text-sm text-muted-foreground font-medium">
-                    Selecione uma nota acima para visualizar os detalhes e gerenciar pagamentos.
+                    Clique em "Ver Detalhes" em uma nota acima para visualizar documentos e carnês.
                   </p>
                 </CardContent>
               </Card>
             )}
           </div>
         </div>
+
+        {/* Modal de Extrato do Cliente */}
+        {extratoNote && (
+            <NoteExtratoDialog 
+                open={!!extratoNote} 
+                onOpenChange={(open) => !open && setExtratoNote(null)}
+                note={extratoNote}
+                clientName={client.name}
+                payments={allPayments.filter(p => p.promissoryNoteId === extratoNote.id)}
+                onPaymentAction={handlePaymentStatusChange}
+            />
+        )}
       </div>
     </ProtectedRoute>
   );

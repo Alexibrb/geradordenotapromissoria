@@ -2,10 +2,10 @@
 "use client";
 
 import type { PromissoryNote, Payment } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, Trash2, TrendingUp, TrendingDown, CheckCircle, Package, PartyPopper, Lock } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, TrendingDown, CheckCircle, Package, PartyPopper, Lock, FileText, ListChecks } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -14,11 +14,12 @@ type PromissoryNoteCardProps = {
   payments: Payment[];
   isSelected: boolean;
   onSelect: () => void;
+  onExtrato: () => void;
   onEdit: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
 };
 
-export function PromissoryNoteCard({ note, payments, isSelected, onSelect, onEdit, onDelete }: PromissoryNoteCardProps) {
+export function PromissoryNoteCard({ note, payments, isSelected, onSelect, onExtrato, onEdit, onDelete }: PromissoryNoteCardProps) {
 
   const totalPaid = payments.reduce((acc, p) => acc + p.amount, 0);
   const totalToReceive = Math.max(0, note.value - totalPaid);
@@ -26,8 +27,6 @@ export function PromissoryNoteCard({ note, payments, isSelected, onSelect, onEdi
   const totalInstallments = note.numberOfInstallments + (note.hasDownPayment ? 1 : 0);
   const paidInstallments = payments.length;
   
-  // Consideramos quitada se o valor a receber for zero (com margem de erro decimal) 
-  // e se o número de pagamentos for igual ao total esperado
   const isFullyPaid = totalToReceive < 0.01 && paidInstallments >= totalInstallments && totalInstallments > 0;
 
   const formatCurrency = (value: number) => {
@@ -37,11 +36,10 @@ export function PromissoryNoteCard({ note, payments, isSelected, onSelect, onEdi
   return (
     <Card
       className={cn(
-        "cursor-pointer hover:shadow-md transition-all relative overflow-hidden border-2",
+        "flex flex-col hover:shadow-md transition-all relative overflow-hidden border-2",
         isSelected ? 'border-primary shadow-blue-100 shadow-lg' : 'border-transparent',
         isFullyPaid ? 'bg-blue-50/40 border-blue-200' : 'bg-card'
       )}
-      onClick={onSelect}
     >
       {isFullyPaid && (
         <div className="absolute top-0 right-0 z-10">
@@ -72,11 +70,11 @@ export function PromissoryNoteCard({ note, payments, isSelected, onSelect, onEdi
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onEdit}>
                 <Edit className="mr-2 h-4 w-4" />
-                Editar
+                Editar Dados
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                Excluir
+                Excluir Nota
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -87,7 +85,7 @@ export function PromissoryNoteCard({ note, payments, isSelected, onSelect, onEdi
         )}
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 flex-1">
         <div className="flex items-center justify-between">
             <p className={cn("text-lg font-black", isFullyPaid ? "text-blue-700" : "text-foreground")}>
                 {formatCurrency(note.value)}
@@ -120,6 +118,29 @@ export function PromissoryNoteCard({ note, payments, isSelected, onSelect, onEdi
             </div>
         </div>
       </CardContent>
+
+      <CardFooter className="p-4 pt-0 flex gap-2">
+          <Button 
+            variant={isSelected ? "default" : "outline"} 
+            size="sm" 
+            className="flex-1 h-9 gap-1.5"
+            onClick={onSelect}
+          >
+              <FileText className="h-3.5 w-3.5" />
+              Ver Detalhes
+          </Button>
+          {!isFullyPaid && (
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="flex-1 h-9 gap-1.5 bg-blue-600 text-white hover:bg-blue-700"
+              onClick={onExtrato}
+            >
+                <ListChecks className="h-3.5 w-3.5" />
+                Extrato
+            </Button>
+          )}
+      </CardFooter>
     </Card>
   );
 }
