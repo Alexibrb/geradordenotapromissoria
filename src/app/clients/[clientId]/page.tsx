@@ -507,7 +507,7 @@ function ClientDetailPage() {
                     <CarneDisplay 
                         data={selectedNoteData} 
                         payments={selectedNotePayments}
-                        onPaymentStatusChange={(isPaid, installmentNumber, value, isDownPayment) => handlePaymentStatusChange(isPaid, installmentNumber, value, isDownPayment)}
+                        onPaymentStatusChange={(isPaid, installmentNumber, value, isDownPayment, paymentDate) => handlePaymentStatusChange(isPaid, installmentNumber, value, isDownPayment, paymentDate)}
                     />
                 )}
                 {activeView === 'statement' && (
