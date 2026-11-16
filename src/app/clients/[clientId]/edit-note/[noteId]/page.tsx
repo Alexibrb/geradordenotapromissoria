@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PromissoryNoteDisplay } from '@/components/promissory-note-display';
 import { CarneDisplay } from '@/components/carne-display';
+import { format } from 'date-fns';
 
 function EditNotePage() {
   const { clientId, noteId } = useParams();
@@ -116,7 +116,13 @@ function EditNotePage() {
     }, 1500);
   };
   
-    const handlePaymentStatusChange = (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => {
+    const handlePaymentStatusChange = (
+      isPaid: boolean, 
+      installmentNumber: number, 
+      value: number, 
+      isDownPayment: boolean,
+      paymentDate: Date = new Date()
+    ) => {
      if (!user || !note) return;
 
      const paymentsRef = collection(firestore, 'users', user.uid, 'clients', clientId as string, 'promissoryNotes', note.id, 'payments');
@@ -124,7 +130,7 @@ function EditNotePage() {
      if (isPaid) {
         const paymentData: Omit<Payment, 'id'> = {
             promissoryNoteId: note.id,
-            paymentDate: new Date(),
+            paymentDate: paymentDate,
             amount: value,
             installmentNumber: installmentNumber,
             isDownPayment: isDownPayment
@@ -132,7 +138,7 @@ function EditNotePage() {
         addDocumentNonBlocking(paymentsRef, paymentData);
         toast({
             title: `Pagamento Confirmado`,
-            description: `${installmentNumber === 0 ? 'Entrada' : `Parcela ${installmentNumber}`} marcada como paga.`,
+            description: `${installmentNumber === 0 ? 'Entrada' : `Parcela ${installmentNumber}`} marcada como paga em ${format(paymentDate, 'dd/MM/yyyy')}.`,
             className: 'bg-green-600 text-white',
         });
      } else {

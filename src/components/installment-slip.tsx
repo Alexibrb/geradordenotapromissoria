@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -6,9 +5,10 @@ import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { ptBR } from "date-fns/locale";
 import { Button } from "./ui/button";
-import { FileDown, CheckCircle2 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { FileDown, CheckCircle2, Calendar as CalendarIcon, Wallet2, Undo2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +40,7 @@ type InstallmentSlipProps = {
   isDownPayment: boolean;
   isPaid: boolean;
   paidDate?: Date;
-  onPaidChange: (checked: boolean) => void;
+  onPaidAction: (isPaid: boolean, paymentDate: Date) => void;
 };
 
 export function InstallmentSlip({
@@ -61,10 +61,11 @@ export function InstallmentSlip({
   isDownPayment,
   isPaid,
   paidDate,
-  onPaidChange
+  onPaidAction
 }: InstallmentSlipProps) {
   const [showConfirmPaid, setShowConfirmPaid] = useState(false);
   const [showConfirmUnpaid, setShowConfirmUnpaid] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const handleGeneratePdf = () => {
     const slipElement = document.getElementById(`slip-container-${slipId}`);
@@ -83,7 +84,7 @@ export function InstallmentSlip({
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          windowWidth: 1200, // Força layout consistente
+          windowWidth: 1200, 
         }).then((canvas) => {
             const imgData = canvas.toDataURL("image/jpeg", 1.0);
             const pdf = new jspdf("p", "mm", "a4");
@@ -114,7 +115,6 @@ export function InstallmentSlip({
     }
   };
   
-  const checkboxId = `paid-checkbox-${slipId}`;
   const titleText = isDownPayment ? 'Comprovante de Entrada' : 'Comprovante de Pagamento';
   const installmentText = isDownPayment ? 'Entrada' : `Parcela ${installmentNumber} de ${totalInstallments}`;
 
@@ -124,7 +124,10 @@ export function InstallmentSlip({
   }).format(value);
 
   return (
-    <div id={`slip-container-${slipId}`} className="bg-card border-2 border-dashed rounded-lg overflow-hidden print-break-inside-avoid shadow-sm hover:shadow-md transition-shadow">
+    <div id={`slip-container-${slipId}`} className={cn(
+      "bg-card border-2 rounded-lg overflow-hidden print-break-inside-avoid shadow-sm hover:shadow-md transition-shadow",
+      isPaid ? "border-green-200" : "border-dashed"
+    )}>
         <div id={`slip-${slipId}-pdf-area`} className="bg-card p-8 relative">
              {header && (
                 <div className="text-center mb-6 border-b pb-4">
@@ -195,24 +198,59 @@ export function InstallmentSlip({
             </div>
         </div>
         
-        <div className="no-print p-4 bg-secondary/20 border-t-2 border-dashed flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-                <Checkbox 
-                  id={checkboxId} 
-                  checked={isPaid} 
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setShowConfirmPaid(true);
-                    } else {
-                      setShowConfirmUnpaid(true);
-                    }
-                  }} 
-                />
-                <Label htmlFor={checkboxId} className="cursor-pointer font-bold text-base">
-                  {isPaid ? 'Pagamento Confirmado' : 'Marcar como Pago'}
-                </Label>
+        <div className="no-print p-4 bg-secondary/20 border-t flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+                {isPaid ? (
+                   <div className="flex items-center gap-2">
+                      <div className="bg-green-600 text-white px-4 py-2 rounded-md font-bold flex items-center gap-2 shadow-sm">
+                        <CheckCircle2 className="h-5 w-5" />
+                        PAGAMENTO CONFIRMADO
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:bg-destructive/10 font-bold"
+                        onClick={() => setShowConfirmUnpaid(true)}
+                      >
+                        <Undo2 className="mr-2 h-4 w-4" />
+                        Estornar
+                      </Button>
+                   </div>
+                ) : (
+                  <div className="flex items-center gap-2 flex-wrap justify-center">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-[160px] justify-start text-left font-normal border-primary",
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                          {format(selectedDate, "dd/MM/yyyy")}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={(date) => date && setSelectedDate(date)}
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Button 
+                      onClick={() => setShowConfirmPaid(true)} 
+                      className="bg-green-600 hover:bg-green-700 text-white font-black px-6 h-10 shadow-md"
+                    >
+                        <Wallet2 className="mr-2 h-5 w-5" />
+                        QUITAR PARCELA
+                    </Button>
+                  </div>
+                )}
             </div>
-            <Button onClick={handleGeneratePdf} variant="outline" size="sm" className="h-10 px-4">
+            <Button onClick={handleGeneratePdf} variant="outline" size="sm" className="h-10 px-4 border-2">
                 <FileDown className="mr-2 h-5 w-5" />
                 Gerar PDF A4
             </Button>
@@ -224,13 +262,13 @@ export function InstallmentSlip({
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Pagamento</AlertDialogTitle>
               <AlertDialogDescription>
-                Você deseja confirmar o pagamento da <strong>{installmentText}</strong> no valor de <strong>{formattedValue}</strong> para o cliente <strong>{clientName}</strong>?
+                Você deseja confirmar o pagamento da <strong>{installmentText}</strong> no valor de <strong>{formattedValue}</strong> para o cliente <strong>{clientName}</strong> em <strong>{format(selectedDate, 'dd/MM/yyyy')}</strong>?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction variant="default" onClick={() => {
-                onPaidChange(true);
+              <AlertDialogAction variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => {
+                onPaidAction(true, selectedDate);
                 setShowConfirmPaid(false);
               }}>
                 Confirmar Pagamento
@@ -250,7 +288,7 @@ export function InstallmentSlip({
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction variant="destructive" onClick={() => {
-                onPaidChange(false);
+                onPaidAction(false, new Date());
                 setShowConfirmUnpaid(false);
               }}>
                 Sim, Estornar

@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { PromissoryNoteData, Payment } from "@/types";
@@ -14,7 +13,7 @@ import html2canvas from "html2canvas";
 type CarneDisplayProps = {
   data: PromissoryNoteData;
   payments?: Payment[];
-  onPaymentStatusChange: (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean) => void;
+  onPaymentStatusChange: (isPaid: boolean, installmentNumber: number, value: number, isDownPayment: boolean, paymentDate: Date) => void;
 };
 
 type SlipData = {
@@ -135,12 +134,9 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
       });
     }
 
-    // Ordenação dinâmica baseada no filtro solicitado
     if (filter === 'paid') {
-      // Decrescente (Mais recente primeiro) para a aba de Pagas
       return result.sort((a, b) => b.dueDate.getTime() - a.dueDate.getTime());
     } else {
-      // Crescente (Mais antiga primeiro) para Pendentes e Todas
       return result.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
     }
   }, [filter, allInstallmentSlips, payments]);
@@ -239,7 +235,7 @@ export function CarneDisplay({ data, payments = [], onPaymentStatusChange }: Car
                     {...slipData}
                     isPaid={isPaid}
                     paidDate={paidDate}
-                    onPaidChange={(checked) => onPaymentStatusChange(checked, slipData.installmentNumber, slipData.value, slipData.isDownPayment)}
+                    onPaidAction={(paid, date) => onPaymentStatusChange(paid, slipData.installmentNumber, slipData.value, slipData.isDownPayment, date)}
                   />
                 </div>
               </React.Fragment>
