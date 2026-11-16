@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
+import Link from 'next/navigation';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, doc, query, where, getDocs, orderBy } from 'firebase/firestore';
@@ -42,7 +42,6 @@ function ClientDetailPage() {
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [isAlertExpanded, setIsAlertExpanded] = useState(false);
   
-  // Estado para o novo modal de Extrato
   const [extratoNote, setExtratoNote] = useState<PromissoryNote | null>(null);
 
   const clientDocRef = useMemoFirebase(() => 
@@ -156,7 +155,6 @@ function ClientDetailPage() {
   const handleSelectNote = (note: PromissoryNote) => {
     setSelectedNote(note);
     setActiveView('note');
-    // Scroll suave para os detalhes
     window.scrollTo({ top: document.getElementById('note-details-section')?.offsetTop || 0, behavior: 'smooth' });
   };
 
@@ -312,7 +310,7 @@ function ClientDetailPage() {
   const selectedNoteData = getNoteData(selectedNote);
   const selectedNotePayments = selectedNote ? allPayments.filter(p => p.promissoryNoteId === selectedNote.id) : [];
 
-  const isFullyPaid = selectedNote && selectedNotePayments.length >= (selectedNote.numberOfInstallments + (selectedNote.hasDownPayment ? 1 : 0)) && selectedNotePayments.reduce((acc, p) => acc + p.amount, 0) >= selectedNote.value;
+  const isFullyPaidNote = selectedNote && selectedNotePayments.length >= (selectedNote.numberOfInstallments + (selectedNote.hasDownPayment ? 1 : 0)) && selectedNotePayments.reduce((acc, p) => acc + p.amount, 0) >= selectedNote.value;
 
   if (isClientLoading || areNotesLoading || loadingPayments) {
     return (
@@ -486,7 +484,7 @@ function ClientDetailPage() {
                         <Receipt className="mr-2 h-4 w-4"/>
                         Carnê e Comprovantes
                     </Button>
-                    {isFullyPaid && (
+                    {isFullyPaidNote && (
                        <Button 
                         onClick={() => setActiveView('statement')} 
                         variant={activeView === 'statement' ? 'default' : 'secondary'} 
@@ -507,7 +505,7 @@ function ClientDetailPage() {
                     <CarneDisplay 
                         data={selectedNoteData} 
                         payments={selectedNotePayments}
-                        onPaymentStatusChange={(isPaid, installmentNumber, value, isDownPayment, paymentDate) => handlePaymentStatusChange(isPaid, installmentNumber, value, isDownPayment, paymentDate)}
+                        onPaymentStatusChange={handlePaymentStatusChange}
                     />
                 )}
                 {activeView === 'statement' && (
@@ -530,7 +528,6 @@ function ClientDetailPage() {
           </div>
         </div>
 
-        {/* Modal de Extrato do Cliente */}
         {extratoNote && (
             <NoteExtratoDialog 
                 open={!!extratoNote} 
